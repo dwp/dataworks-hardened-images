@@ -1,0 +1,17 @@
+name: Guacd Snyk scan
+
+on:
+  push:
+    paths:
+      - 'guacd/**'
+
+jobs:
+  snyk-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Snyk to check Guacd image for vulnerabilities
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: guacd/guacd
