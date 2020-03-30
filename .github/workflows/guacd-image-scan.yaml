@@ -16,4 +16,4 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           image: guacamole/guacd
-          args: --file=guacd/Dockerfile --severity-threshold=high
+          args: --file=/guacd/Dockerfile --severity-threshold=high
