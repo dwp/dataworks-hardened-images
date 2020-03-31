@@ -18,4 +18,4 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           image: guacamole/guacd
-          args: --file=guacd/Dockerfile
+          args: --file=guacd/Dockerfile --org=dwp-dataworks
