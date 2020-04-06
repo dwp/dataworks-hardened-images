@@ -5,7 +5,6 @@ on:
     paths:
       - 'guacd/**'
       - '.github/workflows/guacd-pr-image-scan.yaml'
-      - '.github/actions/snyk-high-scan/**'
 
 jobs:
   high-only-snyk-scan:
