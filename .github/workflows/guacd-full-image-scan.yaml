@@ -18,4 +18,4 @@ jobs:
         with:
           command: monitor
           image: guacamole/guacd
-          args: --org=dwp-dataworks --file=guacd/Dockerfile --org=dwp-dataworks
+          args: --org=dwp-dataworks --file=guacd/Dockerfile
