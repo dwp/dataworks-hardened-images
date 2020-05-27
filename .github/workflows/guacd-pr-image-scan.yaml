@@ -11,11 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build Docker image
-        run: docker build -t ${{ env.IMAGE_NAME }}:latest ./guacd/
+        run: docker build -t ${{ env.IMAGE_NAME }}:latest .
       - name: Run Snyk to check image for high vulnerabilities
         uses: snyk/actions/docker@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           image: ${{ env.IMAGE_NAME }}
-          args: --file=guacd/Dockerfile --severity-threshold=high --exclude-base-image-vulns --org=dwp-dataworks
+          args: --file=Dockerfile --severity-threshold=high --exclude-base-image-vulns --org=dwp-dataworks

@@ -41,11 +41,7 @@ jobs:
     steps:
       - name: Get release version
         id: get_version
-        run: |
-          echo ::set-env name=RELEASE_VERSION::$(echo ${GITHUB_REF:10})
-          ls
-          pwd
-          ls /home/runner/work/dataworks-hardened-images/dataworks-hardened-images
+        run: echo ::set-env name=RELEASE_VERSION::$(echo ${GITHUB_REF:10})
       - name: Publish to DockerHub
         uses: elgohr/Publish-Docker-Github-Action@master
         with:
@@ -54,7 +50,6 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
           tags: "latest, ${{ needs.get-publish-version.outputs.publish-version }}"
           tag_semver: true
-          workdir: guacd
 
   snyk-monitor:
     runs-on: ubuntu-latest
@@ -68,4 +63,4 @@ jobs:
         with:
           command: monitor
           image: ${{ env.IMAGE_NAME }}
-          args: --file=guacd/Dockerfile --org=dwp-dataworks
+          args: --file=Dockerfile --org=dwp-dataworks
