@@ -1,9 +1,6 @@
 name: Master
 
-on:
-  push:
-    branches:
-      - master
+on: pull_request
 
 env:
   IMAGE_NAME: dwpdigital/guacd
@@ -53,7 +50,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
           tags: "latest, ${{ needs.get-publish-version.outputs.publish-version }}"
           tag_semver: true
-          workdir: guacd
+          workdir: /github/workspace/guacd
 
   snyk-monitor:
     runs-on: ubuntu-latest
