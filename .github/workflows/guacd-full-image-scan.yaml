@@ -65,4 +65,4 @@ jobs:
         with:
           command: monitor
           image: ${{ env.IMAGE_NAME }}
-          args: --file=Dockerfile --org=dwp-dataworks
+          args: --file=guacd/Dockerfile --org=dwp-dataworks

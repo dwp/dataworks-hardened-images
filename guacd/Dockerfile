@@ -2,4 +2,4 @@
 FROM guacamole/guacd:1.1.0
 
 # # Remove packages which are not requires & introduce vulnerabilities
-RUN apt remove ffmpeg freerdp2
+RUN apt remove libavcodec58 libfreerdp-client2-2 -y
