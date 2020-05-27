@@ -17,4 +17,4 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           image: guacamole/guacd
-          args: --file=guacd/Dockerfile --severity-threshold=high --exclude-base-image-vulns --org=dwp-dataworks
+          args: --file=guacd/Dockerfile --severity-threshold=high --org=dwp-dataworks
