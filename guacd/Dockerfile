@@ -2,4 +2,4 @@
 FROM guacamole/guacd:1.1.0
 
 # Remove packages which are not requires & introduce vulnerabilities
-RUN apk del ffmpeg
+RUN dpkg remove ffmpeg freerdp2
