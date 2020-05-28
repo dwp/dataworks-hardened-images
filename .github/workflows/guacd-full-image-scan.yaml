@@ -1,9 +1,9 @@
 name: Master
 
-on: pull_request
-#  push:
-#    branches:
-#      - master
+on:
+  push:
+    branches:
+      - master
 
 env:
   IMAGE_NAME: dwpdigital/guacd
