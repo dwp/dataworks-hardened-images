@@ -6,3 +6,7 @@ ignore:
     - '*':
         reason: Required for GuacD jbig2 compression, cannot be removed.
         expires: 2020-08-11T00:00:00.000Z
+  SNYK-DEBIAN10-JBIG2DEC-567554:
+    - '*':
+        reason: Required for GuacD jbig2 compression, cannot be removed.
+        expires: 2020-08-11T00:00:00.000Z
