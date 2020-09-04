@@ -21,7 +21,6 @@ RUN sed -i -e ‘s/v[[:digit:]]\..*\//edge\//g’ /etc/apk/repositories && \
     bash \
     aws-cli && \
     tar -C /tmp -zoxf /tmp/azkaban-web-server.tar.gz && \
-    mv /tmp/azkaban-web-server-0.1.0-SNAPSHOT /azkaban-web-server && \
-    chown -R nobody:nogroup /azkaban-web-server
+    mv /tmp/azkaban-web-server-0.1.0-SNAPSHOT /azkaban-web-server
 
 ENTRYPOINT [ “/bin/entrypoint.sh” ]
