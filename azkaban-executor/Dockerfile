@@ -1,7 +1,6 @@
 FROM gradle:jdk8 AS builder
 
-ENV AZK_VERSION 3.81.0
-ENV MYSQL_JDBC_VERSION 5.1.35
+ENV AZK_VERSION 3.81.0ß
 
 USER root
 
@@ -22,6 +21,7 @@ RUN sed -i -e 's/v[[:digit:]]\..*\//edge\//g' /etc/apk/repositories && \
     aws-cli && \
     tar -C /tmp -zoxf /tmp/azkaban-exec-server.tar.gz && \
     mv /tmp/azkaban-exec-server-0.1.0-SNAPSHOT /azkaban-exec-server && \
-    chown -R nobody:nogroup /azkaban-exec-server
+    chown -R nobody:nogroup /azkaban-exec-server && \
+    chmod 755 /bin/entrypoint.sh
 
-ENTRYPOINT [ “/bin/entrypoint.sh” ]
+ENTRYPOINT [ "/bin/entrypoint.sh" ]
