@@ -3,11 +3,11 @@ name: High vulns Snyk PR scan
 on: 
   pull_request:
     paths:
-      - 'azkaban-executor/**'
+      - 'prom-pushgateway/**'
 
 
 env:
-  IMAGE_NAME: dwpdigital/azkaban-executor
+  IMAGE_NAME: dwpdigital/prom-pushgateway
 
 jobs:
   docker-build-and-scan:
@@ -15,11 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build Docker image
-        run: docker build -t ${{ env.IMAGE_NAME }}:latest ./azkaban-executor/
+        run: docker build -t ${{ env.IMAGE_NAME }}:latest ./prom-pushgateway/
       - name: Run Snyk to check image for high vulnerabilities
         uses: snyk/actions/docker@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           image: ${{ env.IMAGE_NAME }}
-          args: --file=azkaban-executor/Dockerfile --severity-threshold=high --exclude-base-image-vulns --org=dwp-dataworks
+          args: --file=prom-pushgateway/Dockerfile --severity-threshold=high --exclude-base-image-vulns --org=dwp-dataworks
