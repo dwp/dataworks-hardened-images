@@ -1,4 +1,4 @@
-FROM gradle:jdk9 AS builder
+FROM gradle:jdk8 AS builder
 
 ENV AZK_VERSION 3.81.0
 
