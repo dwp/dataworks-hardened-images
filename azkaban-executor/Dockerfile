@@ -1,4 +1,4 @@
-FROM gradle:jdk8 AS builder
+FROM gradle:jdk9 AS builder
 
 ENV AZK_VERSION 3.81.0
 
@@ -9,7 +9,7 @@ RUN curl -k -LSs --output /tmp/azkaban.tar.gz https://github.com/azkaban/azkaban
     /tmp/azkaban-$AZK_VERSION/gradlew -p /tmp/azkaban-$AZK_VERSION assemble && \
     mv /tmp/azkaban-$AZK_VERSION/azkaban-exec-server/build/distributions/azkaban-exec-server-0.1.0-SNAPSHOT.tar.gz /tmp/azkaban-exec-server.tar.gz
 
-FROM openjdk:8-alpine
+FROM openjdk:8u212-jre-alpine3.9
 
 COPY --from=builder /tmp/azkaban-exec-server.tar.gz /tmp/azkaban-exec-server.tar.gz
 COPY entrypoint.sh /bin/entrypoint.sh
