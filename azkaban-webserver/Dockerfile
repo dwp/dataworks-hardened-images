@@ -4,9 +4,12 @@ ENV AZK_VERSION 3.81.0
 
 USER root
 
+COPY azkaban-cognito-usermanager /tmp/azkaban-cognito-usermanager
+
 RUN curl -k -LSs --output /tmp/azkaban.tar.gz https://github.com/azkaban/azkaban/archive/$AZK_VERSION.tar.gz && \
     tar -C /tmp -zoxf /tmp/azkaban.tar.gz && \
     /tmp/azkaban-$AZK_VERSION/gradlew -p /tmp/azkaban-$AZK_VERSION assemble && \
+    /tmp/azkaban-cognito-usermanager/gradlew -p /tmp/azkaban-cognito-usermanager assemble && \
     mv /tmp/azkaban-$AZK_VERSION/azkaban-web-server/build/distributions/azkaban-web-server-0.1.0-SNAPSHOT.tar.gz /tmp/azkaban-web-server.tar.gz && \
     mv /tmp/azkaban-$AZK_VERSION/azkaban-db/build/distributions/azkaban-db-0.1.0-SNAPSHOT.tar.gz /tmp/azkaban-db.tar.gz
 
