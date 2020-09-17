@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -eux
+set -eu
 
 mkdir -p /mnt/s3fs/s3-home && mkdir -p /mnt/s3fs/s3-shared
 
