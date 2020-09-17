@@ -17,7 +17,7 @@ mkdir -p /mnt/tmp
 
 S3FS_PID=$!
 
-while [ -z "$(ls /mnt/tmp/home)" ]; do
+while [ -z "$( mount | grep ^s3fs  )" ]; do
     echo "Waiting for mount";
     sleep 1;
 done
@@ -37,7 +37,7 @@ kill -9 $S3FS_PID || true
 
 S3FS_PID=$!
 
-while [ -z "$(ls /mnt/tmp/shared)" ]; do
+while [ -z "$( mount | grep ^s3fs  )" ]; do
     echo "Waiting for mount";
     sleep 1;
 done
