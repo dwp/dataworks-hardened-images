@@ -269,7 +269,7 @@ public class CognitoUserManager implements UserManager {
   private User getCognitoUser(final String token) throws UserManagerException {
     DecodedJWT decodedToken = null;
     try {
-      JwkProvider provider = new UrlJwkProvider( new URL("http://192.168.1.79/jwks.json"));
+      JwkProvider provider = new UrlJwkProvider( new URL(System.getenv("PROVIDER_URL");));
       JwkProvider cognito = new GuavaCachedJwkProvider(provider);
       String secretKey = retrieveStore();
       decodedToken = JWT.decode(token);
