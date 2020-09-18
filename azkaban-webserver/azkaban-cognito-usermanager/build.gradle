@@ -1,9 +1,5 @@
 plugins {
-    id 'com.github.johnrengelman.shadow' version '1.2.4'
-    id 'co.riiid.gradle' version '0.4.2'
     id 'java'
-    id 'maven'
-    id 'idea'
 }
 
 sourceCompatibility = 1.8
@@ -15,24 +11,21 @@ repositories {
     }
 }
 
-shadowJar {
-    relocate 'org.apache.mina', 'shadow_2_0_9.org.apache.mina'
-    classifier = null
+configurations {
+    extraLibs
 }
-
-jar.enabled = true
 
 dependencies {
     compileOnly group: 'com.github.azkaban', name: 'azkaban', version: '3.81.0'
-    compile group: 'org.apache.directory.api', name: 'api-all', version: '1.0.0-M31'
-
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile group: 'org.zapodot', name: 'embedded-ldap-junit', version: '0.5.2'
-    testCompile group: 'com.github.azkaban', name: 'azkaban', version: '3.81.0'
+    compile group: 'com.auth0', name: 'java-jwt', version: '3.10.0'
+    compile group: 'com.auth0', name: 'jwks-rsa', version: '0.11.0'
+    extraLibs group: 'com.auth0', name: 'java-jwt', version: '3.10.0'
+    extraLibs group: 'com.auth0', name: 'jwks-rsa', version: '0.11.0'
 }
 
-artifacts {
-    shadowJar;
+jar {
+    from {
+        configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }
 
-build.dependsOn(shadowJar);
