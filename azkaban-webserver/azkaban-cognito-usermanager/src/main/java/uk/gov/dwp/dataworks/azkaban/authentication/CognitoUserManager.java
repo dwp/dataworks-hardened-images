@@ -271,7 +271,6 @@ public class CognitoUserManager implements UserManager {
     try {
       JwkProvider provider = new UrlJwkProvider( new URL(System.getenv("KEYSTORE_URL")));
       JwkProvider cognito = new GuavaCachedJwkProvider(provider);
-      String secretKey = retrieveStore();
       decodedToken = JWT.decode(token);
       Jwk algo = cognito.get(decodedToken.getKeyId());
       Algorithm algorithm;
@@ -297,10 +296,6 @@ public class CognitoUserManager implements UserManager {
     User user = null;
     user = new User(claims.get("cognito:username").asString());
     return user;
-  }
-
-  private String retrieveStore() {
-
   }
 
   private User getXMLUser(final String username, final String password) throws UserManagerException {

@@ -39,6 +39,7 @@ RUN apk add --update --no-cache \
     mv /tmp/jackson-databind-2.11.1.jar /azkaban-web-server/lib && \
     rm -f /azkaban-web-server/lib/jackson-core-2.2.2.jar && \
     mkdir -p /azkaban-web-server/plugins/jobtypes && \
+    mkdir -p /azkaban-web-server/extlib && \
     mv /tmp/azkaban-db-0.1.0-SNAPSHOT /azkaban-db && \
     mv /tmp/azkaban-cognito-usermanager-1.0.0-SNAPSHOT.jar /azkaban-web-server/extlib && \
     chown -R nobody:nogroup /azkaban-web-server && \
