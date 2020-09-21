@@ -46,9 +46,7 @@ fi
 
 if [ -n "$KEYSTORE_DATA" ]; then
   echo $KEYSTORE_DATA | base64 -d > /store.jwk
-  set_property "keystore-url"      "file:////store.jwk"
-else
-  set_property "keystore-url"       "$KEYSTORE_URL"
+  export KEYSTORE_URL='file:////store.jwk'
 fi
 
 echo "INFO: Copying azkaban web-server configuration file(s) from ${S3_URI} to /azkaban-web-server/conf..."
