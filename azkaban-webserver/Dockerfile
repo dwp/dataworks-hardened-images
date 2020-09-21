@@ -25,12 +25,12 @@ COPY dist/jackson-core-2.11.1.jar /tmp/jackson-core-2.11.1.jar
 COPY dist/jackson-databind-2.11.1.jar /tmp/jackson-databind-2.11.1.jar
 COPY entrypoint.sh /bin/entrypoint.sh
 
-RUN sed -i -e 's/v[[:digit:]]\..*\//edge\//g' /etc/apk/repositories && \
-    apk upgrade --update-cache --available && \
-    apk add --update --no-cache \
+RUN apk add --update --no-cache \
     bash \
     mysql-client \
-    aws-cli && \
+    py3-pip && \
+    pip3 install --upgrade pip && \
+    pip3 install awscli && \
     tar -C /tmp -zoxf /tmp/azkaban-web-server.tar.gz && \
     tar -C /tmp -zoxf /tmp/azkaban-db.tar.gz && \
     mv /tmp/azkaban-web-server-0.1.0-SNAPSHOT /azkaban-web-server && \
