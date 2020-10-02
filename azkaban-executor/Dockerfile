@@ -23,7 +23,7 @@ RUN apk add --update --no-cache \
 
 FROM openjdk:8-alpine
 
-COPY --from=builder /tmp/azkaban-exec-server.tar.gz /tmp/azkaban-exec-server.tar.gz
+COPY --from=gradle-builder /tmp/azkaban-exec-server.tar.gz /tmp/azkaban-exec-server.tar.gz
 COPY entrypoint.sh /bin/entrypoint.sh
 
 RUN sed -i -e 's/v[[:digit:]]\..*\//edge\//g' /etc/apk/repositories && \
