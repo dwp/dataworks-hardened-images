@@ -12,7 +12,6 @@ RUN curl -k -LSs --output /tmp/azkaban.tar.gz https://github.com/azkaban/azkaban
     mv -f /tmp/LoginAbstractAzkabanServlet.java /tmp/azkaban-$AZK_VERSION/azkaban-web-server/src/main/java/azkaban/webapp/servlet && \
     /tmp/azkaban-$AZK_VERSION/gradlew -p /tmp/azkaban-$AZK_VERSION assemble && \
     /tmp/azkaban-cognito-usermanager/gradlew -p /tmp/azkaban-cognito-usermanager assemble && \
-    mv /tmp/azkaban-$AZK_VERSION/az-exec-util/src/main/c/execute-as-user.c /tmp/execute-as-user.c && \
     mv /tmp/azkaban-$AZK_VERSION/azkaban-web-server/build/distributions/azkaban-web-server-0.1.0-SNAPSHOT.tar.gz /tmp/azkaban-web-server.tar.gz && \
     mv /tmp/azkaban-$AZK_VERSION/azkaban-db/build/distributions/azkaban-db-0.1.0-SNAPSHOT.tar.gz /tmp/azkaban-db.tar.gz
 
