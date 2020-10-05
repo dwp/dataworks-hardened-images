@@ -52,17 +52,38 @@ mv /azkaban-exec-server/conf/commonprivate.properties /azkaban-exec-server/plugi
 chmod +x /azkaban-exec-server/bin/start-exec.sh
 chmod +x /azkaban-exec-server/bin/internal/internal-start-executor.sh
 
-COGNITO_GROUPS=$(aws cognito-idp list-groups --user-pool-id $USER_POOL_ID | jq .Groups[].GroupName | tr -d "\"")
-for COGNITO_GROUP in $COGNITO_GROUPS;
+CREDS=$(aws sts assume-role --role-arn "$COGNITO_ROLE_ARN" --role-session-name EMR_Get_Users | jq .Credentials)
+export AWS_ACCESS_KEY_ID=$(echo "$CREDS" | jq -r .AccessKeyId)
+export AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | jq -r .SecretAccessKey)
+export AWS_SESSION_TOKEN=$(echo "$CREDS" | jq -r .SessionToken)
+
+COGNITO_GROUPS=$(aws cognito-idp list-groups --user-pool-id $USER_POOL_ID | jq -r .Groups[].GroupName)
+
+for GROUP in $COGNITO_GROUPS; 
 do
-    addgroup $COGNITO_GROUP
-    COGNITO_USERS=$(aws cognito-idp list-users-in-group --user-pool-id $USER_POOL_ID --group-name $COGNITO_GROUP | jq .Users[].Username | tr -d "\"")
-    for COGNITO_USER in $COGNITO_USERS;
-    do
-        adduser $COGNITO_USER -DH
-        addgroup $COGNITO_USER $COGNITO_GROUP
-    done
+  echo "Creating group $GROUP"
+  addgroup $GROUP
+
+  echo "Adding users for group $GROUP"
+  USERS=$(aws cognito-idp list-users-in-group --user-pool-id "$USER_POOL_ID" --group-name "$GROUP" | jq '.Users[]' | jq -r '(.Attributes[] | if .Name =="preferred_username" then .Value else empty end) // .Username')
+  USERDIR=$(aws cognito-idp list-users --user-pool-id "$USER_POOL_ID")
+
+  for USER in $USERS;
+  do
+    USERNAME=$(echo $USERDIR \
+            | jq ".Users[] as \$u | if ( (\$u.Attributes[] | if .Name ==\"preferred_username\" then .Value else empty end) // \$u.Username) == \"$USER\" then \$u else empty end " \
+            | jq -r ".Attributes[] | if .Name == \"sub\" then \"$USER\" + (.Value | match(\"...\").string) else empty end")
+
+    echo "Creating user $USERNAME"
+    adduser $USERNAME -DH
+
+    echo "Adding user $USERNAME to group $GROUP"
+    addgroup $USERNAME $GROUP
+
+  done
 done
+
+addgroup azkaban
 
 echo "INFO: Starting azkaban exec-server..."
 exec /azkaban-exec-server/bin/start-exec.sh
