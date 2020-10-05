@@ -52,7 +52,7 @@ mv /azkaban-exec-server/conf/commonprivate.properties /azkaban-exec-server/plugi
 chmod +x /azkaban-exec-server/bin/start-exec.sh
 chmod +x /azkaban-exec-server/bin/internal/internal-start-executor.sh
 
-COGNITO_GROUPS=`aws cognito-idp list-groups --user-pool-id $USER_POOL_ID | jq .Groups[].GroupName | tr -d "\""`
+COGNITO_GROUPS=$(aws cognito-idp list-groups --user-pool-id $USER_POOL_ID | jq .Groups[].GroupName | tr -d "\"")
 for COGNITO_GROUP in $COGNITO_GROUPS;
 do
     addgroup $COGNITO_GROUP
