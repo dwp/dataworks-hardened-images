@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.List;
+import java.util.Arrays;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -265,7 +267,7 @@ public class CognitoUserManager implements UserManager {
       }
     }
   }
-
+  
   private User getCognitoUser(final String token) throws UserManagerException {
     DecodedJWT decodedToken = null;
     try {
@@ -294,7 +296,10 @@ public class CognitoUserManager implements UserManager {
     }
     Map<String, Claim> claims = decodedToken.getClaims();
     User user = null;
-    user = new User(claims.get("cognito:username").asString());
+    String username = claims.get("cognito:username").asString();
+    List<String> groups = Arrays.asList(claims.get("cognito:groups").as(String[].class));
+    user = new User(username);
+    user.addGroup(groups.get(0));
     return user;
   }
 
