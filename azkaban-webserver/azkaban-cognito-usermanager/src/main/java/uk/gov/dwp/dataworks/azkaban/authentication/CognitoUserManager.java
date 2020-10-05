@@ -266,16 +266,6 @@ public class CognitoUserManager implements UserManager {
     }
   }
 
-  private void addOSUser(String username, String group) {
-    try {
-      ProcessBuilder pb = new ProcessBuilder("bash", "-c", "if ! id " + username + " &>/dev/null; then adduser " + username + " -DH; addgroup " + username + " " + group + "; fi");
-      Process process = pb.start();
-      process.waitFor();
-    } catch (Exception e) {
-      logger.error(e.toString());
-    }
-  }
-  
   private User getCognitoUser(final String token) throws UserManagerException {
     DecodedJWT decodedToken = null;
     try {
@@ -304,11 +294,7 @@ public class CognitoUserManager implements UserManager {
     }
     Map<String, Claim> claims = decodedToken.getClaims();
     User user = null;
-    String username = claims.get("cognito:username").asString();
-    List<String> groups = Arrays.asList(claims.get("cognito:groups").as(String[].class));
-    user = new User(username);
-    user.addGroup(groups.get(0));
-    addOSUser(username, groups.get(0));
+    user = new User(claims.get("cognito:username").asString());
     return user;
   }
 

@@ -52,5 +52,17 @@ mv /azkaban-exec-server/conf/commonprivate.properties /azkaban-exec-server/plugi
 chmod +x /azkaban-exec-server/bin/start-exec.sh
 chmod +x /azkaban-exec-server/bin/internal/internal-start-executor.sh
 
+COGNITO_GROUPS=`aws cognito-idp list-groups --user-pool-id $USER_POOL_ID | jq .Groups[].GroupName | tr -d "\""`
+for COGNITO_GROUP in $COGNITO_GROUPS;
+do
+    addgroup $COGNITO_GROUP
+    COGNITO_USERS=$(aws cognito-idp list-users-in-group --user-pool-id $USER_POOL_ID --group-name $COGNITO_GROUP | jq .Users[].Username | tr -d "\"")
+    for COGNITO_USER in $COGNITO_USERS;
+    do
+        adduser $COGNITO_USER -DH
+        addgroup $COGNITO_USER $COGNITO_GROUP
+    done
+done
+
 echo "INFO: Starting azkaban exec-server..."
 exec /azkaban-exec-server/bin/start-exec.sh
