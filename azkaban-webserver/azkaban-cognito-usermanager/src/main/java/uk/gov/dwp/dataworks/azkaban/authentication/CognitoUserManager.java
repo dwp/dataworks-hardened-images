@@ -297,16 +297,31 @@ public class CognitoUserManager implements UserManager {
     Map<String, Claim> claims = decodedToken.getClaims();
     User user = null;
     String username = null;
+    String salt = null;
+    List<String> groups = null;
+
+    if (claims.containsKey("sub")) {
+      salt = claims.get("sub").asString();
+    } else {
+      throw new UserManagerException("Missing sub element from token.");
+    }
+
     if (claims.containsKey("preferred_username")) {
       username = claims.get("preferred_username").asString();
-    } else if ((claims.containsKey("cognito:username")) && (claims.containsKey("sub"))) {
+      username = username + salt.substring(0, 3);
+    } else if (claims.containsKey("cognito:username")) {
       username = claims.get("cognito:username").asString();
-      String salt = claims.get("sub").asString();
       username = username + salt.substring(0, 3);
     } else {
       throw new UserManagerException("Missing elements from token.");
     }
-    List<String> groups = Arrays.asList(claims.get("cognito:groups").as(String[].class));
+
+    if (claims.containsKey("cognito:groups")) {
+      groups = Arrays.asList(claims.get("cognito:groups").as(String[].class));
+    } else {
+      throw new UserManagerException("Missing groups element from token.");
+    }
+    
     user = new User(username);
     user.addGroup(groups.get(0));
     return user;
