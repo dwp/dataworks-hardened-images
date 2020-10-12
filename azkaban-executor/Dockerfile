@@ -10,7 +10,7 @@ RUN curl -k -LSs --output /tmp/azkaban.tar.gz https://github.com/azkaban/azkaban
     tar -C /tmp -zoxf /tmp/azkaban.tar.gz && \
     /tmp/azkaban-$AZK_VERSION/gradlew -p /tmp/azkaban-$AZK_VERSION assemble && \
     /tmp/azkaban-emr-jobtype/gradlew -p /tmp/azkaban-emr-jobtype assemble && \
-    mv /tmp/azkaban-emr-jobtype/build/libs/azkaban-emr-jobtype-1.0.0-SNAPSHOT.jar /tmp/azkaban-emr-jobtype-1.0.0-SNAPSHOT.jar
+    mv /tmp/azkaban-emr-jobtype/build/libs/azkaban-emr-jobtype-1.0.0-SNAPSHOT.jar /tmp/azkaban-emr-jobtype-1.0.0-SNAPSHOT.jar && \
     mv /tmp/azkaban-$AZK_VERSION/azkaban-exec-server/build/distributions/azkaban-exec-server-0.1.0-SNAPSHOT.tar.gz /tmp/azkaban-exec-server.tar.gz && \
     mv /tmp/azkaban-$AZK_VERSION/az-exec-util/src/main/c/execute-as-user.c /tmp/execute-as-user.c
 
