@@ -24,6 +24,7 @@ COPY entrypoint.sh /bin/entrypoint.sh
 RUN apk add --update --no-cache \
     bash \
     mysql-client \
+    openssl \
     py3-pip && \
     pip3 install --upgrade pip && \
     pip3 install awscli && \
