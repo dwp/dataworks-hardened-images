@@ -1,8 +1,11 @@
 #!/bin/sh
 set -e
 
-/usr/bin/openssl req -x509 -newkey rsa:4096 -keyout $JAVA_HOME/jre/lib/security/key.pem -out $JAVA_HOME/jre/lib/security/cert.pem -days 30 -nodes -subj '/CN=azkaban' \
-&& keytool -keystore cacerts -storepass changeit -noprompt -trustcacerts -importcert -alias self_signed -file $JAVA_HOME/jre/lib/security/cert.pem
+/usr/bin/openssl req -x509 -newkey rsa:4096 -keyout $JAVA_HOME/jre/lib/security/key.pem -out $JAVA_HOME/jre/lib/security/cert.pem -days 30 -nodes -subj "/CN=azkaban"
+keytool -keystore /azkaban-web-server/cacerts -storepass changeit -noprompt -trustcacerts -importcert -alias self_signed -file $JAVA_HOME/jre/lib/security/cert.pem
+openssl req -new -key $JAVA_HOME/jre/lib/security/key.pem -subj "/CN=azkaban" -out $JAVA_HOME/jre/lib/security/cert.csr
+openssl pkcs12 -inkey $JAVA_HOME/jre/lib/security/key.pem -in $JAVA_HOME/jre/lib/security/cert.pem -export -out /azkaban-web-server/cacerts.pkcs12 -passout pass:changeit
+keytool -importkeystore -srckeystore /azkaban-web-server/cacerts.pkcs12 -storepass changeit -srcstorepass changeit -srcstoretype PKCS12 -destkeystore /azkaban-web-server/cacerts
 
 echo "INFO: Checking container configuration..."
 if [ -z "${AZKABAN_CONFIG_S3_BUCKET}" -o -z "${AZKABAN_CONFIG_S3_PREFIX}" ]; then
