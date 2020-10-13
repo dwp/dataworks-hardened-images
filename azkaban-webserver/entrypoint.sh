@@ -1,11 +1,13 @@
 #!/bin/sh
 set -e
 
+PASS=$(aws secretsmanager get-secret-value --secret-id /concourse/dataworks/workflow_manager --query SecretBinary --output text | base64 -D | jq -r .keystore_password)
+
 /usr/bin/openssl req -x509 -newkey rsa:4096 -keyout $JAVA_HOME/jre/lib/security/key.pem -out $JAVA_HOME/jre/lib/security/cert.pem -days 30 -nodes -subj "/CN=azkaban"
-keytool -keystore /azkaban-web-server/cacerts -storepass changeit -noprompt -trustcacerts -importcert -alias self_signed -file $JAVA_HOME/jre/lib/security/cert.pem
+keytool -keystore /azkaban-web-server/cacerts -storepass ${PASS} -noprompt -trustcacerts -importcert -alias self_signed -file $JAVA_HOME/jre/lib/security/cert.pem
 openssl req -new -key $JAVA_HOME/jre/lib/security/key.pem -subj "/CN=azkaban" -out $JAVA_HOME/jre/lib/security/cert.csr
-openssl pkcs12 -inkey $JAVA_HOME/jre/lib/security/key.pem -in $JAVA_HOME/jre/lib/security/cert.pem -export -out /azkaban-web-server/cacerts.pkcs12 -passout pass:changeit
-keytool -importkeystore -srckeystore /azkaban-web-server/cacerts.pkcs12 -storepass changeit -srcstorepass changeit -srcstoretype PKCS12 -destkeystore /azkaban-web-server/cacerts
+openssl pkcs12 -inkey $JAVA_HOME/jre/lib/security/key.pem -in $JAVA_HOME/jre/lib/security/cert.pem -export -out /azkaban-web-server/cacerts.pkcs12 -passout pass:${PASS}
+keytool -importkeystore -srckeystore /azkaban-web-server/cacerts.pkcs12 -storepass ${PASS} -srcstorepass ${PASS} -srcstoretype PKCS12 -destkeystore /azkaban-web-server/cacerts
 
 echo "INFO: Checking container configuration..."
 if [ -z "${AZKABAN_CONFIG_S3_BUCKET}" -o -z "${AZKABAN_CONFIG_S3_PREFIX}" ]; then
