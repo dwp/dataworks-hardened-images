@@ -16,8 +16,6 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build Docker image
         run: docker build -t ${{ env.IMAGE_NAME }}:latest ./azkaban-executor/
-      - name: ssl version check
-        run: apk info openssl
       - name: Run Snyk to check image for high vulnerabilities
         uses: snyk/actions/docker@master
         env:
