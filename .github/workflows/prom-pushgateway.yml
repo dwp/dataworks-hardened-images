@@ -3,7 +3,7 @@ name: Prometheus Pushgateway Master
 on:
   push:
     tags:
-      - '*'
+    - '*'
     paths:
     - 'prom-pushgateway/**'
 

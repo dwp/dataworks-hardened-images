@@ -3,7 +3,7 @@ name: Guacd Master
 on:
   push:
     tags:
-      - '*'
+    - '*'
     paths:
     - 'guacd/**'
 

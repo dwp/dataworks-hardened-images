@@ -3,7 +3,7 @@ name: Azkaban Webserver Master
 on:
   push:
     tags:
-      - '*'
+    - '*'
     paths:
     - 'azkaban-webserver/**'
 
