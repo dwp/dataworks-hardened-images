@@ -62,6 +62,8 @@ nohup /opt/s3fs-fuse/bin/s3fs ${S3_BUCKET}:/shared/${TEAM} /mnt/s3fs/s3-shared -
     -o umask=0033 \
     &> /var/log/s3fs-shared &
 
+# Trap SIGTERM
+
 cleanup() {
     echo "Container stopped, performing cleanup..."
     fusermount -u /mnt/s3fs/s3-home

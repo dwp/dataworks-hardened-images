@@ -3,7 +3,7 @@ name: S3FS Master
 on:
   push:
     tags:
-      - '*'
+    - '*'
     paths:
     - 's3fs/**'
 
