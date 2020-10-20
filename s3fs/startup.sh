@@ -30,11 +30,15 @@ fusermount -u /mnt/tmp
 mkdir -p /mnt/tmp/shared/${TEAM};
 chmod -R a-r /mnt/tmp/shared/${TEAM} || true # || true Needed as this will fail if there are some files encrypted with a different KMS key
 
+# Cleanup
+
 fusermount -u /mnt/tmp
 
 rm -rf /mnt/tmp
 
 fusermount -u /mnt/s3fs/s3-home && fusermount -u /mnt/s3fs/s3-shared # in case cleanup failed on shutdown
+
+# Mount home and team s3
 
 mkdir -p /mnt/s3fs/s3-home && mkdir -p /mnt/s3fs/s3-shared
 
