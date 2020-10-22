@@ -54,17 +54,20 @@ end
 function substitute_proxy_user(jwt_object)
     ngx.req.read_body()
     local raw_body = ngx.req.get_body_data()
-    if not raw_body or not pcall(cjson.decode(raw_body)) then return end
-    
+
+    if not raw_body or not pcall(cjson.decode, raw_body) then return end
+
     local body = cjson.decode(raw_body)
     
     if body and body.proxyUser then  
         local new_body = body
         
         local sub_suffix = jwt_object.payload.sub:sub(1,3)
-        local username = jwt_object.payload["cognito:username"] .. sub_suffix
-        new_body.proxyUser = username
+        local username_base = (jwt_object.payload["preferred_username"]
+            and jwt_object.payload["preferred_username"]
+            or jwt_object.payload["cognito:username"])
 
+        new_body.proxyUser = username_base .. sub_suffix
         ngx.req.set_body_data(cjson.encode(new_body))
     end
 end
