@@ -141,6 +141,8 @@ public class EMRStep extends AbstractProcessJob {
 
     String clusterId = getClusterId(emr);
 
+    configureCluster(emr, clusterId);
+
     ArrayList<String> args = retrieveScript(this.getJobProps().getString(COMMAND));
     args.add(getUserGroup(effectiveUser));
     args.add(retrieveScriptArguments(this.getJobProps().getString(COMMAND)));
@@ -361,5 +363,9 @@ public class EMRStep extends AbstractProcessJob {
 
   public String getPath() {
     return Utils.ifNull(this.getJobPath(), "");
+  }
+
+  private void configureCluster(AmazonElasticMapReduce emr, String clusterId) {
+    // TODO
   }
 }
