@@ -160,30 +160,26 @@ public class EMRStep extends AbstractProcessJob {
 
     String logGroupName = this.getSysProps().getString(AWS_LOG_GROUP_NAME, "/aws/emr/azkaban");
 
-    GetLogEventsRequest getLogEventsRequest = new GetLogEventsRequest()
-      .withLogGroupName(logGroupName)
-      .withLogStreamName(result.getStepIds().get(0))
-      .withStartFromHead(true);
-
-    GetLogEventsResult logResult = logsClient.getLogEvents(getLogEventsRequest);
-
-    printLogs(logResult);
-
     boolean stepCompleted = false;
 
     while(! stepCompleted) {
+      Thread.sleep(pollTime);
+
       stepCompleted = isStepCompleted(emr, clusterId, result.getStepIds().get(0));
 
       String sequenceToken = logResult.getNextForwardToken();
 
-      getLogEventsRequest = new GetLogEventsRequest()
+      GetLogEventsRequest getLogEventsRequest = new GetLogEventsRequest()
         .withLogGroupName(logGroupName)
         .withLogStreamName(result.getStepIds().get(0))
         .withNextToken(sequenceToken);
 
-      logResult = logsClient.getLogEvents(getLogEventsRequest);
-
-      printLogs(logResult);
+      try {
+        GetLogEventsResult logResult = logsClient.getLogEvents(getLogEventsRequest);
+        printLogs(logResult);
+      } catch(AWSLogsException e) {
+        info("Waiting for logs to become available")
+      }
     }
 
     // Get the output properties from this job.
