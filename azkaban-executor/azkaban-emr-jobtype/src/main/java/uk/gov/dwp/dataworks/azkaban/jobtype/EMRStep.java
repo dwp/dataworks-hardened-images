@@ -47,6 +47,7 @@ public class EMRStep extends AbstractProcessJob {
   public static final String AWS_EMR_STEP_SCRIPT = "aws.emr.step.script";
   public static final String AWS_EMR_STEP_NAME = "aws.emr.step.name";
   public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
+  public static final String AWS_LOG_GROUP_NAME = "aws.log.group.name";
   // Use azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER instead
   @Deprecated
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
@@ -157,8 +158,10 @@ public class EMRStep extends AbstractProcessJob {
 
     AWSLogsClient logsClient = new AWSLogsClient().withRegion(Regions.EU_WEST_2);
 
+    String logGroupName = this.getSysProps().getString(AWS_LOG_GROUP_NAME, "/aws/emr/azkaban");
+
     GetLogEventsRequest getLogEventsRequest = new GetLogEventsRequest()
-      .withLogGroupName(this.getSysProps().getString(AWS_EMR_CLUSTER_NAME))
+      .withLogGroupName(logGroupName)
       .withLogStreamName(result.getStepIds().get(0))
       .withStartFromHead(true);
 
@@ -174,7 +177,7 @@ public class EMRStep extends AbstractProcessJob {
       String sequenceToken = logResult.getNextForwardToken();
 
       getLogEventsRequest = new GetLogEventsRequest()
-        .withLogGroupName(this.getSysProps().getString(AWS_EMR_CLUSTER_NAME))
+        .withLogGroupName(logGroupName)
         .withLogStreamName(result.getStepIds().get(0))
         .withNextToken(sequenceToken);
 
