@@ -178,7 +178,7 @@ public class EMRStep extends AbstractProcessJob {
         GetLogEventsResult logResult = logsClient.getLogEvents(getLogEventsRequest);
         printLogs(logResult);
       } catch(AWSLogsException e) {
-        info("Waiting for logs to become available")
+        info("Waiting for logs to become available");
       }
     }
 
