@@ -164,27 +164,25 @@ public class EMRStep extends AbstractProcessJob {
 
     String sequenceToken = "";
 
+    GetLogEventsRequest getLogEventsRequest = new GetLogEventsRequest()
+      .withLogGroupName(logGroupName)
+      .withLogStreamName(result.getStepIds().get(0))
+      .withStartFromHead(true);
+
+    int pollTime = this.getSysProps().getInt(BOOT_POLL_INTERVAL, BOOT_POLL_INTERVAL_DEFAULT);
+
     while(! stepCompleted) {
       Thread.sleep(pollTime);
 
       stepCompleted = isStepCompleted(emr, clusterId, result.getStepIds().get(0));
 
-      if (sequenceToken.equals("")) {
-        GetLogEventsRequest getLogEventsRequest = new GetLogEventsRequest()
-          .withLogGroupName(logGroupName)
-          .withLogStreamName(result.getStepIds().get(0))
-          .withStartFromHead(true);
-      } else {
-        GetLogEventsRequest getLogEventsRequest = new GetLogEventsRequest()
-          .withLogGroupName(logGroupName)
-          .withLogStreamName(result.getStepIds().get(0))
-          .withNextToken(sequenceToken);
-      }
-
       try {
         GetLogEventsResult logResult = logsClient.getLogEvents(getLogEventsRequest);
         printLogs(logResult);
-        sequenceToken = logResult.getNextForwardToken();
+        getLogEventsRequest = new GetLogEventsRequest()
+          .withLogGroupName(logGroupName)
+          .withLogStreamName(result.getStepIds().get(0))
+          .withNextToken(logResult.getNextForwardToken(););
       } catch(AWSLogsException e) {
         info("Waiting for logs to become available");
       }
