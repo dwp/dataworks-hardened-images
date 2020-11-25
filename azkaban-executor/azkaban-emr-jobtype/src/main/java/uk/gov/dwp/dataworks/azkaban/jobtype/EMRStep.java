@@ -169,10 +169,8 @@ public class EMRStep extends AbstractProcessJob {
       .withLogStreamName(result.getStepIds().get(0))
       .withStartFromHead(true);
 
-    int pollTime = this.getSysProps().getInt(BOOT_POLL_INTERVAL, BOOT_POLL_INTERVAL_DEFAULT);
-
     while(! stepCompleted) {
-      Thread.sleep(pollTime);
+      Thread.sleep(POLL_INTERVAL);
 
       stepCompleted = isStepCompleted(emr, clusterId, result.getStepIds().get(0));
 
@@ -202,7 +200,9 @@ public class EMRStep extends AbstractProcessJob {
     ListStepsResult steps = emr.listSteps(new ListStepsRequest().withClusterId(clusterId));
     for (StepSummary step : steps.getSteps()) {
       if (step.getId().equals(stepId)) {
-        return step.getStatus().getState().equals("COMPLETED");
+        return (step.getStatus().getState().equals("COMPLETED") 
+          || step.getStatus().getState().equals("FAILED") 
+          || step.getStatus().getState().equals("CANCELLED"));
       }
     }
     error("Failed to find step with ID: " + stepId);
