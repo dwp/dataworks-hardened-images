@@ -182,7 +182,7 @@ public class EMRStep extends AbstractProcessJob {
         getLogEventsRequest = new GetLogEventsRequest()
           .withLogGroupName(logGroupName)
           .withLogStreamName(result.getStepIds().get(0))
-          .withNextToken(logResult.getNextForwardToken(););
+          .withNextToken(logResult.getNextForwardToken());
       } catch(AWSLogsException e) {
         info("Waiting for logs to become available");
       }
