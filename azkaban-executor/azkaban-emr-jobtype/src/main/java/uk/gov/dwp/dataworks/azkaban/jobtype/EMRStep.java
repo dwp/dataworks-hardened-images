@@ -17,6 +17,8 @@ import com.amazonaws.services.elasticmapreduce.model.*;
 import com.amazonaws.services.elasticmapreduce.util.StepFactory;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.lambda.invoke.LambdaInvokerFactory;
+import com.amazonaws.services.logs.AWSLogsClient;
+import com.amazonaws.services.logs.model.*;
 import org.apache.log4j.Logger;
 import uk.gov.dwp.dataworks.lambdas.EMRConfiguration;
 import uk.gov.dwp.dataworks.lambdas.EMRLauncher;
@@ -153,8 +155,53 @@ public class EMRStep extends AbstractProcessJob {
 		  .withJobFlowId(clusterId)
 		  .withSteps(runBashScript));
 
+    AWSLogsClient logsClient = new AWSLogsClient().withRegion(Regions.EU_WEST_2);
+
+    GetLogEventsRequest getLogEventsRequest = new GetLogEventsRequest()
+      .withLogGroupName(this.getSysProps().getString(AWS_EMR_CLUSTER_NAME))
+      .withLogStreamName(result.getStepIds().get(0))
+      .withStartFromHead(true);
+
+    GetLogEventsResult logResult = logsClient.getLogEvents(getLogEventsRequest);
+
+    printLogs(logResult);
+
+    boolean stepCompleted = false;
+
+    while(! stepCompleted) {
+      stepCompleted = isStepCompleted(emr, clusterId, result.getStepIds().get(0));
+
+      String sequenceToken = logResult.getNextForwardToken();
+
+      getLogEventsRequest = new GetLogEventsRequest()
+        .withLogGroupName(this.getSysProps().getString(AWS_EMR_CLUSTER_NAME))
+        .withLogStreamName(result.getStepIds().get(0))
+        .withNextToken(sequenceToken);
+
+      logResult = logsClient.getLogEvents(getLogEventsRequest);
+
+      printLogs(logResult);
+    }
+
     // Get the output properties from this job.
     generateProperties(propFiles[1]);
+  }
+
+  private void printLogs(GetLogEventsResult logResult) {
+    for (OutputLogEvent event : logResult.getEvents()) {
+      info(event.getMessage());
+    }
+  }
+
+  private boolean isStepCompleted(AmazonElasticMapReduce emr, String clusterId, String stepId) {
+    ListStepsResult steps = emr.listSteps(new ListStepsRequest().withClusterId(clusterId));
+    for (StepSummary step : steps.getSteps()) {
+      if (step.getId().equals(stepId)) {
+        return step.getStatus().getState().equals("COMPLETED");
+      }
+    }
+    error("Failed to find step with ID: " + stepId);
+    return false;
   }
 
   private String retrieveScriptArguments(String command) {
