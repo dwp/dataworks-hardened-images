@@ -42,4 +42,3 @@ jar {
         configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
-
