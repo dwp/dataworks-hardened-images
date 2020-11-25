@@ -11,6 +11,7 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClientBuilder;
 import com.amazonaws.services.elasticmapreduce.model.*;
@@ -48,6 +49,7 @@ public class EMRStep extends AbstractProcessJob {
   public static final String AWS_EMR_STEP_NAME = "aws.emr.step.name";
   public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
   public static final String AWS_LOG_GROUP_NAME = "aws.log.group.name";
+  public static final String AWS_REGION = "aws.region";
   // Use azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER instead
   @Deprecated
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
@@ -132,8 +134,10 @@ public class EMRStep extends AbstractProcessJob {
 
     this.logJobProperties();
 
+    String awsRegion = this.getSysProps().getString(AWS_REGION, "eu-west-2");
+
     AmazonElasticMapReduce emr = AmazonElasticMapReduceClientBuilder.standard()
-			.withRegion(Regions.EU_WEST_2)
+			.withRegion(awsRegion)
 			.build();
 
     String clusterId = getClusterId(emr);
@@ -148,7 +152,7 @@ public class EMRStep extends AbstractProcessJob {
 
     StepConfig runBashScript = new StepConfig()
         .withName(this.getSysProps().getString(AWS_EMR_STEP_NAME)) 
-        .withHadoopJarStep(new StepFactory("eu-west-2.elasticmapreduce")
+        .withHadoopJarStep(new StepFactory(awsRegion + ".elasticmapreduce")
           .newScriptRunnerStep(this.getSysProps().getString(AWS_EMR_STEP_SCRIPT), args.toArray(new String[args.size()])))
         .withActionOnFailure("CONTINUE");
 
@@ -156,7 +160,7 @@ public class EMRStep extends AbstractProcessJob {
 		  .withJobFlowId(clusterId)
 		  .withSteps(runBashScript));
 
-    AWSLogsClient logsClient = new AWSLogsClient().withRegion(Regions.EU_WEST_2);
+    AWSLogsClient logsClient = new AWSLogsClient().withRegion(RegionUtils.getRegion(awsRegion));
 
     String logGroupName = this.getSysProps().getString(AWS_LOG_GROUP_NAME, "/aws/emr/azkaban");
 
