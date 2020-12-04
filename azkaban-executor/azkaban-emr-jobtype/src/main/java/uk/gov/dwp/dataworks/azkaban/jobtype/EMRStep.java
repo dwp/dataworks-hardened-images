@@ -10,19 +10,23 @@ import azkaban.utils.ExecuteAsUser;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
-import com.amazonaws.regions.Regions;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClientBuilder;
 import com.amazonaws.services.elasticmapreduce.model.*;
 import com.amazonaws.services.elasticmapreduce.util.StepFactory;
+import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
-import com.amazonaws.services.lambda.invoke.LambdaInvokerFactory;
+import com.amazonaws.services.lambda.model.InvokeRequest;
+import com.amazonaws.services.lambda.model.InvokeResult;
 import com.amazonaws.services.logs.AWSLogsClient;
-import com.amazonaws.services.logs.model.*;
+import com.amazonaws.services.logs.model.AWSLogsException;
+import com.amazonaws.services.logs.model.GetLogEventsRequest;
+import com.amazonaws.services.logs.model.GetLogEventsResult;
+import com.amazonaws.services.logs.model.OutputLogEvent;
 import org.apache.log4j.Logger;
+import org.codehaus.jackson.map.ObjectMapper;
 import uk.gov.dwp.dataworks.lambdas.EMRConfiguration;
-import uk.gov.dwp.dataworks.lambdas.EMRLauncher;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -250,13 +254,29 @@ public class EMRStep extends AbstractProcessJob {
 
       if (clusterId == null && !invokedLambda) {
         info("Starting up cluster");
-        final EMRLauncher launcher = LambdaInvokerFactory.builder()
-                .lambdaClient(AWSLambdaClientBuilder.defaultClient())
-                .build(EMRLauncher.class);
-
         EMRConfiguration batchConfig = EMRConfiguration.builder().withName(clusterName).build();
+
+        String payload = "{}";
+
+        try {
+          payload = new ObjectMapper().writeValueAsString(batchConfig);
+        } catch (Exception e) {
+          error(e.getMessage());
+          throw new IllegalStateException(e);
+        }
+
+        AWSLambda client = AWSLambdaClientBuilder.defaultClient();
+        InvokeRequest req = new InvokeRequest()
+                  .withFunctionName("aws_analytical_env_emr_launcher")
+                  .withPayload(payload);
+
+        InvokeResult result = client.invoke(req);
         invokedLambda = true;
-        launcher.LaunchBatchEMR(batchConfig);
+
+        if (result.getStatusCode() != 200) {
+            error(result.getFunctionError());
+            throw new IllegalStateException(result.getFunctionError());
+        }
       }
 
       if (clusterId == null) {
