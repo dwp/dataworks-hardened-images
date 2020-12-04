@@ -237,13 +237,13 @@ public class EMRStep extends AbstractProcessJob {
 
     int pollTime = this.getSysProps().getInt(BOOT_POLL_INTERVAL, BOOT_POLL_INTERVAL_DEFAULT);
     int maxAttempts = this.getSysProps().getInt(BOOT_POLL_ATTEMPTS_MAX, BOOT_POLL_ATTEMPTS_MAX_DEFAULT);
-
+    String clusterName = this.getSysProps().getString(AWS_EMR_CLUSTER_NAME);
     while(clusterId == null && maxAttempts > 0) {
       ListClustersRequest clustersRequest = getClusterRequest();
       ListClustersResult clustersResult = emr.listClusters(clustersRequest);
       List<ClusterSummary> clusters = clustersResult.getClusters();
       for (ClusterSummary cluster : clusters) {
-        if (cluster.getName().equals(this.getSysProps().getString(AWS_EMR_CLUSTER_NAME))) {
+        if (cluster.getName().equals(clusterName)) {
           clusterId = cluster.getId();
         }
       }
@@ -254,9 +254,9 @@ public class EMRStep extends AbstractProcessJob {
                 .lambdaClient(AWSLambdaClientBuilder.defaultClient())
                 .build(EMRLauncher.class);
 
-        EMRConfiguration batchConfig = EMRConfiguration.builder().withName(AWS_EMR_CLUSTER_NAME).build();
-        launcher.LaunchBatchEMR(batchConfig);
+        EMRConfiguration batchConfig = EMRConfiguration.builder().withName(clusterName).build();
         invokedLambda = true;
+        launcher.LaunchBatchEMR(batchConfig);
       }
 
       if (clusterId == null) {
