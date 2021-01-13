@@ -180,7 +180,7 @@ public class EMRStep extends AbstractProcessJob {
     while(! stepCompleted) {
       Thread.sleep(POLL_INTERVAL);
 
-      Pair<Boolean, String> completionStatus = isStepCompleted(emr, clusterId, result.getStepIds().get(0));
+      Pair<Boolean, String> completionStatus = getStepStatus(emr, clusterId, result.getStepIds().get(0));
       stepCompleted = completionStatus.getFirst();
 
       if (stepCompleted && completionStatus.getSecond() != "COMPLETED"){
@@ -211,7 +211,7 @@ public class EMRStep extends AbstractProcessJob {
     }
   }
 
-  private Pair<Boolean, String> isStepCompleted(AmazonElasticMapReduce emr, String clusterId, String stepId) {
+  private Pair<Boolean, String> getStepStatus(AmazonElasticMapReduce emr, String clusterId, String stepId) {
     ListStepsResult steps = emr.listSteps(new ListStepsRequest().withClusterId(clusterId));
     for (StepSummary step : steps.getSteps()) {
       if (step.getId().equals(stepId)) {
