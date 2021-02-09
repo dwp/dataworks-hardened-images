@@ -167,8 +167,8 @@ public class EMRStep extends AbstractProcessJob {
 		  .withJobFlowId(clusterId)
 		  .withSteps(runBashScript));
 
-    stepIds = result.getStepIds()
-    String stepId = stepIds.get(0)
+    stepIds = result.getStepIds();
+    String stepId = stepIds.get(0);
 
     AWSLogsClient logsClient = new AWSLogsClient().withRegion(RegionUtils.getRegion(awsRegion));
 
@@ -463,20 +463,20 @@ public class EMRStep extends AbstractProcessJob {
 			.build();
 
     String clusterId = getClusterId(emr);
-    String stepId = stepIds.get(0)
+    String stepId = stepIds.get(0);
 
     info("Requesting step to cancel");
 
-    emr.cancelSteps(getCancelStepsRequest(clusterId, new ArrayList<String>(stepId)))
+    emr.cancelSteps(getCancelStepsRequest(clusterId, new ArrayList<String>(stepId)));
 
     info("EMR Step Cancel Requested");
   }
 
-  private CancelStepsRequest getCancelStepsRequest(clusterId, stepIds) =
-    CancelStepsRequest().apply {
-        withClusterId(clusterId)
-        withStepIds(stepIds)
-    }
+  private CancelStepsRequest getCancelStepsRequest(String clusterId, Collection<String> stepIds) {
+    CancelStepsRequest request = CancelStepsRequest();
+    request.setClusterId(clusterId);
+    request.setStepIds(stepIds);
+    return request;
   }
 
   @Override
