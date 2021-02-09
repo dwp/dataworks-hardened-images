@@ -465,10 +465,12 @@ public class EMRStep extends AbstractProcessJob {
     String clusterId = getClusterId(emr);
 
     info("Retrieved cluster with clusterId: " + clusterId);
+
+    String stepId = stepIds.get(0);
     info("Requesting step to cancel with stepId: " + stepId);
 
     ArrayList<String> steps = new ArrayList<String>();
-    steps.add(stepIds.get(0));
+    steps.add(stepId);
     emr.cancelSteps(getCancelStepsRequest(clusterId, steps));
 
     info("EMR Step Cancel Requested");
