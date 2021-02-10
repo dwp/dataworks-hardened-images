@@ -517,7 +517,7 @@ public class EMRStep extends AbstractProcessJob {
     return request;
   }
 
-  private void kill_job() {
+  private void kill_job() throws InterruptedException  {
     synchronized (this) {
         this.killed = true;
         this.notify();
