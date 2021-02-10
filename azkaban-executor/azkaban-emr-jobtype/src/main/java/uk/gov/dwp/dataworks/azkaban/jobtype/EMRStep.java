@@ -172,8 +172,8 @@ public class EMRStep extends AbstractProcessJob {
 		  .withJobFlowId(clusterId)
 		  .withSteps(runBashScript));
 
-    stepIds = result.getStepIds();
-    String stepId = stepIds.get(0);
+    this.stepIds = result.getStepIds();
+    String stepId = this.stepIds.get(0);
 
     AWSLogsClient logsClient = new AWSLogsClient().withRegion(RegionUtils.getRegion(awsRegion));
 
@@ -481,7 +481,7 @@ public class EMRStep extends AbstractProcessJob {
     }
     info("Retrieved cluster with clusterId: " + clusterId);
 
-    String stepId = stepIds.get(0);
+    String stepId = this.stepIds.get(0);
     if (stepId == null) {
         info("No step found, killing job"); 
         kill_job();
