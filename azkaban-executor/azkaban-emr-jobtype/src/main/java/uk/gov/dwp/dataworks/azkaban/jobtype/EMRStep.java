@@ -474,7 +474,7 @@ public class EMRStep extends AbstractProcessJob {
 
     try {
         String clusterId = getClusterId(emr);
-    } catch (IllegalStateException) {
+    } catch (IllegalStateException e) {
         info("No cluster found, killing job"); 
         kill_job();
         return;
@@ -494,7 +494,7 @@ public class EMRStep extends AbstractProcessJob {
 
     try {
         emr.cancelSteps(getCancelStepsRequest(clusterId, steps));
-    } catch (IllegalStateException) {
+    } catch (IllegalStateException e) {
         info("Error occurred killing job"); 
         kill_job();
         return;
@@ -511,7 +511,7 @@ public class EMRStep extends AbstractProcessJob {
     return request;
   }
 
-  private kill_job() {
+  private void kill_job() {
     synchronized (this) {
         this.killed = true;
         this.notify();
