@@ -186,6 +186,11 @@ public class EMRStep extends AbstractProcessJob {
     while(! stepCompleted) {
       Thread.sleep(POLL_INTERVAL);
 
+      if (killed) {
+          info("Stopping waiting for step to complete due to job being killed");
+          return;
+      }
+
       Pair<Boolean, String> completionStatus = getStepStatus(emr, clusterId, stepId);
       stepCompleted = completionStatus.getFirst();
 
@@ -462,18 +467,36 @@ public class EMRStep extends AbstractProcessJob {
 			.withRegion(awsRegion)
 			.build();
 
-    String clusterId = getClusterId(emr);
-
+    try {
+        String clusterId = getClusterId(emr);
+    } catch (IllegalStateException) {
+        info("No cluster found, killing job"); 
+        kill_job();
+        return;
+    }
     info("Retrieved cluster with clusterId: " + clusterId);
 
     String stepId = stepIds.get(0);
+    if (stepId == null) {
+        info("No step found, killing job"); 
+        kill_job();
+        return;
+    }
     info("Requesting step to cancel with stepId: " + stepId);
 
     ArrayList<String> steps = new ArrayList<String>();
     steps.add(stepId);
-    emr.cancelSteps(getCancelStepsRequest(clusterId, steps));
 
-    info("EMR Step Cancel Requested");
+    try {
+        emr.cancelSteps(getCancelStepsRequest(clusterId, steps));
+    } catch (IllegalStateException) {
+        info("Error occurred killing job"); 
+        kill_job();
+        return;
+    }
+
+    info("EMR step requested to cancel");
+    kill_job();
   }
 
   private CancelStepsRequest getCancelStepsRequest(String clusterId, Collection<String> stepIds) {
@@ -481,6 +504,23 @@ public class EMRStep extends AbstractProcessJob {
     request.setClusterId(clusterId);
     request.setStepIds(stepIds);
     return request;
+  }
+
+  private kill_job() {
+    synchronized (this) {
+        this.killed = true;
+        this.notify();
+        if (this.process == null) {
+            return;
+        }
+    }
+    this.process.awaitStartup();
+    final boolean processkilled = this.process
+        .softKill(KILL_TIME.toMillis(), TimeUnit.MILLISECONDS);
+    if (!processkilled) {
+        warn("Kill with signal TERM failed. Killing with KILL signal.");
+        this.process.hardKill();
+    }
   }
 
   @Override
