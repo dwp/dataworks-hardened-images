@@ -472,12 +472,18 @@ public class EMRStep extends AbstractProcessJob {
 			.withRegion(awsRegion)
 			.build();
 
+    String clusterId = null
     try {
         String clusterId = getClusterId(emr);
     } catch (IllegalStateException e) {
         info("No cluster found, killing job"); 
         kill_job();
         return;
+    }
+
+    if (clusterId == null) {
+        info("Cluster not returned, killing job"); 
+        kill_job();
     }
     info("Retrieved cluster with clusterId: " + clusterId);
 
