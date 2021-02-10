@@ -474,7 +474,7 @@ public class EMRStep extends AbstractProcessJob {
 
     String clusterId = null;
     try {
-        String clusterId = getClusterId(emr);
+        clusterId = getClusterId(emr);
     } catch (IllegalStateException e) {
         info("No cluster found, killing job"); 
         kill_job();
