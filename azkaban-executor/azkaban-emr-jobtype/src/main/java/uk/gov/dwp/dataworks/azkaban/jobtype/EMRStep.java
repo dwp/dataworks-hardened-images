@@ -149,6 +149,11 @@ public class EMRStep extends AbstractProcessJob {
 
     String clusterId = getClusterId(emr);
 
+    if (killed) {
+        info("Job has been killed so exiting run");
+        return;
+    }
+
     configureCluster(emr, clusterId);
 
     ArrayList<String> args = new ArrayList<>(Arrays.asList(getUserGroup(effectiveUser)));
@@ -267,7 +272,7 @@ public class EMRStep extends AbstractProcessJob {
     int pollTime = this.getSysProps().getInt(BOOT_POLL_INTERVAL, BOOT_POLL_INTERVAL_DEFAULT);
     int maxAttempts = this.getSysProps().getInt(BOOT_POLL_ATTEMPTS_MAX, BOOT_POLL_ATTEMPTS_MAX_DEFAULT);
     String clusterName = this.getSysProps().getString(AWS_EMR_CLUSTER_NAME);
-    while(clusterId == null && maxAttempts > 0) {
+    while(!killed && clusterId == null && maxAttempts > 0) {
       ListClustersRequest clustersRequest = getClusterRequest();
       ListClustersResult clustersResult = emr.listClusters(clustersRequest);
       List<ClusterSummary> clusters = clustersResult.getClusters();
@@ -314,7 +319,7 @@ public class EMRStep extends AbstractProcessJob {
       }
     }
 
-    if (clusterId == null) {
+    if (!killed && clusterId == null) {
       throw new IllegalStateException("No batch EMR cluster available");
     }
 
