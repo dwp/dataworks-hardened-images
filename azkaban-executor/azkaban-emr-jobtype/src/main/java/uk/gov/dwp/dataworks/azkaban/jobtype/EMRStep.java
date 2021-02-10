@@ -472,7 +472,7 @@ public class EMRStep extends AbstractProcessJob {
 			.withRegion(awsRegion)
 			.build();
 
-    String clusterId = null
+    String clusterId = null;
     try {
         String clusterId = getClusterId(emr);
     } catch (IllegalStateException e) {
