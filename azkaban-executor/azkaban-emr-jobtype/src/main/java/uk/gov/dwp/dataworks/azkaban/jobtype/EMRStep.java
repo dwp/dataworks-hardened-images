@@ -213,6 +213,7 @@ public class EMRStep extends AbstractProcessJob {
         getLogEventsRequest = new GetLogEventsRequest()
           .withLogGroupName(logGroupName)
           .withLogStreamName(stepId)
+          .withStartFromHead(true)
           .withNextToken(logResult.getNextForwardToken());
         lastToken = logResult.getNextForwardToken();
       } catch(AWSLogsException e) {
@@ -231,6 +232,7 @@ public class EMRStep extends AbstractProcessJob {
         getLogEventsRequest = new GetLogEventsRequest()
           .withLogGroupName(logGroupName)
           .withLogStreamName(stepId)
+          .withStartFromHead(true)
           .withNextToken(lastToken);
         
         lastToken = nextToken;
