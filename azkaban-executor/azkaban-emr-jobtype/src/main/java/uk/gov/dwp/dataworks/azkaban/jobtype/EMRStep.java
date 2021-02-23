@@ -235,11 +235,12 @@ public class EMRStep extends AbstractProcessJob {
           .withStartFromHead(true)
           .withNextToken(nextToken);
 
-        lastToken = nextToken;
-        nextToken = logResult.getNextForwardToken();
-
         GetLogEventsResult logResult = logsClient.getLogEvents(getLogEventsRequest);
         printLogs(logResult);
+
+        lastToken = nextToken;
+        nextToken = logResult.getNextForwardToken();
+        
       } catch(AWSLogsException e) {
         info("Error reading logs: " + e.getErrorMessage());
         nextToken = lastToken;
