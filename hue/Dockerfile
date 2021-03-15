@@ -11,7 +11,7 @@ WORKDIR /tmp/hue
 
 ENV PYTHON_VER=python3.8
 
-RUN apk add rsync make g++ python3=3.8.5-r0 python3-dev=3.8.5-r0 \
+RUN apk add rsync make g++ python3-dev\
         mariadb mariadb-dev	libffi-dev krb5-dev openldap-dev \
         libsasl sqlite-dev libxml2-dev libxslt-dev npm
 
