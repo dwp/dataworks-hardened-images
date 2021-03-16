@@ -35,7 +35,7 @@ RUN addgroup hue && \
     adduser --system --uid 1001 --no-create-home --ingroup hue hue && \
     chown -R hue /usr/share/hue
 
-RUN apk add python3=3.8.5-r0 libsasl libstdc++ krb5 libxslt gettext openssl \
+RUN apk add python3 libsasl libstdc++ krb5 libxslt gettext openssl \
         mariadb mariadb-connector-c mariadb-client
 
 # Install database connectors e.g.:
@@ -52,4 +52,4 @@ COPY --chown=hue middleware.py /usr/share/hue/desktop/core/src/desktop/middlewar
 
 EXPOSE 8888
 
-CMD ["./startup.sh"]
+ENTRYPOINT ["/bin/sh", "-c", "/usr/share/hue/startup.sh"]
