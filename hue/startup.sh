@@ -1,10 +1,17 @@
 #!/bin/sh
 
+update_session_backup_file() {
+  mkdir -p /mnt/s3fs/s3-home/.huedb
+  rm -f /mnt/s3fs/s3-home/.huedb/huedb_session_dump.sql
+  mv /tmp/huedb_backup.sql /mnt/s3fs/s3-home/.huedb/huedb_session_dump.sql \
+  && echo "Session data backed up successfully"
+}
+
 save_session_data() {
   echo "Container shutting down, saving session data now..."
-  mariadb-dump --socket=/tmp/maria.sock --databases hue > /tmp/huedb_backup.sql || return
-  mkdir -p /mnt/s3fs/s3-home/.huedb
-  mv /tmp/huedb_backup.sql /mnt/s3fs/s3-home/.huedb/huedb_session_dump.sql
+  rm -f /tmp/huedb_backup.sql
+  mariadb-dump --socket=/tmp/maria.sock --databases hue > /tmp/huedb_backup.sql \
+  && update_session_backup_file || echo "Session data backup not successful"
 }
 
 trap save_session_data SIGTERM
