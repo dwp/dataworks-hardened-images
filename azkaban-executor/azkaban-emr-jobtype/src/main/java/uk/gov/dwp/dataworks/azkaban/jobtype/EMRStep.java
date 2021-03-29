@@ -265,7 +265,7 @@ public class EMRStep extends AbstractProcessJob {
       );
     } else {
       error("Failed to find step with ID: " + stepId);
-      return new Pair<>(false, "");
+      return new Pair<>(true, "FAILED");
     }
   }
 
