@@ -16,7 +16,7 @@ It is key to understand the way that the containerised implementation of Azkaban
 1. All active instances of both executors and webservers must be torn down. This can be done using the AWS console or AWS CLI:
     ```shell
     aws ecs update-service --cluster <CLUSTER_NAME> --service azkaban-executor --desired-count 0 
-    aws ecs update-service --cluster <CLUSTER_NAME> --service azkaban-webserver --desired-count 0 
+    aws ecs update-service --cluster <CLUSTER_NAME> --service azkaban-webserver --force-new-deployment --desired-count 0 
     ```
 1. The `azkaban-truncate-table` lambda should be called to truncate the active executors table: 
     ```shell
@@ -28,7 +28,7 @@ It is key to understand the way that the containerised implementation of Azkaban
     ```
 1. The executor(s) should then be brought back up* before the webservers using the console or CLI:
     ```shell
-    aws ecs update-service --cluster <CLUSTER_NAME> --service azkaban-executor --desired-count <INT> 
+    aws ecs update-service --cluster <CLUSTER_NAME> --service azkaban-executor --task-definition <TASK_DEFINITION_NAME:REVISION> --desired-count <INT> 
     executor_running_count=$(aws ecs describe-services --cluster <CLUSTER_NAME> --services azkaban-executor | jq -r '.services[0].runningCount')
     
     while [ "$executor_running_count" -eq 0 ]; do
@@ -38,7 +38,7 @@ It is key to understand the way that the containerised implementation of Azkaban
 
     aws ecs update-service --cluster <CLUSTER_NAME> --service azkaban-webserver --desired-count <INT> 
     ```
-    *The new task definition will be used by default, if it is the latest active one but, it can be passed in to the cli command, if needed using `--task-definition <ARN>`
+    *The new task definition will be used by default, if it is the latest active one but, it can be passed in to the cli command, if needed using `--task-definition <TASK_DEFINITION_NAME>:<REVISION_NUMBER>`
 
 This should ensure that only the new version of the executor is registered with the webservers and all testing will be carried out on the updated image.
 
@@ -46,4 +46,5 @@ This should ensure that only the new version of the executor is registered with 
 1. AWS profile name
 1. Lambda function (for truncating executor table) name
 1. Cluster name
+1. "<TASK_DEFINITION_NAME>:<REVISION_NUMBER>"
 

@@ -156,8 +156,7 @@ public class EMRStep extends AbstractProcessJob {
 
     configureCluster(emr, clusterId);
 
-    info("This is CommonJobProperties.FLOW_UUID: " + this.getJobProps().getString(CommonJobProperties.FLOW_UUID));
-
+    // Passing in the FLOW_UUID to be used as a correlation ID in EMR steps
     ArrayList<String> args = new ArrayList<>();
     args.add(this.getJobProps().getString(CommonJobProperties.FLOW_UUID));
     args.add(getUserGroup(effectiveUser));
