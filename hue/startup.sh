@@ -1,15 +1,18 @@
 #!/bin/sh
 
+BACKUP_DIR=/mnt/s3fs/s3-home/.huedb
+BACKUP_FILE=backup
+TMP_BACKUP_FILE=/tmp/huedb_backup.sql
+
 update_session_backup_file() {
-  mkdir -p /mnt/s3fs/s3-home/.huedb
-  rm -f /mnt/s3fs/s3-home/.huedb/backup
-  cp /tmp/huedb_backup.sql /mnt/s3fs/s3-home/.huedb/backup \
-  && echo "Session data backed up successfully"
+  mkdir -p $BACKUP_DIR
+  rm -f $BACKUP_DIR/$BACKUP_FILE
+  cp $TMP_BACKUP_FILE $BACKUP_DIR/$BACKUP_FILE && echo "Session data backed up successfully"
 }
 
 save_session_data() {
   echo "saving session data now..."
-  mariadb-dump --socket=/tmp/maria.sock --databases hue > /tmp/huedb_backup.sql \
+  mariadb-dump --socket=/tmp/maria.sock --databases hue > $TMP_BACKUP_FILE \
   && update_session_backup_file || echo "Session data backup not successful"
 }
 
@@ -33,9 +36,9 @@ mariadb --socket=/tmp/maria.sock  << !EOF
     QUIT
 !EOF
 
-if [ -f "/mnt/s3fs/s3-home/.huedb/huedb_session_dump.sql" ]; then
-  echo restoring previous session data from huedb sql dump file...
-  mariadb --socket=/tmp/maria.sock hue < /mnt/s3fs/s3-home/.huedb/backup
+if [ -f "$BACKUP_DIR/$BACKUP_FILE" ]; then
+  echo restoring previous session data from backup file...
+  mariadb --socket=/tmp/maria.sock hue < $BACKUP_DIR/$BACKUP_FILE
 else
   echo Previous session sql file does not exist, not running mysql query to restore huedb...
 fi
