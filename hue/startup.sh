@@ -2,14 +2,13 @@
 
 update_session_backup_file() {
   mkdir -p /mnt/s3fs/s3-home/.huedb
-  rm -f /mnt/s3fs/s3-home/.huedb/huedb_session_dump.sql
-  mv /tmp/huedb_backup.sql /mnt/s3fs/s3-home/.huedb/huedb_session_dump.sql \
+  rm -f /mnt/s3fs/s3-home/.huedb/backup
+  cp /tmp/huedb_backup.sql /mnt/s3fs/s3-home/.huedb/backup \
   && echo "Session data backed up successfully"
 }
 
 save_session_data() {
-  echo "Container shutting down, saving session data now..."
-  rm -f /tmp/huedb_backup.sql
+  echo "saving session data now..."
   mariadb-dump --socket=/tmp/maria.sock --databases hue > /tmp/huedb_backup.sql \
   && update_session_backup_file || echo "Session data backup not successful"
 }
@@ -36,9 +35,9 @@ mariadb --socket=/tmp/maria.sock  << !EOF
 
 if [ -f "/mnt/s3fs/s3-home/.huedb/huedb_session_dump.sql" ]; then
   echo restoring previous session data from huedb sql dump file...
-  mariadb --socket=/tmp/maria.sock hue < /mnt/s3fs/s3-home/.huedb/huedb_session_dump.sql
+  mariadb --socket=/tmp/maria.sock hue < /mnt/s3fs/s3-home/.huedb/backup
 else
-  echo previous session sql file does not exist, not running mysql query to restore huedb...
+  echo Previous session sql file does not exist, not running mysql query to restore huedb...
 fi
 
 ./build/env/bin/hue migrate
@@ -46,5 +45,6 @@ fi
 ./build/env/bin/supervisor &
 
 while true; do
-  sleep 1
+  sleep 120
+  save_session_data
 done
