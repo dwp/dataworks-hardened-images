@@ -1,13 +1,19 @@
 #!/bin/sh
 set -e
 
-echo "INFO: Checking container configuration...."
-if [ -z "${AZKABAN_CONFIG_S3_BUCKET}" -o -z "${AZKABAN_CONFIG_S3_PREFIX}" ]; then
-  echo "ERROR: AZKABAN_CONFIG_S3_BUCKET and AZKABAN_CONFIG_S3_PREFIX environment variables must be provided"
+echo "INFO: Checking container configuration..."
+if [[ -n "${AZKABAN_CONFIG_S3_BUCKET}" && -n "${AZKABAN_CONFIG_S3_PREFIX}" ]]; then
+  CONFIG_S3_BUCKET="${AZKABAN_CONFIG_S3_BUCKET}"
+  CONFIG_S3_PREFIX="${AZKABAN_CONFIG_S3_PREFIX}"
+elif [[ -n "${AZKABAN_EXTERNAL_CONFIG_S3_BUCKET}" && -n "${AZKABAN_EXTERNAL_CONFIG_S3_PREFIX}" ]]; then
+  CONFIG_S3_BUCKET="${AZKABAN_EXTERNAL_CONFIG_S3_BUCKET}"
+  CONFIG_S3_PREFIX="${AZKABAN_EXTERNAL_CONFIG_S3_PREFIX}"
+else
+  echo "ERROR: CONFIG_S3_BUCKET and CONFIG_S3_PREFIX environment variables must be provided"
   exit 1
 fi
 
-S3_URI="s3://${AZKABAN_CONFIG_S3_BUCKET}/${AZKABAN_CONFIG_S3_PREFIX}"
+S3_URI="s3://${CONFIG_S3_BUCKET}/${CONFIG_S3_PREFIX}"
 
 # If either of the AWS credentials variables were provided, validate them
 if [ -n "${AWS_ACCESS_KEY_ID}${AWS_SECRET_ACCESS_KEY}" ]; then
