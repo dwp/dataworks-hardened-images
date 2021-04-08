@@ -1,6 +1,6 @@
 package uk.gov.dwp.dataworks.lambdas;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.codehaus.jackson.annotate.JsonProperty;
 
 public class EMRConfiguration {
     private Overrides overrides;
