@@ -6,10 +6,7 @@ import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.jobExecutor.utils.process.AzkabanProcess;
 import azkaban.metrics.CommonMetrics;
-import azkaban.utils.ExecuteAsUser;
-import azkaban.utils.Pair;
-import azkaban.utils.Props;
-import azkaban.utils.Utils;
+import azkaban.utils.*;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClientBuilder;
@@ -54,6 +51,7 @@ public class EMRStep extends AbstractProcessJob {
   public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
   public static final String AWS_LOG_GROUP_NAME = "aws.log.group.name";
   public static final String AWS_REGION = "aws.region";
+  public static final String AZKABAN_SERVICE_USER = "azkaban.service.user";
   // Use azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER instead
   @Deprecated
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
@@ -71,7 +69,6 @@ public class EMRStep extends AbstractProcessJob {
   private static final int BOOT_POLL_INTERVAL_DEFAULT = 300000; /* 5 mins */
   private static final String BOOT_POLL_ATTEMPTS_MAX = "emr.boot.poll.attempts.max";
   private static final int BOOT_POLL_ATTEMPTS_MAX_DEFAULT = 5;
-
   private final CommonMetrics commonMetrics;
   private volatile AzkabanProcess process;
   private volatile boolean killed = false;
@@ -159,7 +156,9 @@ public class EMRStep extends AbstractProcessJob {
     // Passing in the FLOW_UUID to be used as a correlation ID in EMR steps
     ArrayList<String> args = new ArrayList<>();
     args.add(this.getJobProps().getString(CommonJobProperties.FLOW_UUID));
-    args.add(getUserGroup(effectiveUser));
+    String emrUser = getEmrUser(effectiveUser);
+    info("Script to be run as emr user '" + emrUser + "'");
+    args.add(emrUser);
     args.addAll(retrieveScript(this.getJobProps().getString(COMMAND)));
     args.add(retrieveScriptArguments(this.getJobProps().getString(COMMAND)));
 
@@ -167,8 +166,10 @@ public class EMRStep extends AbstractProcessJob {
 
     StepConfig runBashScript = new StepConfig()
             .withName(this.getSysProps().getString(AWS_EMR_STEP_NAME))
-            .withHadoopJarStep(new StepFactory(awsRegion + ".elasticmapreduce")
-                    .newScriptRunnerStep(this.getSysProps().getString(AWS_EMR_STEP_SCRIPT), args.toArray(new String[args.size()])))
+            .withHadoopJarStep(
+                    new StepFactory(awsRegion + ".elasticmapreduce")
+                            .newScriptRunnerStep(this.getSysProps().getString(AWS_EMR_STEP_SCRIPT), 
+                                    args.toArray(new String[args.size()])))
             .withActionOnFailure("CONTINUE");
 
     AddJobFlowStepsResult result = emr.addJobFlowSteps(new AddJobFlowStepsRequest()
@@ -248,6 +249,17 @@ public class EMRStep extends AbstractProcessJob {
     generateProperties(propFiles[1]);
 
     info("EMR Step Complete");
+  }
+
+  private String getEmrUser(String effectiveUser) {
+    try {
+      String serviceUser = getSysProps().getString(AZKABAN_SERVICE_USER);
+      info("Got service user from properties: '" + serviceUser + "'.");
+      return (serviceUser != null && !serviceUser.trim().equals("")) ? serviceUser : getUserGroup(effectiveUser);
+    } catch (UndefinedPropertyException e) {
+      info("No '" + AZKABAN_SERVICE_USER + "' property.");
+      return getUserGroup(effectiveUser);
+    }
   }
 
   private void printLogs(GetLogEventsResult logResult) {

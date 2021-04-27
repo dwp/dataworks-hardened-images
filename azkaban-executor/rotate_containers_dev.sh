@@ -47,7 +47,7 @@ webserver_running_count=$(get_running_count azkaban-webserver)
 retries=0
 
 while [ $executor_running_count -ne 0 ] || [ $webserver_running_count -ne 0 ]; do
-        if [ "$retries" -eq 15 ]; then
+        if [ "$retries" -eq 35 ]; then
                 echo "ERROR: MAX RETRIES Exceeded, Azkaban executor or webserver taking too long to shut down. Exiting..."
                 exit 1;
         fi
@@ -59,7 +59,7 @@ while [ $executor_running_count -ne 0 ] || [ $webserver_running_count -ne 0 ]; d
         sleep 10;
 done;
 
-aws lambda invoke --function-name $TRUNCATE_TABLE_FUNCTION_NAME
+aws --profile $PROFILE lambda invoke --function-name $TRUNCATE_TABLE_FUNCTION_NAME \
                   --invocation-type RequestResponse \
                   --payload '{ "table_to_truncate": "executors" }' \
                   --cli-connect-timeout 600 \
