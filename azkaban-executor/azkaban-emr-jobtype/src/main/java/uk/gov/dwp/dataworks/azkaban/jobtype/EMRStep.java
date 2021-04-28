@@ -23,6 +23,7 @@ import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.amazonaws.services.logs.model.OutputLogEvent;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
+import uk.gov.dwp.dataworks.azkaban.utility.EMRUtility;
 import uk.gov.dwp.dataworks.lambdas.EMRConfiguration;
 
 import java.io.BufferedReader;
@@ -145,7 +146,7 @@ public class EMRStep extends AbstractProcessJob {
             .build();
 
     String clusterId = getClusterId(emr);
-
+    info("Got cluster id: '" + clusterId + "'");
     if (killed) {
       info("Job has been killed so exiting run");
       return;
@@ -309,11 +310,12 @@ public class EMRStep extends AbstractProcessJob {
     int pollTime = this.getSysProps().getInt(BOOT_POLL_INTERVAL, BOOT_POLL_INTERVAL_DEFAULT);
     int maxAttempts = this.getSysProps().getInt(BOOT_POLL_ATTEMPTS_MAX, BOOT_POLL_ATTEMPTS_MAX_DEFAULT);
     String clusterName = this.getJobProps().getString( AWS_EMR_CLUSTER_NAME, this.getSysProps().getString(AWS_EMR_CLUSTER_NAME));
-
+    info("Looking for cluster named '" + clusterName + "'.");
     while(!killed && clusterId == null && maxAttempts > 0) {
-      ListClustersRequest clustersRequest = getClusterRequest();
-      ListClustersResult clustersResult = emr.listClusters(clustersRequest);
-      List<ClusterSummary> clusters = clustersResult.getClusters();
+      List<ClusterSummary> clusters = EMRUtility.activeClusterSummaries(emr);
+      info("Found the following active clusters:");
+      clusters.stream().map(ClusterSummary::getId).forEach(this::info);
+
       for (ClusterSummary cluster : clusters) {
         if (cluster.getName().equals(clusterName)) {
           clusterId = cluster.getId();
@@ -321,7 +323,7 @@ public class EMRStep extends AbstractProcessJob {
       }
 
       if (clusterId == null && !invokedLambda) {
-        info("Starting up cluster");
+        info("No active cluster named: '" + clusterName + "', starting one up.");
         EMRConfiguration batchConfig = EMRConfiguration.builder().withName(clusterName).build();
 
         String payload = "{}";
@@ -362,17 +364,6 @@ public class EMRStep extends AbstractProcessJob {
     }
 
     return clusterId;
-  }
-
-  private ListClustersRequest getClusterRequest() {
-    Collection<String> clusterStates = new ArrayList<String>();
-    clusterStates.add("STARTING");
-    clusterStates.add("BOOTSTRAPPING");
-    clusterStates.add("WAITING");
-    clusterStates.add("RUNNING");
-    ListClustersRequest clustersRequest = new ListClustersRequest();
-    clustersRequest.setClusterStates(clusterStates);
-    return clustersRequest;
   }
 
   /**
