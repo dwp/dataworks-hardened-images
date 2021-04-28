@@ -19,7 +19,7 @@ import static org.mockito.Mockito.*;
 class EMRUtilityTest {
 
     @Test
-    void activeClusterSummaries() {
+    void activeClusterSummariesReturnsAllPaginatedResults() {
         ListClustersResult page1 = clustersResult(1, 0, 10);
         ListClustersResult page2 = clustersResult(2, 10, 20);
         ListClustersResult page3 = clustersResult(null, 20, 25);
