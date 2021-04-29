@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_GROUP_NAME;
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER;
@@ -172,6 +173,11 @@ public class EMRStep extends AbstractProcessJob {
                             .newScriptRunnerStep(this.getSysProps().getString(AWS_EMR_STEP_SCRIPT), 
                                     args.toArray(new String[args.size()])))
             .withActionOnFailure("CONTINUE");
+
+    if (killed) {
+      info("Job has been killed, aborting");
+      return;
+    }
 
     AddJobFlowStepsResult result = emr.addJobFlowSteps(new AddJobFlowStepsRequest()
             .withJobFlowId(clusterId)
@@ -493,54 +499,35 @@ public class EMRStep extends AbstractProcessJob {
     return groupName;
   }
 
-  @Override
-  public void cancel() throws InterruptedException {
-    set_job_to_killed();
-
-    String awsRegion = this.getSysProps().getString(AWS_REGION, "eu-west-2");
-
-    AmazonElasticMapReduce emr = AmazonElasticMapReduceClientBuilder.standard()
-            .withRegion(awsRegion)
-            .build();
-
-    String clusterId = null;
-    try {
-      clusterId = getClusterId(emr);
-    } catch (IllegalStateException e) {
-      info("No cluster found, killing job");
-      kill_job();
-      return;
+    @Override
+    public void cancel() {
+        setJobToKilled();
+        if (this.stepIds != null) {
+            List<String> steps = this.stepIds.stream().filter(Objects::nonNull).collect(Collectors.toList());
+            if (steps.size() > 0) {
+                AmazonElasticMapReduce emr = emrClient();
+                EMRUtility.activeClusterId(emr, clusterName()).ifPresent(clusterId -> {
+                    info("Cancelling steps '" + steps + "' on clusterId: '" + clusterId + "'.");
+                    CancelStepsResult result = emr.cancelSteps(getCancelStepsRequest(clusterId, steps));
+                    result.getCancelStepsInfoList().forEach(cancelInfo -> info(
+                            "Cancelled steps '" + steps + "', " + "cancellation status: '" + cancelInfo.getStatus()
+                                    + "', " + "cancellation reason '" + cancelInfo.getReason() + "'."));
+                });
+            }
+        }
     }
 
-    if (clusterId == null) {
-      info("Cluster not returned, killing job");
-      kill_job();
-      return;
-    }
-    info("Retrieved cluster with clusterId: " + clusterId);
-
-    String stepId = this.stepIds.get(0);
-    if (stepId == null) {
-      info("No step found, killing job");
-      kill_job();
-      return;
-    }
-    info("Requesting step to cancel with stepId: " + stepId);
-
-    ArrayList<String> steps = new ArrayList<String>();
-    steps.add(stepId);
-
-    try {
-      emr.cancelSteps(getCancelStepsRequest(clusterId, steps));
-    } catch (IllegalStateException e) {
-      info("Error occurred killing job");
-      kill_job();
-      return;
+    private AmazonElasticMapReduce emrClient() {
+        return AmazonElasticMapReduceClientBuilder.standard().withRegion(awsRegion()).build();
     }
 
-    info("EMR step requested to cancel");
-    kill_job();
-  }
+    private String clusterName() {
+        return this.getJobProps().getString(AWS_EMR_CLUSTER_NAME, this.getSysProps().getString(AWS_EMR_CLUSTER_NAME));
+    }
+
+    private String awsRegion() {
+        return this.getSysProps().getString(AWS_REGION, "eu-west-2");
+    }
 
   private CancelStepsRequest getCancelStepsRequest(String clusterId, Collection<String> stepIds) {
     CancelStepsRequest request = new CancelStepsRequest();
@@ -549,23 +536,10 @@ public class EMRStep extends AbstractProcessJob {
     return request;
   }
 
-  private void set_job_to_killed() throws InterruptedException  {
+  private void setJobToKilled() {
     synchronized (this) {
       this.killed = true;
       this.notify();
-      if (this.process == null) {
-        return;
-      }
-    }
-  }
-
-  private void kill_job() throws InterruptedException  {
-    this.process.awaitStartup();
-    final boolean processkilled = this.process
-            .softKill(KILL_TIME.toMillis(), TimeUnit.MILLISECONDS);
-    if (!processkilled) {
-      warn("Kill with signal TERM failed. Killing with KILL signal.");
-      this.process.hardKill();
     }
   }
 

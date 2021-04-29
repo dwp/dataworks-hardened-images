@@ -8,15 +8,20 @@ import com.amazonaws.services.elasticmapreduce.model.ListClustersResult;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public class EMRUtility {
+
+    public static Optional<String> activeClusterId(AmazonElasticMapReduce emr, String clusterName) {
+        return activeClusterSummaries(emr).stream().filter(x -> x.getName().equals(clusterName))
+                .map(ClusterSummary::getId).findFirst();
+    }
 
     public static List<ClusterSummary> activeClusterSummaries(AmazonElasticMapReduce emr) {
         List<ClusterSummary> clusters = new ArrayList<>();
         String marker = "";
         do {
-            ListClustersRequest clustersRequest = clusterRequest(marker);
-            ListClustersResult clustersResult = emr.listClusters(clustersRequest);
+            ListClustersResult clustersResult = emr.listClusters(clusterRequest(marker));
             marker = clustersResult.getMarker();
             clusters.addAll(clustersResult.getClusters());
         } while (marker != null && !marker.trim().equals(""));
