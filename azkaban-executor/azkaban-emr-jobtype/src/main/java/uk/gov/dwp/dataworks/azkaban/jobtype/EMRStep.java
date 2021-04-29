@@ -174,6 +174,11 @@ public class EMRStep extends AbstractProcessJob {
                                     args.toArray(new String[args.size()])))
             .withActionOnFailure("CONTINUE");
 
+    if (killed) {
+      info("Job has been killed, aborting");
+      return;
+    }
+
     AddJobFlowStepsResult result = emr.addJobFlowSteps(new AddJobFlowStepsRequest()
             .withJobFlowId(clusterId)
             .withSteps(runBashScript));
