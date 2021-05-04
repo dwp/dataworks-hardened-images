@@ -8,7 +8,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static uk.gov.dwp.dataworks.azkaban.authentication.CognitoUserManager.DISALLOW_PROXY_USER;
+import static uk.gov.dwp.dataworks.azkaban.authentication.CognitoUserManager.USE_EMR_USER;
 import static uk.gov.dwp.dataworks.azkaban.authentication.CognitoUserManager.XML_FILE_PARAM;
 
 class CognitoUserManagerTest {
@@ -26,7 +26,7 @@ class CognitoUserManagerTest {
             String user, boolean expected) {
         Props props = mock(Props.class);
         when(props.getString(XML_FILE_PARAM)).thenReturn("src/test/resources/azkaban-users-tests.xml");
-        when(props.getBoolean(DISALLOW_PROXY_USER, false)).thenReturn(proxyDisallowed);
+        when(props.getBoolean(USE_EMR_USER, false)).thenReturn(proxyDisallowed);
         CognitoUserManager userManager = new CognitoUserManager(props);
         assertEquals(expected, userManager.validateProxyUser(proxyUser, new User(user)));
     }

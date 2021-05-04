@@ -54,5 +54,4 @@ RUN sed -i -e 's/v[[:digit:]]\..*\//v3.12\//g' /etc/apk/repositories && \
 
 COPY --from=binary-builder /tmp/execute-as-user /azkaban-exec-server/execute-as-user
 
-RUN which chown
 ENTRYPOINT [ "/bin/entrypoint.sh" ]
