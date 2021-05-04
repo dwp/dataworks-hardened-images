@@ -1,0 +1,4 @@
+<azkaban-users>
+    <user username="user" groups="group" proxy="proxy" password="password" roles="admin" />
+    <role name="admin" permissions="ADMIN"/>
+</azkaban-users>

@@ -1,12 +1,14 @@
 package uk.gov.dwp.dataworks.azkaban.jobtype;
 
 import azkaban.Constants;
-import azkaban.Constants.JobProperties;
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.jobExecutor.utils.process.AzkabanProcess;
 import azkaban.metrics.CommonMetrics;
-import azkaban.utils.*;
+import azkaban.utils.ExecuteAsUser;
+import azkaban.utils.Pair;
+import azkaban.utils.Props;
+import azkaban.utils.Utils;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClientBuilder;
@@ -24,6 +26,7 @@ import com.amazonaws.services.logs.model.OutputLogEvent;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 import uk.gov.dwp.dataworks.azkaban.utility.EMRUtility;
+import uk.gov.dwp.dataworks.azkaban.utility.UserUtility;
 import uk.gov.dwp.dataworks.lambdas.EMRConfiguration;
 
 import java.io.BufferedReader;
@@ -32,7 +35,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_GROUP_NAME;
@@ -54,6 +56,7 @@ public class EMRStep extends AbstractProcessJob {
   public static final String AWS_LOG_GROUP_NAME = "aws.log.group.name";
   public static final String AWS_REGION = "aws.region";
   public static final String AZKABAN_SERVICE_USER = "azkaban.service.user";
+  public static final String USE_EMR_USER = "use.emr.user";
   // Use azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_NATIVE_LIB_FOLDER instead
   @Deprecated
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
@@ -117,7 +120,8 @@ public class EMRStep extends AbstractProcessJob {
     if (isExecuteAsUser) {
       final String nativeLibFolder = this.getSysProps().getString(AZKABAN_SERVER_NATIVE_LIB_FOLDER);
       executeAsUserBinaryPath = String.format("%s/%s", nativeLibFolder, "execute-as-user");
-      effectiveUser = getEffectiveUser(this.getJobProps());
+      effectiveUser = UserUtility.effectiveUser(jobProps, sysProps);
+      info("Effective user: '" + effectiveUser + "'");
       // Throw exception if Azkaban tries to run flow as a prohibited user
       if (blackListedUsers.contains(effectiveUser)) {
         throw new RuntimeException(
@@ -158,7 +162,7 @@ public class EMRStep extends AbstractProcessJob {
     // Passing in the FLOW_UUID to be used as a correlation ID in EMR steps
     ArrayList<String> args = new ArrayList<>();
     args.add(this.getJobProps().getString(CommonJobProperties.FLOW_UUID));
-    String emrUser = getEmrUser(effectiveUser);
+    String emrUser = UserUtility.emrUser(sysProps, effectiveUser, this::getUserGroup);
     info("Script to be run as emr user '" + emrUser + "'");
     args.add(emrUser);
     args.addAll(retrieveScript(this.getJobProps().getString(COMMAND)));
@@ -258,17 +262,6 @@ public class EMRStep extends AbstractProcessJob {
     info("EMR Step Complete");
   }
 
-  private String getEmrUser(String effectiveUser) {
-    try {
-      String serviceUser = getSysProps().getString(AZKABAN_SERVICE_USER);
-      info("Got service user from properties: '" + serviceUser + "'.");
-      return (serviceUser != null && !serviceUser.trim().equals("")) ? serviceUser : getUserGroup(effectiveUser);
-    } catch (UndefinedPropertyException e) {
-      info("No '" + AZKABAN_SERVICE_USER + "' property.");
-      return getUserGroup(effectiveUser);
-    }
-  }
-
   private void printLogs(GetLogEventsResult logResult) {
     for (OutputLogEvent event : logResult.getEvents()) {
       info(event.getMessage());
@@ -319,8 +312,7 @@ public class EMRStep extends AbstractProcessJob {
     info("Looking for cluster named '" + clusterName + "'.");
     while(!killed && clusterId == null && maxAttempts > 0) {
       List<ClusterSummary> clusters = EMRUtility.activeClusterSummaries(emr);
-      info("Found the following active clusters:");
-      clusters.stream().map(ClusterSummary::getId).forEach(this::info);
+      info("Found the following active clusters: " + clusters.stream().map(ClusterSummary::getId).collect(Collectors.joining(",")) + "'");
 
       for (ClusterSummary cluster : clusters) {
         if (cluster.getName().equals(clusterName)) {
@@ -372,28 +364,6 @@ public class EMRStep extends AbstractProcessJob {
     return clusterId;
   }
 
-  /**
-   * <pre>
-   * Determines what user id should the process job run as, in the following order of precedence:
-   * 1. USER_TO_PROXY
-   * 2. SUBMIT_USER
-   * </pre>
-   *
-   * @return the user that Azkaban is going to execute as
-   */
-  private String getEffectiveUser(final Props jobProps) {
-    String effectiveUser = null;
-    if (jobProps.containsKey(JobProperties.USER_TO_PROXY)) {
-      effectiveUser = jobProps.getString(JobProperties.USER_TO_PROXY);
-    } else if (jobProps.containsKey(CommonJobProperties.SUBMIT_USER)) {
-      effectiveUser = jobProps.getString(CommonJobProperties.SUBMIT_USER);
-    } else {
-      throw new RuntimeException(
-              "Internal Error: No user.to.proxy or submit.user in the jobProps");
-    }
-    info("effective user is: " + effectiveUser);
-    return effectiveUser;
-  }
 
   /**
    * Checks to see if user has write access to current working directory which many users need for
@@ -430,7 +400,7 @@ public class EMRStep extends AbstractProcessJob {
     final String groupName = this.getSysProps().getString(AZKABAN_SERVER_GROUP_NAME, "azkaban");
     final List<String> changeOwnershipCommand = Arrays
             .asList(CHOWN, effectiveUser + ":" + groupName, fileName);
-    info("Change ownership of " + fileName + " to " + effectiveUser + ":" + groupName + ".");
+    info("Change ownership of " + fileName + " to " + effectiveUser + ":" + groupName + ", command '" + changeOwnershipCommand + "'.");
     final int result = executeAsUser.execute("root", changeOwnershipCommand);
     if (result != 0) {
       handleError("Failed to change current working directory ownership. Error code: " + Integer
