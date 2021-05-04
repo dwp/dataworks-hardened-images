@@ -15,12 +15,12 @@ class CognitoUserManagerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "false,proxy,user,true",
-            "false,non-configured-proxy,user,false",
+            "false,proxy,               user,               true",
+            "false,non-configured-proxy,user,               false",
             "false,non-configured-proxy,non-configured-user,false",
-            "true,proxy,user,false",
-            "true,user,user,true",
-            "true,non-configured-user,non-configured-user,true",
+            "true, proxy,               user,               false",
+            "true, user,                user,               true",
+            "true, non-configured-user, non-configured-user,true",
     })
     void shouldValidateProxyUsersWhenDisallowProxyFeatureToggledOn(boolean proxyDisallowed, String proxyUser,
             String user, boolean expected) {
@@ -37,7 +37,7 @@ class CognitoUserManagerTest {
             "non-configured-proxy,user,               false",
             "non-configured-proxy,non-configured-user,false",
             "proxy,               user,               true",
-            // The following 2 cases represent behaviour prior to 'disallow.proxy.user' introduction,
+            // The following 2 cases represent behaviour prior to 'use.emr.user' introduction,
             // i.e. can't specify launching user as proxy unless it's in the user config.
             "user,                user,               false",
             "non-configured-user, non-configured-user,false",
