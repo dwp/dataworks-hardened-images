@@ -63,7 +63,7 @@ public class CognitoUserManager implements UserManager {
   private HashMap<String, Role> roles;
   private HashMap<String, Set<String>> groupRoles;
   private HashMap<String, Set<String>> proxyUserMap;
-  private boolean disallowProxyUser = false;
+  private boolean useEmrUser = false;
   /**
    * The mandatory UserManager(Props) constructor, which is called via reflection.
    */
@@ -73,7 +73,7 @@ public class CognitoUserManager implements UserManager {
 
   CognitoUserManager(final Props props, final FileWatcherFactory fileWatcherFactory) {
     this.xmlPath = props.getString(XML_FILE_PARAM);
-    this.disallowProxyUser = props.getBoolean(USE_EMR_USER, false);
+    this.useEmrUser = props.getBoolean(USE_EMR_USER, false);
     parseXMLFile();
 
     // Create a thread which listens to any change in user config file and
@@ -420,16 +420,16 @@ public class CognitoUserManager implements UserManager {
   @Override
   public boolean validateProxyUser(final String proxyUser, final User realUser) {
 
-    if (disallowProxyUser) {
+    if (useEmrUser) {
       if (realUser.getUserId().equals(proxyUser)) {
         logger.info("Allowing proxy user (" + proxyUser + ") "
                 + "that is same as realUser (" + realUser.getUserId() + ") "
-                + "when '" + USE_EMR_USER + "' property (" + disallowProxyUser + ") is true.");
+                + "when '" + USE_EMR_USER + "' property (" + useEmrUser + ") is true.");
         return true;
       } else {
         logger.info("Cannot specify proxy user (" + proxyUser + ") "
                 + "that is different to realUser (" + realUser.getUserId() + ") "
-                + "when '" + USE_EMR_USER + "' property (" + disallowProxyUser + ") is true.");
+                + "when '" + USE_EMR_USER + "' property (" + useEmrUser + ") is true.");
         return false;
       }
     }
