@@ -2,6 +2,35 @@
 
 set -eux
 
+# Mount entire S3 bucket with home KMS key and ensure home dir is created
+
+mkdir -p /mnt/tmp
+
+/opt/s3fs-fuse/bin/s3fs ${S3_BUCKET} /mnt/tmp \
+    -o ecs \
+    -o endpoint=eu-west-2 \
+    -o url=https://s3.amazonaws.com \
+    -o use_sse=kmsid:${KMS_HOME}
+
+mkdir -p /mnt/tmp/home/${USER}
+
+fusermount -u /mnt/tmp
+
+# Mount entire S3 bucket with shared KMS key and ensure team dir is created
+
+/opt/s3fs-fuse/bin/s3fs ${S3_BUCKET} /mnt/tmp \
+    -o ecs \
+    -o endpoint=eu-west-2 \
+    -o url=https://s3.amazonaws.com \
+    -o use_sse=kmsid:${KMS_SHARED}
+
+
+mkdir -p /mnt/tmp/shared/${TEAM}
+
+fusermount -u /mnt/tmp
+
+rm -rf /mnt/tmp
+
 fusermount -u /mnt/s3fs/s3-home && fusermount -u /mnt/s3fs/s3-shared # in case cleanup failed on shutdown
 
 mkdir -p /mnt/s3fs/s3-home && mkdir -p /mnt/s3fs/s3-shared
