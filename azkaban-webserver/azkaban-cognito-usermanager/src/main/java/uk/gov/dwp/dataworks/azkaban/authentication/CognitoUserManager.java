@@ -1,21 +1,19 @@
 package uk.gov.dwp.dataworks.azkaban.authentication;
 
-import javax.xml.bind.DatatypeConverter;
+import azkaban.user.*;
 import azkaban.user.FileWatcher.FileWatcherFactory;
 import azkaban.user.User.UserPermissions;
-import azkaban.user.*;
 import azkaban.utils.Props;
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.List;
-import java.util.Arrays;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
+import com.auth0.jwk.GuavaCachedJwkProvider;
+import com.auth0.jwk.Jwk;
+import com.auth0.jwk.JwkProvider;
+import com.auth0.jwk.UrlJwkProvider;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.Claim;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.auth0.jwt.interfaces.Verification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -23,15 +21,15 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
-import com.auth0.jwk.*;
-import com.auth0.jwt.*;
-import com.auth0.jwt.algorithms.*;
-import com.auth0.jwt.exceptions.*;
-import com.auth0.jwt.interfaces.Claim;
-import com.auth0.jwt.interfaces.DecodedJWT;
-import com.auth0.jwt.interfaces.Verification;
-import java.security.interfaces.RSAPublicKey;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
+import java.security.interfaces.RSAPublicKey;
+import java.util.*;
 
 /**
  * Xml implementation of the UserManager. Looks for the property user.manager.xml.file in the
@@ -58,13 +56,14 @@ public class CognitoUserManager implements UserManager {
   public static final String GROUPNAME_ATTR = "name";
   private static final Logger logger = LoggerFactory.getLogger(XmlUserManager.class);
   private final String xmlPath;
+  public static final String USE_EMR_USER = "use.emr.user";
 
   private HashMap<String, User> users;
   private HashMap<String, String> userPassword;
   private HashMap<String, Role> roles;
   private HashMap<String, Set<String>> groupRoles;
   private HashMap<String, Set<String>> proxyUserMap;
-
+  private boolean useEmrUser = false;
   /**
    * The mandatory UserManager(Props) constructor, which is called via reflection.
    */
@@ -74,7 +73,7 @@ public class CognitoUserManager implements UserManager {
 
   CognitoUserManager(final Props props, final FileWatcherFactory fileWatcherFactory) {
     this.xmlPath = props.getString(XML_FILE_PARAM);
-
+    this.useEmrUser = props.getBoolean(USE_EMR_USER, false);
     parseXMLFile();
 
     // Create a thread which listens to any change in user config file and
@@ -258,16 +257,16 @@ public class CognitoUserManager implements UserManager {
     } else if (password == null || password.trim().isEmpty()) {
       throw new UserManagerException("Password is empty.");
     }
-    
+
     synchronized (this) {
       if (username.equals("cognitoToken")) {
         return getCognitoUser(password);
       } else {
-        return getXMLUser(username, password);   
+        return getXMLUser(username, password);
       }
     }
   }
-  
+
   private User getCognitoUser(final String token) throws UserManagerException {
     DecodedJWT decodedToken = null;
     try {
@@ -277,10 +276,10 @@ public class CognitoUserManager implements UserManager {
       Jwk algo = cognito.get(decodedToken.getKeyId());
       Algorithm algorithm;
       switch(algo.getAlgorithm()) {
-        case "RS256": 
+        case "RS256":
           algorithm = Algorithm.RSA256((RSAPublicKey) algo.getPublicKey(), null);
           break;
-        case "RS512": 
+        case "RS512":
           algorithm = Algorithm.RSA512((RSAPublicKey) algo.getPublicKey(), null);
           break;
         default:
@@ -321,7 +320,8 @@ public class CognitoUserManager implements UserManager {
     } else {
       throw new UserManagerException("Missing groups element from token.");
     }
-    
+
+
     user = new User(username);
     user.addGroup(groups.get(0));
     return user;
@@ -419,6 +419,21 @@ public class CognitoUserManager implements UserManager {
 
   @Override
   public boolean validateProxyUser(final String proxyUser, final User realUser) {
+
+    if (useEmrUser) {
+      if (realUser.getUserId().equals(proxyUser)) {
+        logger.info("Allowing proxy user (" + proxyUser + ") "
+                + "that is same as realUser (" + realUser.getUserId() + ") "
+                + "when '" + USE_EMR_USER + "' property (" + useEmrUser + ") is true.");
+        return true;
+      } else {
+        logger.info("Cannot specify proxy user (" + proxyUser + ") "
+                + "that is different to realUser (" + realUser.getUserId() + ") "
+                + "when '" + USE_EMR_USER + "' property (" + useEmrUser + ") is true.");
+        return false;
+      }
+    }
+
     if (this.proxyUserMap.containsKey(realUser.getUserId())
         && this.proxyUserMap.get(realUser.getUserId()).contains(proxyUser)) {
       return true;
