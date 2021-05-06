@@ -36,7 +36,7 @@ RUN addgroup --gid 1001 hue && \
     chown -R hue /usr/share/hue
 
 RUN apk add python3 libsasl libstdc++ krb5 libxslt gettext openssl \
-        mariadb mariadb-connector-c mariadb-client
+        mariadb mariadb-connector-c mariadb-client cyrus-sasl-plain cyrus-sasl-dev
 
 # Install database connectors e.g.:
 # RUN ./build/env/bin/pip install git+https://github.com/gethue/PyHive
