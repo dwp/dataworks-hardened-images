@@ -1,0 +1,15 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.19.0
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  SNYK-JAVA-COMBEUST-174815:
+    - '*':
+        reason: 'Do not use testng, and hence beust'
+        expires: 2021-08-30T23:00:00.000Z
+        created: 2021-05-10T15:27:53.225Z
+  SNYK-JAVA-IONETTY-1042268:
+    - '*':
+        reason: No fixed version
+        expires: 2021-08-30T23:00:00.000Z
+        created: 2021-05-10T15:28:57.960Z
+patch: {}
