@@ -21,9 +21,11 @@ dependencies {
     compile group: 'com.auth0', name: 'java-jwt', version: '3.10.0'
     compile group: 'com.auth0', name: 'jwks-rsa', version: '0.14.1'
     compile group: 'software.amazon.awssdk', name: 'cognitoidentityprovider', version: '2.16.59'
+    compile group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.11'
     extraLibs group: 'com.auth0', name: 'java-jwt', version: '3.10.0'
     extraLibs group: 'com.auth0', name: 'jwks-rsa', version: '0.14.1'
-    compile group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.11'
+    extraLibs group: 'software.amazon.awssdk', name: 'cognitoidentityprovider', version: '2.16.59'
+    extraLibs group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.11'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.4.2'
     testImplementation "org.mockito:mockito-core:3.+"
