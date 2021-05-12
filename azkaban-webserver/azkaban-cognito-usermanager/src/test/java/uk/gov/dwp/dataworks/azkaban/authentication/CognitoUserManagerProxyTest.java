@@ -4,7 +4,6 @@ import azkaban.user.User;
 import azkaban.user.UserManagerException;
 import azkaban.utils.Props;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -20,7 +19,6 @@ import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.*;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class CognitoUserManagerProxyTest {

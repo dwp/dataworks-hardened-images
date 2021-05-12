@@ -20,7 +20,11 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
+import java.util.logging.Logger;
+
 public class CognitoUserManagerProxy implements UserManager {
+    private static final Logger LOGGER = Logger.getLogger(CognitoUserManagerProxy.class.getName());
+
     private final Props props;
     private CognitoIdentityProviderClient identityProvider;
 
@@ -34,6 +38,7 @@ public class CognitoUserManagerProxy implements UserManager {
     @Override
     public User getUser(String username, String password) throws UserManagerException {
 
+        LOGGER.entering("CognitoUserManagerProxy", "getUser", new Object[]{ username, password });
         Map<String, String> authParameters = new HashMap<>();
         authParameters.put("USERNAME", username);
         authParameters.put("PASSWORD", password);
@@ -44,14 +49,17 @@ public class CognitoUserManagerProxy implements UserManager {
 
         final InitiateAuthResponse response;
         try {
+            LOGGER.info("Authenticating user " + username);
             response = identityProvider.initiateAuth(builder -> {
                 builder.authFlow(AuthFlowType.USER_PASSWORD_AUTH)
                         .authParameters(authParameters)
                         .clientId(props.getString("cognito.clientId"));
             });
         } catch (NotAuthorizedException ex) {
+            LOGGER.warning(username + " is not authorized");
             throw new UserManagerException("Incorrect username or password");
         } catch (ResourceNotFoundException ex) {
+            LOGGER.severe(ex.getMessage());
             throw new UserManagerException(ex.getMessage());
         }
 
@@ -72,9 +80,11 @@ public class CognitoUserManagerProxy implements UserManager {
 
             u.setPermissions(permissions);
 
+            LOGGER.info("Returning user object for " + username);
             return u;
         }
 
+        LOGGER.warning("Could not authenticate user, response was: " + response);
         return null;
     }
 
