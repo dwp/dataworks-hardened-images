@@ -11,11 +11,9 @@ public class EMRConfiguration {
 
     public EMRConfiguration(String name, String config){
         this.overrides = new Overrides(name);
-        this.s3Overrides = new S3Overrides(config);
-    }
-
-    public EMRConfiguration(String name){
-        this.overrides = new Overrides(name);
+        if (config != null){
+            this.s3Overrides = new S3Overrides(config);
+        }
     }
 
     public static EMRConfigurationBuilder builder() {
@@ -44,11 +42,7 @@ public class EMRConfiguration {
         }
 
         public EMRConfiguration build() {
-            if (this.config != null){
-                return new EMRConfiguration(this.name, this.config);
-            } else {
-                return new EMRConfiguration(this.name);
-            }
+            return new EMRConfiguration(this.name, this.config);
         }
     }
 
