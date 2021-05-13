@@ -50,6 +50,7 @@ public class EMRStep extends AbstractProcessJob {
   public static final String COMMAND = "step";
   public static final String AWS_EMR_CLUSTER_NAME = "aws.emr.cluster.name";
   public static final String AWS_EMR_CLUSTER_STATEFILE = "aws.emr.cluster.statefile";
+  public static final String AWS_EMR_CLUSTER_CONFIG = "aws.emr.cluster.config";
   public static final String AWS_EMR_STEP_SCRIPT = "aws.emr.step.script";
   public static final String AWS_EMR_STEP_NAME = "aws.emr.step.name";
   public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
@@ -308,7 +309,8 @@ public class EMRStep extends AbstractProcessJob {
 
     int pollTime = this.getSysProps().getInt(BOOT_POLL_INTERVAL, BOOT_POLL_INTERVAL_DEFAULT);
     int maxAttempts = this.getSysProps().getInt(BOOT_POLL_ATTEMPTS_MAX, BOOT_POLL_ATTEMPTS_MAX_DEFAULT);
-    String clusterName = this.getJobProps().getString( AWS_EMR_CLUSTER_NAME, this.getSysProps().getString(AWS_EMR_CLUSTER_NAME));
+    String clusterName = this.getJobProps().getString(AWS_EMR_CLUSTER_NAME, this.getSysProps().getString(AWS_EMR_CLUSTER_NAME));
+    String clusterConfig = this.getJobProps().getString(AWS_EMR_CLUSTER_CONFIG);
     info("Looking for cluster named '" + clusterName + "'.");
     while(!killed && clusterId == null && maxAttempts > 0) {
       List<ClusterSummary> clusters = EMRUtility.activeClusterSummaries(emr);
@@ -322,7 +324,7 @@ public class EMRStep extends AbstractProcessJob {
 
       if (clusterId == null && !invokedLambda) {
         info("No active cluster named: '" + clusterName + "', starting one up.");
-        EMRConfiguration batchConfig = EMRConfiguration.builder().withName(clusterName).build();
+        EMRConfiguration batchConfig = EMRConfiguration.builder().withName(clusterName).withS3Overrides(clusterConfig).build();
 
         String payload = "{}";
 
