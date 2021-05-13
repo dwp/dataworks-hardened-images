@@ -1,25 +1,18 @@
 package uk.gov.dwp.dataworks.azkaban.authentication;
 
-import azkaban.user.Role;
-import azkaban.user.User;
-import azkaban.user.UserManager;
-import azkaban.user.UserManagerException;
+import azkaban.user.*;
 import azkaban.utils.Props;
 
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthFlowType;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.NotAuthorizedException;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.ResourceNotFoundException;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.logging.Logger;
 
 public class CognitoUserManagerProxy implements UserManager {
@@ -27,43 +20,110 @@ public class CognitoUserManagerProxy implements UserManager {
 
     private final Props props;
     private CognitoIdentityProviderClient identityProvider;
+    private AuthenticationHelper authHelper;
 
     public CognitoUserManagerProxy(final Props props) {
         this.props = props;
         this.identityProvider = CognitoIdentityProviderClient.builder()
                 .region(Region.of(props.getString("aws.region", "EU-WEST-2")))
                 .build();
+        this.authHelper = new AuthenticationHelper(props.getString("cognito.userPoolName"));
     }
 
     @Override
     public User getUser(String username, String password) throws UserManagerException {
 
         LOGGER.entering("CognitoUserManagerProxy", "getUser", new Object[]{ username, password });
+
+        String secretHash = AuthenticationHelper.calculateSecretHash(
+                props.getString("cognito.clientId"),
+                props.getString("cognito.clientSecret"),
+                username);
+
         Map<String, String> authParameters = new HashMap<>();
         authParameters.put("USERNAME", username);
-        authParameters.put("PASSWORD", password);
-        authParameters.put("SECRET_HASH",
-                calculateSecretHash(props.getString("cognito.clientId"),
-                                    props.getString("cognito.clientSecret"),
-                                    username));
+        authParameters.put("SRP_A", authHelper.getA().toString(16));
+        authParameters.put("SECRET_HASH", secretHash);
 
         final InitiateAuthResponse response;
+        AuthenticationResultType result = null;
+        ChallengeNameType lastChallenge = null;
         try {
             LOGGER.info("Authenticating user " + username);
             response = identityProvider.initiateAuth(builder -> {
-                builder.authFlow(AuthFlowType.USER_PASSWORD_AUTH)
+                builder.authFlow(AuthFlowType.USER_SRP_AUTH)
                         .authParameters(authParameters)
                         .clientId(props.getString("cognito.clientId"));
             });
-        } catch (NotAuthorizedException ex) {
-            LOGGER.warning(username + " is not authorized");
-            throw new UserManagerException("Incorrect username or password");
-        } catch (ResourceNotFoundException ex) {
+
+            result = response.authenticationResult();
+            lastChallenge = response.challengeName();
+
+            if (ChallengeNameType.PASSWORD_VERIFIER.equals(lastChallenge)) {
+                String userIdForSrp = response.challengeParameters().get("USER_ID_FOR_SRP");
+                String userNameForSrp = response.challengeParameters().get("USERNAME");
+
+                BigInteger b = new BigInteger(response.challengeParameters().get("SRP_B"), 16);
+                BigInteger salt = new BigInteger(response.challengeParameters().get("SALT"), 16);
+
+                SimpleDateFormat formatTimestamp = new SimpleDateFormat("EEE MMM d HH:mm:ss z yyyy", Locale.US);
+                formatTimestamp.setTimeZone(new SimpleTimeZone(SimpleTimeZone.UTC_TIME, "UTC"));
+
+                byte[] key = authHelper.getPasswordAuthenticationKey(userIdForSrp, password, b, salt);
+
+                Date timestamp = new Date();
+                byte[] hmac = null;
+                try {
+                    Mac mac = Mac.getInstance("HmacSHA256");
+                    SecretKeySpec keySpec = new SecretKeySpec(key, "HmacSHA256");
+                    mac.init(keySpec);
+                    mac.update(props.getString("cognito.userPoolName").split("_", 2)[1].getBytes(StandardCharsets.UTF_8));
+                    mac.update(userIdForSrp.getBytes(StandardCharsets.UTF_8));
+                    byte[] secretBlock = Base64.getDecoder().decode(response.challengeParameters().get("SECRET_BLOCK"));
+                    mac.update(secretBlock);
+                    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("EEE MMM d HH:mm:ss z yyyy", Locale.US);
+                    simpleDateFormat.setTimeZone(new SimpleTimeZone(SimpleTimeZone.UTC_TIME, "UTC"));
+                    String dateString = simpleDateFormat.format(timestamp);
+                    byte[] dateBytes = dateString.getBytes(StandardCharsets.UTF_8);
+                    hmac = mac.doFinal(dateBytes);
+                } catch (Exception e) {
+                    System.out.println(e);
+                }
+
+                Map<String, String> challengeResponses = new HashMap<>();
+                challengeResponses.put("PASSWORD_CLAIM_SECRET_BLOCK", response.challengeParameters().get("SECRET_BLOCK"));
+                challengeResponses.put("PASSWORD_CLAIM_SIGNATURE", Base64.getEncoder().encodeToString(hmac));
+                challengeResponses.put("USERNAME", userNameForSrp);
+                challengeResponses.put("TIMESTAMP", formatTimestamp.format(timestamp));
+                challengeResponses.put("SECRET_HASH", secretHash);
+
+                RespondToAuthChallengeRequest challengeResponse = RespondToAuthChallengeRequest.builder()
+                        .challengeName(lastChallenge)
+                        .clientId(props.getString("cognito.clientId"))
+                        .session(response.session())
+                        .challengeResponses(challengeResponses)
+                        .build();
+
+                RespondToAuthChallengeResponse challengeResult = identityProvider.respondToAuthChallenge(challengeResponse);
+
+                result = challengeResult.authenticationResult();
+                lastChallenge = challengeResult.challengeName();
+            }
+        }
+        catch (NotAuthorizedException ex) {
+            LOGGER.warning(username + " is not authorized. " + ex.getMessage());
+            throw new UserManagerException(ex.getMessage());
+        }
+        catch (UserNotFoundException ex) {
+            LOGGER.warning( "Login for user " + username + " who does not exist.");
+            throw new UserManagerException(ex.getMessage());
+        }
+        catch (Exception ex) {
             LOGGER.severe(ex.getMessage());
             throw new UserManagerException(ex.getMessage());
         }
 
-        if (response.authenticationResult() != null) {
+        if (result != null) {
             // Success
             User u = new User(username);
             User.UserPermissions permissions = new User.UserPermissions() {
@@ -81,28 +141,12 @@ public class CognitoUserManagerProxy implements UserManager {
             u.setPermissions(permissions);
 
             LOGGER.info("Returning user object for " + username);
+            u.addRole("ADMIN");
             return u;
         }
 
-        LOGGER.warning("Could not authenticate user, response was: " + response);
+        LOGGER.warning("Could not authenticate user, last challenge was: " + lastChallenge);
         return null;
-    }
-
-    public static String calculateSecretHash(String userPoolClientId, String userPoolClientSecret, String userName) {
-        final String HMAC_SHA256_ALGORITHM = "HmacSHA256";
-
-        SecretKeySpec signingKey = new SecretKeySpec(
-                userPoolClientSecret.getBytes(StandardCharsets.UTF_8),
-                HMAC_SHA256_ALGORITHM);
-        try {
-            Mac mac = Mac.getInstance(HMAC_SHA256_ALGORITHM);
-            mac.init(signingKey);
-            mac.update(userName.getBytes(StandardCharsets.UTF_8));
-            byte[] rawHmac = mac.doFinal(userPoolClientId.getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(rawHmac);
-        } catch (Exception e) {
-            throw new RuntimeException("Error while calculating ");
-        }
     }
 
     @Override
@@ -117,7 +161,13 @@ public class CognitoUserManagerProxy implements UserManager {
 
     @Override
     public Role getRole(String roleName) {
-        return null;
+        LOGGER.entering("CognitoUserManagerProxy", "getRole", new Object[]{ roleName });
+        switch(roleName) {
+            case "ADMIN":
+                return new Role(roleName, new Permission(Permission.Type.ADMIN));
+            default:
+                return new Role(roleName, new Permission(Permission.Type.READ));
+        }
     }
 
     @Override
@@ -128,4 +178,5 @@ public class CognitoUserManagerProxy implements UserManager {
     /* package-private */ void setIdentityProvider(CognitoIdentityProviderClient identityProvider) {
         this.identityProvider = identityProvider;
     }
+
 }
