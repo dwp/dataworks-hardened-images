@@ -31,7 +31,7 @@ dependencies {
     extraLibs group: 'software.amazon.awssdk', name: 'apache-client'
     extraLibs group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
     extraLibs group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.13'
-    // extraLibs platform('software.amazon.awssdk:bom:2.16.59')
+    extraLibs platform('software.amazon.awssdk:bom:2.16.59')
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.4.2'
     testImplementation "org.mockito:mockito-core:3.+"
