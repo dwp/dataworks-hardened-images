@@ -20,13 +20,15 @@ dependencies {
     implementation group: 'com.github.azkaban', name: 'azkaban', version: '3.81.0'
     implementation group: 'com.auth0', name: 'java-jwt', version: '3.10.0'
     implementation group: 'com.auth0', name: 'jwks-rsa', version: '0.14.1'
-    implementation group: 'software.amazon.awssdk', name: 'cognitoidentityprovider', version: '2.16.59'
+    implementation group: 'software.amazon.awssdk', name: 'cognitoidentityprovider'
+    implementation group: 'software.amazon.awssdk', name: 'apache-client'
     extraLibs group: 'com.auth0', name: 'java-jwt', version: '3.10.0'
     extraLibs group: 'com.auth0', name: 'jwks-rsa', version: '0.14.1'
     implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
     implementation group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.13'
 
-    extraLibs group: 'software.amazon.awssdk', name: 'cognitoidentityprovider', version: '2.16.59'
+    extraLibs group: 'software.amazon.awssdk', name: 'cognitoidentityprovider'
+    extraLibs group: 'software.amazon.awssdk', name: 'apache-client'
     extraLibs group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
     extraLibs group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.13'
     // extraLibs platform('software.amazon.awssdk:bom:2.16.59')
