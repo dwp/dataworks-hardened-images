@@ -3,6 +3,9 @@ package uk.gov.dwp.dataworks.azkaban.authentication;
 import azkaban.user.*;
 import azkaban.utils.Props;
 
+import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.http.apache.ProxyConfiguration;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
@@ -24,6 +27,18 @@ public class CognitoUserManagerProxy implements UserManager {
 
     public CognitoUserManagerProxy(final Props props) {
         this.props = props;
+
+        SdkHttpClient httpClient = ApacheHttpClient.builder()
+                .proxyConfiguration(
+                        ProxyConfiguration.builder()
+                                .useSystemPropertyValues(true).build())
+                .build();
+
+        this.identityProvider = CognitoIdentityProviderClient.builder()
+                .region(Region.of(props.getString("aws.region", "EU-WEST-2")))
+                .httpClient(httpClient)
+                .build();
+
         this.identityProvider = CognitoIdentityProviderClient.builder()
                 .region(Region.of(props.getString("aws.region", "EU-WEST-2")))
                 .build();
