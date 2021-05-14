@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+    container_name: localstack
+    environment:
+      - SERVICES=dynamodb
+
+  localstack-init:
+    image: localstack-init
+    build:
+      context: resources/images/localstack-init
+    container_name: localstack-init

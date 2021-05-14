@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'com.github.ben-manes.versions' version '0.36.0'
 }
 
 compileJava {
@@ -23,6 +24,8 @@ dependencies {
     implementation "com.amazonaws:aws-java-sdk-emr:${awsVersion}"
     implementation "com.amazonaws:aws-java-sdk-lambda:${awsVersion}"
     implementation "com.amazonaws:aws-java-sdk-logs:${awsVersion}"
+    implementation("com.amazonaws:aws-java-sdk-dynamodb:${awsVersion}")
+
     testImplementation 'org.junit.jupiter:junit-jupiter:5.4.2'
     testImplementation "org.mockito:mockito-core:3.+"
     testImplementation "net.javacrumbs.json-unit:json-unit-assertj:2.25.0"
