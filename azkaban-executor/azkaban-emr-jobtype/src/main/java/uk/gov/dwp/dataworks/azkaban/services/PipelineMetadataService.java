@@ -10,18 +10,18 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class DataPipelineMetadataService {
+public class PipelineMetadataService {
 
-    public DataPipelineMetadataService(AmazonDynamoDB dynamoDB) {
+    public PipelineMetadataService(AmazonDynamoDB dynamoDB) {
         this.dynamoDb = dynamoDB;
     }
 
-    public List<Map<String, AttributeValue>> waitForDependencies(String tableName, String exportDate, String ... products) {
-        waitForDependencies(tableName, dependenciesMetadata(tableName, exportDate, products));
-        return dependenciesMetadata(tableName, exportDate, products);
+    public Optional<List<Map<String, AttributeValue>>> successfulDependencies(String tableName, String exportDate, String ... products) {
+        return successfulDependencies(tableName, dependenciesMetadata(tableName, exportDate, products)) ?
+            Optional.of(dependenciesMetadata(tableName, exportDate, products)) : Optional.empty();
     }
 
-    public List<Map<String, AttributeValue>> dependenciesMetadata(String tableName, String exportDate,
+    private List<Map<String, AttributeValue>> dependenciesMetadata(String tableName, String exportDate,
             String... products) {
         return Arrays.stream(products).map(product -> dependenciesMetadata(tableName, product, exportDate))
                 .reduce(new ArrayList<>(), (accumulation, next) -> {
@@ -30,41 +30,35 @@ public class DataPipelineMetadataService {
                 });
     }
 
-    public void waitForDependencies(String tableName, List<Map<String, AttributeValue>> items) {
-        items.stream().filter(item -> item.get(STATUS_FIELD).getS().equals(COMPLETED_STATUS_VALUE)).forEach(item -> {
-            try {
-                if (!waitForCompletion(tableName, item)) {
-                    throw new RuntimeException(item.get(PARTITION_KEY_FIELD).getS() + "/"
-                            + item.get(SORT_KEY_FIELD).getS() + "/"
-                            + item.get(DATE_FIELD) + " did not complete within the required timeframe.");
-                }
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        });
+    public boolean successfulDependencies(String tableName, List<Map<String, AttributeValue>> items) {
+        return items.stream().map(item -> completedSuccessfully(tableName, item)).filter(x -> !x).findFirst().orElse(true);
     }
 
-    public boolean waitForCompletion(String tableName, Map<String, AttributeValue> item) throws InterruptedException {
-        final AtomicBoolean succeeded = new AtomicBoolean(false);
-        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        final CountDownLatch latch = new CountDownLatch(1);
-        executor.scheduleAtFixedRate(() -> {
-            logger.info("Looking up '" + item + "'");
-            GetItemRequest request = new GetItemRequest().withTableName(tableName).withKey(primaryKey(item));
-            GetItemResult result = dynamoDb.getItem(request);
-            String status = result.getItem().get(STATUS_FIELD).getS();
-            logger.info("Looked up '" + item + "', status is '" + status + "'");
-            if (status.equals("Completed")) {
-                succeeded.set(true);
-                latch.countDown();
-            }
-        }, 0, 10, TimeUnit.SECONDS);
-        final ScheduledExecutorService timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
-        timeoutExecutor.schedule(latch::countDown, 10, TimeUnit.SECONDS);
-        latch.await();
-        timeoutExecutor.shutdownNow();
-        executor.shutdownNow();
-        return succeeded.get();
+    public boolean completedSuccessfully(String tableName, Map<String, AttributeValue> item) {
+        try {
+            final AtomicBoolean succeeded = new AtomicBoolean(false);
+            final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+            final CountDownLatch latch = new CountDownLatch(1);
+            executor.scheduleAtFixedRate(() -> {
+                logger.info("Looking up '" + itemString(item) + "'");
+                GetItemRequest request = new GetItemRequest().withTableName(tableName).withKey(primaryKey(item));
+                GetItemResult result = dynamoDb.getItem(request);
+                String status = result.getItem().get(STATUS_FIELD).getS();
+                logger.info("Looked up '" + itemString(item) + "', status is '" + status + "'");
+                if (status.equals("Completed") || status.equals("Failed")) {
+                    succeeded.set(status.equals("Completed"));
+                    latch.countDown();
+                }
+            }, 0, 10, TimeUnit.SECONDS);
+            final ScheduledExecutorService timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
+            timeoutExecutor.schedule(latch::countDown, 10, TimeUnit.SECONDS);
+            latch.await();
+            timeoutExecutor.shutdownNow();
+            executor.shutdownNow();
+            return succeeded.get();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Map<String, AttributeValue> primaryKey(Map<String, AttributeValue> item) {
@@ -79,7 +73,6 @@ public class DataPipelineMetadataService {
         Map<String, String> nameMap = new HashMap<>();
         nameMap.put("#export_date", "Date");
         nameMap.put("#product", "DataProduct");
-
         Map<String, AttributeValue> valueMap = new HashMap<>();
         valueMap.put(":export_date", new AttributeValue().withS(exportDate));
         valueMap.put(":product", new AttributeValue().withS(product));
@@ -97,11 +90,15 @@ public class DataPipelineMetadataService {
         return results;
     }
 
+    private String itemString(Map<String, AttributeValue> item) {
+        return item.get(PARTITION_KEY_FIELD).getS() + "/" + item.get(SORT_KEY_FIELD).getS() + "/" + item.get(DATE_FIELD);
+    }
+
     private final AmazonDynamoDB dynamoDb;
     private final static String PARTITION_KEY_FIELD = "Correlation_Id";
     private final static String SORT_KEY_FIELD = "DataProduct";
     private final static String STATUS_FIELD = "Status";
     private final static String DATE_FIELD = "Date";
     private final static String COMPLETED_STATUS_VALUE = "Completed";
-    private final static Logger logger = LoggerFactory.getLogger(DataPipelineMetadataService.class);
+    private final static Logger logger = LoggerFactory.getLogger(PipelineMetadataService.class);
 }

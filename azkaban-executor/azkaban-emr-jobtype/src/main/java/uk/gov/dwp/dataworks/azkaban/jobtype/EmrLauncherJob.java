@@ -4,28 +4,36 @@ import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import org.apache.log4j.Logger;
-import uk.gov.dwp.dataworks.azkaban.services.DataPipelineMetadataService;
+import uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService;
 import uk.gov.dwp.dataworks.azkaban.utility.AwsUtility;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class EmrLauncherJob extends AbstractProcessJob {
 
-    private final DataPipelineMetadataService dataPipelineMetadataService;
+    private final PipelineMetadataService pipelineMetadataService;
 
     public EmrLauncherJob(String jobId, Props sysProps, Props jobProps, Logger log) {
         super(jobId, sysProps, jobProps, log);
-        this.dataPipelineMetadataService = new DataPipelineMetadataService(AwsUtility.amazonDynamoDb(awsRegion()));
+        this.pipelineMetadataService = new PipelineMetadataService(AwsUtility.amazonDynamoDb(awsRegion()));
     }
 
     @Override
     public void run() {
-        List<Map<String, AttributeValue>> metadata = dataPipelineMetadataService.waitForDependencies(metadataTableName(),
-                jobProps.getString(EXPORT_DATE_PARAMETER_NAME, new SimpleDateFormat("yyyy-MM-dd").format(new Date())),
-                jobProps.getString(JOB_DEPENDENCIES_PARAMETER_NAME).split(","));
+        Optional<List<Map<String, AttributeValue>>> metadata =
+                pipelineMetadataService.successfulDependencies(metadataTableName(), exportDate(), dependencies());
+    }
+
+    private String[] dependencies() {
+        return jobProps.getString(JOB_DEPENDENCIES_PARAMETER_NAME).split(",");
+    }
+
+    private String exportDate() {
+        return jobProps.getString(EXPORT_DATE_PARAMETER_NAME, new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
     }
 
     private String awsRegion() {
