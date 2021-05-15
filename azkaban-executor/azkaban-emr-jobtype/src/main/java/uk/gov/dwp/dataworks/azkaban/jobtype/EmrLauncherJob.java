@@ -15,8 +15,6 @@ import java.util.Optional;
 
 public class EmrLauncherJob extends AbstractProcessJob {
 
-    private final PipelineMetadataService pipelineMetadataService;
-
     public EmrLauncherJob(String jobId, Props sysProps, Props jobProps, Logger log) {
         super(jobId, sysProps, jobProps, log);
         this.pipelineMetadataService = new PipelineMetadataService(AwsUtility.amazonDynamoDb(awsRegion()));
@@ -47,4 +45,5 @@ public class EmrLauncherJob extends AbstractProcessJob {
     public final static String JOB_DEPENDENCIES_PARAMETER_NAME = "job.dependencies";
     public final static String EXPORT_DATE_PARAMETER_NAME = "export.date";
     public final static String METADATA_TABLE_PARAMETER_NAME = "pipeline.metadata.table";
+    private final PipelineMetadataService pipelineMetadataService;
 }
