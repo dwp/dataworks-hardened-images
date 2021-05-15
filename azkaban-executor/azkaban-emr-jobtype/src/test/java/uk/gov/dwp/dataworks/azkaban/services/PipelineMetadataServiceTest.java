@@ -163,9 +163,10 @@ class PipelineMetadataServiceTest {
         PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
         executorService.schedule(metadataService::cancel, 15, TimeUnit.MILLISECONDS);
-        Future<Optional<List<Map<String, AttributeValue>>>> f = executorService
+        Future<Optional<List<Map<String, AttributeValue>>>> future = executorService
                 .submit(() -> metadataService.successfulDependencies(METADATA_TABLE, EXPORT_DATE, PRODUCT_1));
-        assertFalse(f.get().isPresent());
+
+        assertFalse(future.get().isPresent());
     }
 
     @Test

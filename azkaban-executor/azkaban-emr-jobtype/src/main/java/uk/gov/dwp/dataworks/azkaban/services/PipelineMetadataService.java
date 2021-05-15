@@ -17,12 +17,13 @@ public class PipelineMetadataService {
     }
 
     public Optional<List<Map<String, AttributeValue>>> successfulDependencies(String tableName, String exportDate, String ... products) {
-        return dependenciesSucceeded(tableName, dependenciesMetadata(tableName, exportDate, products)) ?
+        return proceed.get() && dependenciesSucceeded(tableName, dependenciesMetadata(tableName, exportDate, products)) ?
             Optional.of(dependenciesMetadata(tableName, exportDate, products)) : Optional.empty();
     }
 
     public void cancel() {
         logger.warn("Operation has been cancelled");
+        this.proceed.set(false);
         this.latch.countDown();
     }
 
@@ -114,7 +115,7 @@ public class PipelineMetadataService {
     }
 
     private static String itemString(Map<String, AttributeValue> item) {
-        return item.get(PARTITION_KEY_FIELD).getS() + "/" + item.get(SORT_KEY_FIELD).getS() + "/" + item.get(DATE_FIELD);
+        return item.get(PARTITION_KEY_FIELD).getS() + "/" + item.get(SORT_KEY_FIELD).getS() + "/" + item.get(DATE_FIELD).getS();
     }
 
     private static int pollIntervalSeconds() {
@@ -133,5 +134,6 @@ public class PipelineMetadataService {
     private final static String FAILED_COMPLETION_STATUS = "Failed";
     private final AmazonDynamoDB dynamoDb;
     private CountDownLatch latch = new CountDownLatch(1);
+    private AtomicBoolean proceed = new AtomicBoolean(true);
     private final static Logger logger = LoggerFactory.getLogger(PipelineMetadataService.class);
 }
