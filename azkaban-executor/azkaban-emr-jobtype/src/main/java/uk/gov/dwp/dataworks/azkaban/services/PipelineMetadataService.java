@@ -21,6 +21,11 @@ public class PipelineMetadataService {
             Optional.of(dependenciesMetadata(tableName, exportDate, products)) : Optional.empty();
     }
 
+    public void cancel() {
+        logger.warn("Operation has been cancelled");
+        this.latch.countDown();
+    }
+
     private List<Map<String, AttributeValue>> dependenciesMetadata(String tableName, String exportDate,
             String... products) {
         return Arrays.stream(products).map(product -> dependenciesMetadata(tableName, product, exportDate))
@@ -30,26 +35,16 @@ public class PipelineMetadataService {
                 });
     }
 
-    public boolean successfulDependencies(String tableName, List<Map<String, AttributeValue>> items) {
+    private boolean successfulDependencies(String tableName, List<Map<String, AttributeValue>> items) {
         return items.stream().map(item -> completedSuccessfully(tableName, item)).filter(x -> !x).findFirst().orElse(true);
     }
 
-    public boolean completedSuccessfully(String tableName, Map<String, AttributeValue> item) {
+    private boolean completedSuccessfully(String tableName, Map<String, AttributeValue> item) {
         try {
             final AtomicBoolean succeeded = new AtomicBoolean(false);
             final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-            final CountDownLatch latch = new CountDownLatch(1);
-            executor.scheduleAtFixedRate(() -> {
-                logger.info("Looking up '" + itemString(item) + "'");
-                GetItemRequest request = new GetItemRequest().withTableName(tableName).withKey(primaryKey(item));
-                GetItemResult result = dynamoDb.getItem(request);
-                String status = result.getItem().get(STATUS_FIELD).getS();
-                logger.info("Looked up '" + itemString(item) + "', status is '" + status + "'");
-                if (status.equals("Completed") || status.equals("Failed")) {
-                    succeeded.set(status.equals("Completed"));
-                    latch.countDown();
-                }
-            }, 0, 10, TimeUnit.SECONDS);
+            this.latch = new CountDownLatch(1);
+            executor.scheduleAtFixedRate(() -> checkDependency(tableName, item, succeeded), 0, 10, TimeUnit.SECONDS);
             final ScheduledExecutorService timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
             timeoutExecutor.schedule(latch::countDown, 10, TimeUnit.SECONDS);
             latch.await();
@@ -59,6 +54,23 @@ public class PipelineMetadataService {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void checkDependency(String tableName, Map<String, AttributeValue> item, AtomicBoolean succeeded) {
+        logger.info("Checking '" + itemString(item) + "'");
+        GetItemRequest request = new GetItemRequest().withTableName(tableName).withKey(primaryKey(item));
+        GetItemResult result = dynamoDb.getItem(request);
+        String status = result.getItem().get(STATUS_FIELD).getS();
+        logger.info("Checked '" + itemString(item) + "', status is '" + status + "'");
+        if (hasFinished(status)) {
+            logger.info("Dependency '" + itemString(item) + "' has completed, status is '" + status + "'");
+            succeeded.set(status.equals(SUCCESSFUL_COMPLETION_STATUS));
+            latch.countDown();
+        }
+    }
+
+    private boolean hasFinished(String status) {
+        return status.equals(SUCCESSFUL_COMPLETION_STATUS) || status.equals(FAILED_COMPLETION_STATUS);
     }
 
     private Map<String, AttributeValue> primaryKey(Map<String, AttributeValue> item) {
@@ -95,10 +107,12 @@ public class PipelineMetadataService {
     }
 
     private final AmazonDynamoDB dynamoDb;
+    private CountDownLatch latch = new CountDownLatch(1);
     private final static String PARTITION_KEY_FIELD = "Correlation_Id";
     private final static String SORT_KEY_FIELD = "DataProduct";
     private final static String STATUS_FIELD = "Status";
     private final static String DATE_FIELD = "Date";
-    private final static String COMPLETED_STATUS_VALUE = "Completed";
+    private final static String SUCCESSFUL_COMPLETION_STATUS = "Completed";
+    private final static String FAILED_COMPLETION_STATUS = "Failed";
     private final static Logger logger = LoggerFactory.getLogger(PipelineMetadataService.class);
 }
