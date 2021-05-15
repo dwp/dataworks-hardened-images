@@ -110,7 +110,6 @@ public class PipelineMetadataService {
     }
 
     private static boolean hasFinished(String status) {
-        System.out.println("HAS FINISHED: '" + status + "': '" + (status.equals(SUCCESSFUL_COMPLETION_STATUS) || status.equals(FAILED_COMPLETION_STATUS)) + "'");
         return status.equals(SUCCESSFUL_COMPLETION_STATUS) || status.equals(FAILED_COMPLETION_STATUS);
     }
 
