@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-public class EMRUtility {
+public class EmrUtility {
 
     public static Optional<String> activeClusterId(AmazonElasticMapReduce emr, String clusterName) {
         return activeClusterSummaries(emr).stream().filter(x -> x.getName().equals(clusterName))

@@ -58,15 +58,19 @@ public class PipelineMetadataService {
     }
 
     private void checkDependency(String tableName, Map<String, AttributeValue> item, AtomicBoolean succeeded) {
-        logger.info("Checking '" + itemString(item) + "'");
-        GetItemRequest request = new GetItemRequest().withTableName(tableName).withKey(primaryKey(item));
-        GetItemResult result = dynamoDb.getItem(request);
-        String status = result.getItem().get(STATUS_FIELD).getS();
-        logger.info("Checked '" + itemString(item) + "', status is '" + status + "'");
-        if (hasFinished(status)) {
-            logger.info("Dependency '" + itemString(item) + "' has completed, status is '" + status + "'");
-            succeeded.set(status.equals(SUCCESSFUL_COMPLETION_STATUS));
-            latch.countDown();
+        try {
+            logger.info("Checking '" + itemString(item) + "'");
+            GetItemRequest request = new GetItemRequest().withTableName(tableName).withKey(primaryKey(item));
+            GetItemResult result = dynamoDb.getItem(request);
+            String status = result.getItem().get(STATUS_FIELD).getS();
+            logger.info("Checked '" + itemString(item) + "', status is '" + status + "'.");
+            if (hasFinished(status)) {
+                logger.info("Dependency '" + itemString(item) + "' has completed, status is '" + status + "'.");
+                succeeded.set(hasSucceeded(status));
+                latch.countDown();
+            }
+        } catch (Exception e) {
+            logger.error("Failed to check item:", e);
         }
     }
 
@@ -85,8 +89,8 @@ public class PipelineMetadataService {
 
     private static Map<String, AttributeValue> primaryKey(Map<String, AttributeValue> item) {
         return item.entrySet().stream()
-                .filter(entry -> entry.getKey().equals(PARTITION_KEY_FIELD) || entry.getKey()
-                        .equals(SORT_KEY_FIELD)).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                .filter(entry -> entry.getKey().equals(CORRELATION_ID_FIELD) || entry.getKey()
+                        .equals(DATA_PRODUCT_FIELD)).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public static ScanRequest scanRequest(String tableName, String product, String exportDate, Map<String, AttributeValue> lastKeyEvaluatedKey) {
@@ -105,17 +109,29 @@ public class PipelineMetadataService {
 
     private static Map<String, String> nameMap() {
         Map<String, String> nameMap = new HashMap<>();
-        nameMap.put("#export_date", "Date");
-        nameMap.put("#product", "DataProduct");
+        nameMap.put("#export_date", DATE_FIELD);
+        nameMap.put("#product", DATA_PRODUCT_FIELD);
         return nameMap;
     }
 
     private static boolean hasFinished(String status) {
-        return status.equals(SUCCESSFUL_COMPLETION_STATUS) || status.equals(FAILED_COMPLETION_STATUS);
+        return hasSucceeded(status) || hasFailed(status);
+    }
+
+    private static boolean hasFailed(String status) {
+        return hasStatus(FAILED_COMPLETION_STATUS, status);
+    }
+
+    private static boolean hasSucceeded(String status) {
+        return hasStatus(SUCCESSFUL_COMPLETION_STATUS, status);
+    }
+
+    private static boolean hasStatus(String required, String status) {
+        return required.equalsIgnoreCase(status);
     }
 
     private static String itemString(Map<String, AttributeValue> item) {
-        return item.get(PARTITION_KEY_FIELD).getS() + "/" + item.get(SORT_KEY_FIELD).getS() + "/" + item.get(DATE_FIELD).getS();
+        return item.get(CORRELATION_ID_FIELD).getS() + "/" + item.get(DATA_PRODUCT_FIELD).getS() + "/" + item.get(DATE_FIELD).getS();
     }
 
     private static int pollIntervalSeconds() {
@@ -126,14 +142,15 @@ public class PipelineMetadataService {
         return Integer.parseInt(System.getProperty("poll.timeout.milliseconds", "3600000"));
     }
 
-    private final static String PARTITION_KEY_FIELD = "Correlation_Id";
-    private final static String SORT_KEY_FIELD = "DataProduct";
-    private final static String STATUS_FIELD = "Status";
-    private final static String DATE_FIELD = "Date";
+    public final static String CORRELATION_ID_FIELD = "Correlation_Id";
+    public final static String DATA_PRODUCT_FIELD = "DataProduct";
+    public final static String STATUS_FIELD = "Status";
+    public final static String DATE_FIELD = "Date";
+
     private final static String SUCCESSFUL_COMPLETION_STATUS = "Completed";
     private final static String FAILED_COMPLETION_STATUS = "Failed";
     private final AmazonDynamoDB dynamoDb;
     private CountDownLatch latch = new CountDownLatch(1);
-    private AtomicBoolean proceed = new AtomicBoolean(true);
+    private final AtomicBoolean proceed = new AtomicBoolean(true);
     private final static Logger logger = LoggerFactory.getLogger(PipelineMetadataService.class);
 }

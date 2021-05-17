@@ -11,7 +11,7 @@ import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
-import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.scanRequest;
+import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.*;
 
 class PipelineMetadataServiceTest {
 
@@ -206,16 +206,17 @@ class PipelineMetadataServiceTest {
 
     private Map<String, AttributeValue> itemKey() {
         Map<String, AttributeValue> successfulKey = new HashMap<>();
-        successfulKey.put("Correlation_Id", new AttributeValue().withS(CORRELATION_ID_1));
-        successfulKey.put("DataProduct", new AttributeValue().withS(PRODUCT_1));
+        successfulKey.put(CORRELATION_ID_FIELD, new AttributeValue().withS(CORRELATION_ID_1));
+        successfulKey.put(DATA_PRODUCT_FIELD, new AttributeValue().withS(PRODUCT_1));
         return successfulKey;
     }
 
     private Map<String, AttributeValue> tableItem(String correlationId, String status) {
         Map<String, AttributeValue> successfulItem = new HashMap<>();
-        successfulItem.put("Correlation_Id", new AttributeValue().withS(correlationId));
-        successfulItem.put("DataProduct", new AttributeValue().withS(PRODUCT_1));
-        successfulItem.put("Status", new AttributeValue().withS(status));
+        successfulItem.put(CORRELATION_ID_FIELD, new AttributeValue().withS(correlationId));
+        successfulItem.put(DATA_PRODUCT_FIELD, new AttributeValue().withS(PRODUCT_1));
+        successfulItem.put(STATUS_FIELD, new AttributeValue().withS(status));
+        successfulItem.put(DATE_FIELD, new AttributeValue().withS(EXPORT_DATE));
         return successfulItem;
     }
 

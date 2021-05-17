@@ -4,6 +4,7 @@ import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import org.apache.log4j.Logger;
+import uk.gov.dwp.dataworks.azkaban.domain.LambdaPayload;
 import uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService;
 import uk.gov.dwp.dataworks.azkaban.utility.AwsUtility;
 
@@ -12,6 +13,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 public class EmrLauncherJob extends AbstractProcessJob {
 
@@ -22,8 +24,21 @@ public class EmrLauncherJob extends AbstractProcessJob {
 
     @Override
     public void run() {
-        Optional<List<Map<String, AttributeValue>>> metadata =
-                pipelineMetadataService.successfulDependencies(metadataTableName(), exportDate(), dependencies());
+        completedDependencies().filter(xs -> xs.size() > 0).map(xs -> xs.get(0))
+                .map(LambdaPayload::from)
+                .ifPresent(xs -> {
+                    System.out.println("========================> '" + xs + "'");
+                });
+    }
+
+
+    @Override
+    public void cancel()  {
+        pipelineMetadataService.cancel();
+    }
+
+    private Optional<List<Map<String, AttributeValue>>> completedDependencies() {
+        return pipelineMetadataService.successfulDependencies(metadataTableName(), exportDate(), dependencies());
     }
 
     private String[] dependencies() {

@@ -14,7 +14,7 @@ public class App {
     public static void main(String[] args) {
         Props jobProperties = Props.of(
                 JOB_DEPENDENCIES_PARAMETER_NAME, "ADG-incremental",
-                EXPORT_DATE_PARAMETER_NAME, "2021-02-12");
+                EXPORT_DATE_PARAMETER_NAME, "2021-05-12");
         Props systemProperties = new Props();
         Logger jobLogger = Logger.getLogger(EmrLauncherJob.class);
         String jobId = "job-id";

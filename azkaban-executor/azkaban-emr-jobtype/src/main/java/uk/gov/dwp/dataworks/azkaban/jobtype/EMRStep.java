@@ -25,7 +25,7 @@ import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.amazonaws.services.logs.model.OutputLogEvent;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
-import uk.gov.dwp.dataworks.azkaban.utility.EMRUtility;
+import uk.gov.dwp.dataworks.azkaban.utility.EmrUtility;
 import uk.gov.dwp.dataworks.azkaban.utility.UserUtility;
 import uk.gov.dwp.dataworks.lambdas.EMRConfiguration;
 
@@ -313,7 +313,7 @@ public class EMRStep extends AbstractProcessJob {
     String clusterConfig = this.getJobProps().getString(AWS_EMR_CLUSTER_CONFIG);
     info("Looking for cluster named '" + clusterName + "'.");
     while(!killed && clusterId == null && maxAttempts > 0) {
-      List<ClusterSummary> clusters = EMRUtility.activeClusterSummaries(emr);
+      List<ClusterSummary> clusters = EmrUtility.activeClusterSummaries(emr);
       info("Found the following active clusters: " + clusters.stream().map(ClusterSummary::getId).collect(Collectors.joining(",")) + "'");
 
       for (ClusterSummary cluster : clusters) {
@@ -478,7 +478,7 @@ public class EMRStep extends AbstractProcessJob {
             List<String> steps = this.stepIds.stream().filter(Objects::nonNull).collect(Collectors.toList());
             if (steps.size() > 0) {
                 AmazonElasticMapReduce emr = emrClient();
-                EMRUtility.activeClusterId(emr, clusterName()).ifPresent(clusterId -> {
+                EmrUtility.activeClusterId(emr, clusterName()).ifPresent(clusterId -> {
                     info("Cancelling steps '" + steps + "' on clusterId: '" + clusterId + "'.");
                     CancelStepsResult result = emr.cancelSteps(getCancelStepsRequest(clusterId, steps));
                     result.getCancelStepsInfoList().forEach(cancelInfo -> info(
