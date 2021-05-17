@@ -35,21 +35,22 @@ public class CognitoUserManagerProxy implements UserManager {
         CognitoIdentityProviderClientBuilder builder = CognitoIdentityProviderClient.builder();
         builder = builder.region(Region.of(props.getString("aws.region", "eu-west-2")));
 
-        SdkHttpClient httpClient = ApacheHttpClient.builder().proxyConfiguration(
-                ProxyConfiguration.builder().useSystemPropertyValues(true).build()
-        ).build();
-
         if(props.containsKey("http.proxyHost") && props.containsKey("http.proxyPort")) {
-            LOGGER.info("Found proxy details.");
+            LOGGER.info("Using azkaban properties for proxy.");
             DefaultProxyRoutePlanner planner = new DefaultProxyRoutePlanner(new HttpHost(props.getString("http.proxyHost"), props.getInt("http.proxyPort")));
-            httpClient = ApacheHttpClient.builder()
+            SdkHttpClient httpClient = ApacheHttpClient.builder()
                     .httpRoutePlanner(planner)
                     .build();
+            builder = builder.httpClient(httpClient);
+        } else {
+            LOGGER.info("Using system properties for proxy.");
+            SdkHttpClient httpClient = ApacheHttpClient.builder().proxyConfiguration(
+                    ProxyConfiguration.builder().useSystemPropertyValues(true).build()
+            ).build();
+            builder = builder.httpClient(httpClient);
         }
 
-        builder = builder.httpClient(httpClient);
         this.identityProvider = builder.build();
-
         this.authHelper = new AuthenticationHelper(props.getString("cognito.userPoolName"));
     }
 
