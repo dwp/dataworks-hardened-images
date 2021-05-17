@@ -2,12 +2,13 @@ package uk.gov.dwp.dataworks.azkaban.authentication;
 
 import azkaban.user.*;
 import azkaban.utils.Props;
-
+import org.apache.http.HttpHost;
+import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClientBuilder;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 
 import javax.crypto.Mac;
@@ -27,21 +28,23 @@ public class CognitoUserManagerProxy implements UserManager {
 
     public CognitoUserManagerProxy(final Props props) {
         this.props = props;
+        CognitoIdentityProviderClientBuilder builder = CognitoIdentityProviderClient.builder();
 
-        SdkHttpClient httpClient = ApacheHttpClient.builder()
-                .proxyConfiguration(
-                        ProxyConfiguration.builder()
-                                .useSystemPropertyValues(true).build())
-                .build();
+        SdkHttpClient httpClient = ApacheHttpClient.builder().proxyConfiguration(
+                ProxyConfiguration.builder().useSystemPropertyValues(true).build()
+        ).build();
 
-        this.identityProvider = CognitoIdentityProviderClient.builder()
-                .region(Region.of(props.getString("aws.region", "EU-WEST-2")))
-                .httpClient(httpClient)
-                .build();
+        if(props.containsKey("http.proxyHost") && props.containsKey("http.proxyPort")) {
+            LOGGER.info("Found proxy details.");
+            DefaultProxyRoutePlanner planner = new DefaultProxyRoutePlanner(new HttpHost(props.getString("http.proxyHost"), props.getInt("http.proxyPort")));
+            httpClient = ApacheHttpClient.builder()
+                    .httpRoutePlanner(planner)
+                    .build();
+            builder.httpClient(httpClient);
+        }
 
-        this.identityProvider = CognitoIdentityProviderClient.builder()
-                .region(Region.of(props.getString("aws.region", "EU-WEST-2")))
-                .build();
+        builder.httpClient(httpClient);
+        this.identityProvider = builder.build();
         this.authHelper = new AuthenticationHelper(props.getString("cognito.userPoolName"));
     }
 
