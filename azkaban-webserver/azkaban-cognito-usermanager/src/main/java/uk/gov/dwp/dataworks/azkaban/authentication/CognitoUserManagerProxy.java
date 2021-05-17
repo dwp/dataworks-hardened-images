@@ -9,6 +9,7 @@ import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
 
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClientBuilder;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
@@ -32,6 +33,7 @@ public class CognitoUserManagerProxy implements UserManager {
         this.props = props;
 
         CognitoIdentityProviderClientBuilder builder = CognitoIdentityProviderClient.builder();
+        builder = builder.region(Region.of(props.getString("aws.region", "eu-west-2")));
 
         SdkHttpClient httpClient = ApacheHttpClient.builder().proxyConfiguration(
                 ProxyConfiguration.builder().useSystemPropertyValues(true).build()
@@ -45,7 +47,7 @@ public class CognitoUserManagerProxy implements UserManager {
                     .build();
         }
 
-        builder.httpClient(httpClient);
+        builder = builder.httpClient(httpClient);
         this.identityProvider = builder.build();
 
         this.authHelper = new AuthenticationHelper(props.getString("cognito.userPoolName"));
