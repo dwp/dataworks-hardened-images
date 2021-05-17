@@ -2,11 +2,13 @@ package uk.gov.dwp.dataworks.azkaban.authentication;
 
 import azkaban.user.*;
 import azkaban.utils.Props;
+
 import org.apache.http.HttpHost;
 import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
+
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClientBuilder;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
@@ -28,6 +30,7 @@ public class CognitoUserManagerProxy implements UserManager {
 
     public CognitoUserManagerProxy(final Props props) {
         this.props = props;
+
         CognitoIdentityProviderClientBuilder builder = CognitoIdentityProviderClient.builder();
 
         SdkHttpClient httpClient = ApacheHttpClient.builder().proxyConfiguration(
@@ -40,11 +43,11 @@ public class CognitoUserManagerProxy implements UserManager {
             httpClient = ApacheHttpClient.builder()
                     .httpRoutePlanner(planner)
                     .build();
-            builder.httpClient(httpClient);
         }
 
         builder.httpClient(httpClient);
         this.identityProvider = builder.build();
+
         this.authHelper = new AuthenticationHelper(props.getString("cognito.userPoolName"));
     }
 
