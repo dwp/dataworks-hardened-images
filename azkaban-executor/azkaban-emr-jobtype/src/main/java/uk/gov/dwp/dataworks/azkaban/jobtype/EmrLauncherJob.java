@@ -5,6 +5,7 @@ import azkaban.utils.Props;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import org.apache.log4j.Logger;
 import uk.gov.dwp.dataworks.azkaban.domain.LambdaPayload;
+import uk.gov.dwp.dataworks.azkaban.services.LambdaService;
 import uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService;
 import uk.gov.dwp.dataworks.azkaban.utility.AwsUtility;
 
@@ -20,14 +21,15 @@ public class EmrLauncherJob extends AbstractProcessJob {
     public EmrLauncherJob(String jobId, Props sysProps, Props jobProps, Logger log) {
         super(jobId, sysProps, jobProps, log);
         this.pipelineMetadataService = new PipelineMetadataService(AwsUtility.amazonDynamoDb(awsRegion()));
+//        this.lambdaService = new PipelineMetadataService(AwsUtility.amazonDynamoDb(awsRegion()));
     }
 
     @Override
     public void run() {
         completedDependencies().filter(xs -> xs.size() > 0).map(xs -> xs.get(0))
                 .map(LambdaPayload::from)
-                .ifPresent(xs -> {
-                    System.out.println("========================> '" + xs + "'");
+                .ifPresent(x -> {
+                    System.out.println("========================> '" + x + "'");
                 });
     }
 
@@ -61,4 +63,5 @@ public class EmrLauncherJob extends AbstractProcessJob {
     public final static String EXPORT_DATE_PARAMETER_NAME = "export.date";
     public final static String METADATA_TABLE_PARAMETER_NAME = "pipeline.metadata.table";
     private final PipelineMetadataService pipelineMetadataService;
+//    private final LambdaService lambdaService;
 }

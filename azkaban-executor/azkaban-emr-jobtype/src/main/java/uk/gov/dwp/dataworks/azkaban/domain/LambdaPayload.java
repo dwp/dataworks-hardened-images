@@ -4,7 +4,7 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.Objects;
 
 import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.CORRELATION_ID_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATE_FIELD;
@@ -23,6 +23,22 @@ public class LambdaPayload {
     public String toString() {
         return "LambdaPayload{" + "correlationId='" + correlationId + '\'' + ", prefix='" + prefix + '\''
                 + ", snapshotType='" + snapshotType + '\'' + ", exportDate='" + exportDate + '\'' + '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        LambdaPayload that = (LambdaPayload) o;
+        return correlationId.equals(that.correlationId) && prefix.equals(that.prefix) && snapshotType
+                .equals(that.snapshotType) && exportDate.equals(that.exportDate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(correlationId, prefix, snapshotType, exportDate);
     }
 
     private LambdaPayload(String correlationId, String prefix, String snapshotType, String exportDate) {
