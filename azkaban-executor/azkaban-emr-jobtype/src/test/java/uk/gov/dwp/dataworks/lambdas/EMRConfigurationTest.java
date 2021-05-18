@@ -34,4 +34,14 @@ class EMRConfigurationTest {
         JsonAssertions.assertThatJson(event)
                 .isEqualTo("{\"overrides\":{\"Name\":\"test_name\"},\"s3_overrides\":{\"emr_launcher_config_s3_folder\":\"test/config_path\"}}");
     }
+
+    @Test
+    public void hasCorrectJsonStructureNameAndConfigLocationWhenNull() throws IOException {
+        EMRConfiguration test = EMRConfiguration.builder().withName("test_name").withS3Overrides(null).build();
+        ObjectMapper mapper = new ObjectMapper();
+        String event = mapper.writeValueAsString(test);
+
+        JsonAssertions.assertThatJson(event)
+                .isEqualTo("{\"overrides\":{\"Name\":\"test_name\"}}");
+    }
 }
