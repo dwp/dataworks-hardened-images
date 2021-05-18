@@ -4,9 +4,6 @@ import azkaban.utils.Props;
 import org.apache.log4j.Logger;
 import uk.gov.dwp.dataworks.azkaban.jobtype.EmrLauncherJob;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 import static uk.gov.dwp.dataworks.azkaban.jobtype.EmrLauncherJob.*;
 
 public class App {

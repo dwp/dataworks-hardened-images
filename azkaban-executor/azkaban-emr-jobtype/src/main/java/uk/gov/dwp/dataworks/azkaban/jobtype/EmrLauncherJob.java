@@ -4,9 +4,10 @@ import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import org.apache.log4j.Logger;
-import uk.gov.dwp.dataworks.azkaban.domain.InvocationResult;
 import uk.gov.dwp.dataworks.azkaban.domain.InvocationPayload;
+import uk.gov.dwp.dataworks.azkaban.domain.InvocationResult;
 import uk.gov.dwp.dataworks.azkaban.services.EmrLauncherLambdaService;
+import uk.gov.dwp.dataworks.azkaban.services.EmrProgressService;
 import uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService;
 import uk.gov.dwp.dataworks.azkaban.utility.AwsUtility;
 
@@ -23,14 +24,16 @@ public class EmrLauncherJob extends AbstractProcessJob {
         this.pipelineMetadataService = new PipelineMetadataService(AwsUtility.amazonDynamoDb(awsRegion()));
         this.emrLauncherLambdaService = new EmrLauncherLambdaService(AwsUtility.amazonLambda(awsRegion()),
                 jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
+        this.emrProgressService = new EmrProgressService(AwsUtility.amazonElasticMapReduce(awsRegion()));
     }
 
     @Override
     public void run() {
-        dependencyMetadata()
-                .flatMap(emrLauncherLambdaService::invokeEmrLauncher)
-                .filter(InvocationResult::wasSuccessful)
-                .ifPresent(x -> System.out.println("================================> '" + x + "'"));
+//        dependencyMetadata()
+//                .flatMap(emrLauncherLambdaService::invokeEmrLauncher)
+//                .filter(InvocationResult::wasSuccessful)
+//                .map(InvocationResult::getClusterId)
+//                .ifPresent(emrProgressService::observeEmr);
     }
 
     private Optional<InvocationPayload> dependencyMetadata() {
@@ -40,6 +43,8 @@ public class EmrLauncherJob extends AbstractProcessJob {
     @Override
     public void cancel() {
         pipelineMetadataService.cancel();
+        emrLauncherLambdaService.cancel();
+        emrProgressService.cancel();
     }
 
     private Optional<List<Map<String, AttributeValue>>> completedDependencies() {
@@ -64,6 +69,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
 
     private final PipelineMetadataService pipelineMetadataService;
     private final EmrLauncherLambdaService emrLauncherLambdaService;
+    private final EmrProgressService emrProgressService;
     public final static String JOB_DEPENDENCIES_PARAMETER_NAME = "job.dependencies";
     public final static String EXPORT_DATE_PARAMETER_NAME = "export.date";
     public final static String METADATA_TABLE_PARAMETER_NAME = "pipeline.metadata.table";

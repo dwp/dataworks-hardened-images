@@ -18,14 +18,14 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.CORRELATION_ID_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATE_FIELD;
 
 class EmrLauncherLambdaServiceTest {
 
     @Test
-    public void returnsPresentIfRequestSuccessful() throws JsonProcessingException {
+    public void shouldReturnPresentIfRequestSuccessful() throws JsonProcessingException {
         AWSLambda lambda = mock(AWSLambda.class);
         InvocationResultMetadata metadata = new InvocationResultMetadata();
         metadata.setStatusCode(200);
@@ -41,7 +41,7 @@ class EmrLauncherLambdaServiceTest {
     }
 
     @Test
-    public void returnsEmptyIfRequestThrowsError() throws JsonProcessingException {
+    public void shouldReturnPresentIfRequestUnsuccessful() throws JsonProcessingException {
         AWSLambda lambda = mock(AWSLambda.class);
         InvocationResultMetadata metadata = new InvocationResultMetadata();
         metadata.setStatusCode(500);
@@ -49,9 +49,35 @@ class EmrLauncherLambdaServiceTest {
         result.setMetadata(metadata);
         InvokeResult invokeResult = new InvokeResult();
         invokeResult.setPayload(ByteBuffer.wrap(new ObjectMapper().writeValueAsBytes(result)));
+        given(lambda.invoke(any())).willReturn(invokeResult);
+        EmrLauncherLambdaService service = new EmrLauncherLambdaService(lambda, LAMBDA_NAME);
+        Optional<InvocationResult> optionalResult = service.invokeEmrLauncher(payload());
+        assertTrue(optionalResult.isPresent());
+        optionalResult.ifPresent(x -> assertEquals(result, x));
+    }
+
+    @Test
+    public void shouldReturnEmptyIfRequestThrowsError() throws JsonProcessingException {
+        AWSLambda lambda = mock(AWSLambda.class);
+        InvocationResultMetadata metadata = new InvocationResultMetadata();
+        InvocationResult result = new InvocationResult();
+        metadata.setStatusCode(500);
+        result.setMetadata(metadata);
+        InvokeResult invokeResult = new InvokeResult();
+        invokeResult.setPayload(ByteBuffer.wrap(new ObjectMapper().writeValueAsBytes(result)));
         given(lambda.invoke(any())).willThrow(new RuntimeException("FAILED"));
         EmrLauncherLambdaService service = new EmrLauncherLambdaService(lambda, LAMBDA_NAME);
         Optional<InvocationResult> optionalResult = service.invokeEmrLauncher(payload());
+        assertTrue(optionalResult.isEmpty());
+    }
+
+    @Test
+    public void shouldReturnEmptyIfCancelled() {
+        AWSLambda lambda = mock(AWSLambda.class);
+        EmrLauncherLambdaService service = new EmrLauncherLambdaService(lambda, LAMBDA_NAME);
+        service.cancel();
+        Optional<InvocationResult> optionalResult = service.invokeEmrLauncher(payload());
+        verifyNoInteractions(lambda);
         assertTrue(optionalResult.isEmpty());
     }
 

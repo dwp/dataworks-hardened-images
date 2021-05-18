@@ -13,7 +13,7 @@ import uk.gov.dwp.dataworks.azkaban.domain.InvocationResult;
 
 import java.util.Optional;
 
-public class EmrLauncherLambdaService {
+public class EmrLauncherLambdaService extends AbstractCancellableService {
 
     public EmrLauncherLambdaService(final AWSLambda awsLambda, final String functionName) {
         this.awsLambda = awsLambda;
@@ -22,9 +22,14 @@ public class EmrLauncherLambdaService {
 
     public Optional<InvocationResult> invokeEmrLauncher(final InvocationPayload payload) {
         try {
-            InvokeResult result = awsLambda.invoke(invokeRequest(payload));
-            String resultPayload = new String(result.getPayload().array());
-            return Optional.of(new ObjectMapper().readValue(resultPayload, InvocationResult.class));
+            if (proceed.get()) {
+                InvokeResult result = awsLambda.invoke(invokeRequest(payload));
+                String resultPayload = new String(result.getPayload().array());
+                return Optional.of(new ObjectMapper().readValue(resultPayload, InvocationResult.class));
+            } else {
+                logger.warn("Not invoking lambda, due to cancellation.");
+                return Optional.empty();
+            }
         } catch (Exception e) {
             logger.error("Failed to invoke lambda launcher, function: " + functionName + "', payload: '" + payload
                     + "', message: '" + e.getMessage() + "'.", e);

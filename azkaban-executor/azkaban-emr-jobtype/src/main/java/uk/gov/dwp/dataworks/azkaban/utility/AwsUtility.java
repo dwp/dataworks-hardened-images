@@ -5,6 +5,8 @@ import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.client.builder.AwsSyncClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
+import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClientBuilder;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
@@ -16,15 +18,15 @@ import com.amazonaws.services.securitytoken.model.Credentials;
 public class AwsUtility {
 
     public static AmazonDynamoDB amazonDynamoDb(String region) {
-        return "true".equals(System.getenv("AWS_USE_DEVELOPMENT_REMOTELY")) ?
-                assumedRoleDynamoDbClient(region) :
-                dynamoDbClient(region);
+        return useDevEnvironmentRemotely() ? assumedRoleDynamoDbClient(region) : dynamoDbClient(region);
     }
 
     public static AWSLambda amazonLambda(String region) {
-        return "true".equals(System.getenv("AWS_USE_DEVELOPMENT_REMOTELY")) ?
-                assumedRoleLambdaClient(region) :
-                lambdaClient(region);
+        return useDevEnvironmentRemotely() ? assumedRoleLambdaClient(region) : lambdaClient(region);
+    }
+
+    public static AmazonElasticMapReduce amazonElasticMapReduce(String region) {
+        return useDevEnvironmentRemotely() ? assumedRoleEmrClient(region) : emrClient(region);
     }
 
     private static AmazonDynamoDB dynamoDbClient(String region) {
@@ -43,6 +45,14 @@ public class AwsUtility {
         return assumedRoleClientBuilder(AWSLambdaClientBuilder.standard(), region);
     }
 
+    private static AmazonElasticMapReduce emrClient(String region) {
+        return AmazonElasticMapReduceClientBuilder.standard().withRegion(region).build();
+    }
+
+    private static AmazonElasticMapReduce assumedRoleEmrClient(String region) {
+        return assumedRoleClientBuilder(AmazonElasticMapReduceClientBuilder.standard(), region);
+    }
+
     private static <B extends AwsSyncClientBuilder<B, C>, C> C assumedRoleClientBuilder(B builder, String region) {
         Credentials credentials = credentials(region);
         return builder.withRegion(region).withCredentials(new AWSStaticCredentialsProvider(
@@ -56,5 +66,9 @@ public class AwsUtility {
         AWSSecurityTokenService client = AWSSecurityTokenServiceClientBuilder.standard().withRegion(region).build();
         AssumeRoleResult result = client.assumeRole(roleRequest);
         return result.getCredentials();
+    }
+
+    private static boolean useDevEnvironmentRemotely() {
+        return "true".equals(System.getenv("AWS_USE_DEVELOPMENT_REMOTELY"));
     }
 }

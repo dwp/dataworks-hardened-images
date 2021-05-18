@@ -10,7 +10,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class PipelineMetadataService {
+public class PipelineMetadataService extends AbstractCancellableService {
 
     public PipelineMetadataService(final AmazonDynamoDB dynamoDB) {
         this.dynamoDb = dynamoDB;
@@ -18,15 +18,13 @@ public class PipelineMetadataService {
 
     public Optional<List<Map<String, AttributeValue>>> successfulDependencies(final String tableName, final String exportDate,
             final String ... products) {
-        boolean wtf = dependenciesSucceeded(tableName, dependenciesMetadata(tableName, exportDate, products));
-        System.out.println("WTF: " + wtf);
-        return proceed.get() && wtf ?
+        return proceed.get() && dependenciesSucceeded(tableName, dependenciesMetadata(tableName, exportDate, products)) ?
             Optional.of(dependenciesMetadata(tableName, exportDate, products)): Optional.empty();
     }
 
+    @Override
     public void cancel() {
-        logger.warn("Operation has been cancelled");
-        this.proceed.set(false);
+        super.cancel();
         this.latch.countDown();
     }
 
@@ -57,8 +55,8 @@ public class PipelineMetadataService {
             final ScheduledExecutorService timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
             timeoutExecutor.schedule(latch::countDown, pollTimeoutSeconds(), TimeUnit.MILLISECONDS);
             latch.await();
-            timeoutExecutor.shutdownNow();
-            dependencyCheckExecutor.shutdownNow();
+            timeoutExecutor.shutdown();
+            dependencyCheckExecutor.shutdown();
             return Optional.of(succeeded.get());
         } catch (InterruptedException e) {
             logger.error("Failed to check dependency '" + tableName + "', item: '" + item + "'", e);
