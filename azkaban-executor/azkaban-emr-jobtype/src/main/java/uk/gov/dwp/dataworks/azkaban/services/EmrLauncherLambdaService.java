@@ -23,7 +23,9 @@ public class EmrLauncherLambdaService extends AbstractCancellableService {
     public Optional<InvocationResult> invokeEmrLauncher(final InvocationPayload payload) {
         try {
             if (proceed.get()) {
+                logger.info("Invoking lambda '" + functionName + "', payload: '" + payload + "'");
                 InvokeResult result = awsLambda.invoke(invokeRequest(payload));
+                logger.info("Invoked lambda '" + functionName + "', payload: '" + payload + "', result: '" + result + "'");
                 String resultPayload = new String(result.getPayload().array());
                 return Optional.of(new ObjectMapper().readValue(resultPayload, InvocationResult.class));
             } else {

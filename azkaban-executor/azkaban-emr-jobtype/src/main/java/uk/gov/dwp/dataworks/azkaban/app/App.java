@@ -11,7 +11,8 @@ public class App {
         Props jobProperties = Props.of(
                 JOB_DEPENDENCIES_PARAMETER_NAME, "ADG-incremental",
                 EXPORT_DATE_PARAMETER_NAME, "2021-05-12",
-                EMR_LAUNCHER_LAMBDA_PARAMETER_NAME, "aws_clive_emr_launcher");
+                EMR_LAUNCHER_LAMBDA_PARAMETER_NAME, "aws_clive_emr_launcher",
+                AWS_LOG_GROUP_NAME, "/app/aws_clive/step_logs");
 
         Props systemProperties = new Props();
         Logger jobLogger = Logger.getLogger(EmrLauncherJob.class);

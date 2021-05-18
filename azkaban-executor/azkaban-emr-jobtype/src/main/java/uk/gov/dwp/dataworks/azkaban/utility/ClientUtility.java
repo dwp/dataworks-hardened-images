@@ -9,13 +9,20 @@ import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClientBuilder;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
+import com.amazonaws.services.logs.AWSLogs;
+import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
 import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
 import com.amazonaws.services.securitytoken.model.Credentials;
 
-public class AwsUtility {
+public class ClientUtility {
+
+    public static AWSLogs amazonLogsClient(String region) {
+        return useDevEnvironmentRemotely() ? assumedRoleLogsClient(region) : logsClient(region);
+    }
+
 
     public static AmazonDynamoDB amazonDynamoDb(String region) {
         return useDevEnvironmentRemotely() ? assumedRoleDynamoDbClient(region) : dynamoDbClient(region);
@@ -35,6 +42,14 @@ public class AwsUtility {
 
     private static AmazonDynamoDB assumedRoleDynamoDbClient(String region) {
         return assumedRoleClientBuilder(AmazonDynamoDBClientBuilder.standard(), region);
+    }
+
+    private static AWSLogs logsClient(String region) {
+        return AWSLogsClientBuilder.standard().withRegion(region).build();
+    }
+
+    private static AWSLogs assumedRoleLogsClient(String region) {
+        return assumedRoleClientBuilder(AWSLogsClientBuilder.standard(), region);
     }
 
     private static AWSLambda lambdaClient(String region) {

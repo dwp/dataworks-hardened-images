@@ -9,7 +9,7 @@ import uk.gov.dwp.dataworks.azkaban.domain.InvocationResult;
 import uk.gov.dwp.dataworks.azkaban.services.EmrLauncherLambdaService;
 import uk.gov.dwp.dataworks.azkaban.services.EmrProgressService;
 import uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService;
-import uk.gov.dwp.dataworks.azkaban.utility.AwsUtility;
+import uk.gov.dwp.dataworks.azkaban.utility.ClientUtility;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -21,14 +21,20 @@ public class EmrLauncherJob extends AbstractProcessJob {
 
     public EmrLauncherJob(final String jobId, final Props sysProps, final Props jobProps, final Logger log) {
         super(jobId, sysProps, jobProps, log);
-        this.pipelineMetadataService = new PipelineMetadataService(AwsUtility.amazonDynamoDb(awsRegion()));
-        this.emrLauncherLambdaService = new EmrLauncherLambdaService(AwsUtility.amazonLambda(awsRegion()),
+        this.pipelineMetadataService = new PipelineMetadataService(ClientUtility.amazonDynamoDb(awsRegion()));
+        this.emrLauncherLambdaService = new EmrLauncherLambdaService(ClientUtility.amazonLambda(awsRegion()),
                 jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
-        this.emrProgressService = new EmrProgressService(AwsUtility.amazonElasticMapReduce(awsRegion()));
+
+        String logGroup = this.getJobProps().getString(AWS_LOG_GROUP_NAME, "/aws/emr/azkaban");
+
+        this.emrProgressService = new EmrProgressService(ClientUtility.amazonElasticMapReduce(awsRegion()),
+                ClientUtility.amazonLogsClient(awsRegion()),
+                logGroup);
     }
 
     @Override
     public void run() {
+        emrProgressService.observeEmr("j-2JE1DZ31QZQ1I");
 //        dependencyMetadata()
 //                .flatMap(emrLauncherLambdaService::invokeEmrLauncher)
 //                .filter(InvocationResult::wasSuccessful)
@@ -74,4 +80,5 @@ public class EmrLauncherJob extends AbstractProcessJob {
     public final static String EXPORT_DATE_PARAMETER_NAME = "export.date";
     public final static String METADATA_TABLE_PARAMETER_NAME = "pipeline.metadata.table";
     public final static String EMR_LAUNCHER_LAMBDA_PARAMETER_NAME = "emr.launcher.lambda";
+    public static final String AWS_LOG_GROUP_NAME = "aws.log.group.name";
 }

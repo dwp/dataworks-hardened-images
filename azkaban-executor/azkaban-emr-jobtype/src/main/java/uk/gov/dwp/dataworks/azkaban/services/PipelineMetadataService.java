@@ -50,7 +50,7 @@ public class PipelineMetadataService extends AbstractCancellableService {
             final AtomicBoolean succeeded = new AtomicBoolean(false);
             final ScheduledExecutorService dependencyCheckExecutor = Executors.newSingleThreadScheduledExecutor();
             this.latch = new CountDownLatch(1);
-            dependencyCheckExecutor.scheduleAtFixedRate(() -> checkDependency(tableName, item, succeeded), 0,
+            dependencyCheckExecutor.scheduleWithFixedDelay(() -> checkDependency(tableName, item, succeeded), 0,
                     pollIntervalSeconds(), TimeUnit.MILLISECONDS);
             final ScheduledExecutorService timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
             timeoutExecutor.schedule(latch::countDown, pollTimeoutSeconds(), TimeUnit.MILLISECONDS);
