@@ -111,6 +111,7 @@ class PipelineMetadataServiceTest {
         PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
         Optional<List<Map<String, AttributeValue>>> successes = metadataService
                 .successfulDependencies(METADATA_TABLE, EXPORT_DATE, PRODUCT_1);
+        System.out.println(successes);
         assertFalse(successes.isPresent());
     }
 

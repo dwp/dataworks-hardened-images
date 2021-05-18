@@ -1,16 +1,19 @@
 package uk.gov.dwp.dataworks.azkaban.domain;
 
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.CORRELATION_ID_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATE_FIELD;
 
-class LambdaPayloadTest {
+class InvocationPayloadTest {
 
     @Test
     public void shouldUseValuesIfKeysPresent() {
@@ -18,7 +21,7 @@ class LambdaPayloadTest {
         from.put(CORRELATION_ID_FIELD, attributeValue(CORRELATION_ID_VALUE));
         from.put(SNAPSHOT_TYPE_KEY, attributeValue(SNAPSHOT_TYPE_VALUE));
         from.put(DATE_FIELD, attributeValue(DATE_VALUE));
-        LambdaPayload payload = LambdaPayload.from(from);
+        InvocationPayload payload = InvocationPayload.from(from);
         assertEquals(CORRELATION_ID_VALUE, payload.getCorrelationId());
         assertEquals(SNAPSHOT_TYPE_VALUE, payload.getSnapshotType());
         assertEquals(DATE_VALUE, payload.getExportDate());
@@ -27,7 +30,7 @@ class LambdaPayloadTest {
     @Test
     public void shouldUseDefaultsIfKeysNotPresent() {
         Map<String, AttributeValue> from = new HashMap<>();
-        LambdaPayload payload = LambdaPayload.from(from);
+        InvocationPayload payload = InvocationPayload.from(from);
         assertEquals(DEFAULT_VALUE, payload.getCorrelationId());
         assertEquals(DEFAULT_VALUE, payload.getSnapshotType());
         assertEquals(DEFAULT_VALUE, payload.getPrefix());
@@ -36,12 +39,23 @@ class LambdaPayloadTest {
     }
 
     @Test
+    public void shouldRenameKeysWhenSerialized() throws IOException {
+        Map<String, AttributeValue> from = new HashMap<>();
+        String payload = new ObjectMapper().writeValueAsString(InvocationPayload.from(from));
+        Map<String, String> payloadMap = new ObjectMapper().readValue(payload, Map.class);
+        assertTrue(payloadMap.containsKey("correlation_id"));
+        assertTrue(payloadMap.containsKey("export_date"));
+        assertTrue(payloadMap.containsKey("snapshot_type"));
+        assertTrue(payloadMap.containsKey("s3_prefix"));
+    }
+
+    @Test
     public void shouldUseAnalyticalDataSetPrefixIfPresent() {
         Map<String, AttributeValue> from = new HashMap<>();
         from.put(ANALYTICAL_DATASET_PREFIX_KEY, attributeValue(ANALYTICAL_DATASET_PREFIX_VALUE));
         from.put(S3_PREFIX_KEY, attributeValue(S3_PREFIX_VALUE));
         from.put(S3_SNAPSHOTS_PREFIX_KEY, attributeValue(S3_SNAPSHOTS_PREFIX_VALUE));
-        LambdaPayload payload = LambdaPayload.from(from);
+        InvocationPayload payload = InvocationPayload.from(from);
         assertEquals(ANALYTICAL_DATASET_PREFIX_VALUE, payload.getPrefix());
     }
 
@@ -50,7 +64,7 @@ class LambdaPayloadTest {
         Map<String, AttributeValue> from = new HashMap<>();
         from.put(S3_PREFIX_KEY, attributeValue(S3_PREFIX_VALUE));
         from.put(S3_SNAPSHOTS_PREFIX_KEY, attributeValue(S3_SNAPSHOTS_PREFIX_VALUE));
-        LambdaPayload payload = LambdaPayload.from(from);
+        InvocationPayload payload = InvocationPayload.from(from);
         assertEquals(S3_PREFIX_VALUE, payload.getPrefix());
     }
 
@@ -58,7 +72,7 @@ class LambdaPayloadTest {
     public void shouldUseS3SnapshotPrefixIfNoOtherPrefixPresent() {
         Map<String, AttributeValue> from = new HashMap<>();
         from.put(S3_SNAPSHOTS_PREFIX_KEY, attributeValue(S3_SNAPSHOTS_PREFIX_VALUE));
-        LambdaPayload payload = LambdaPayload.from(from);
+        InvocationPayload payload = InvocationPayload.from(from);
         assertEquals(S3_SNAPSHOTS_PREFIX_VALUE, payload.getPrefix());
     }
 

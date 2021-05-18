@@ -12,13 +12,16 @@ import java.util.stream.Collectors;
 
 public class PipelineMetadataService {
 
-    public PipelineMetadataService(AmazonDynamoDB dynamoDB) {
+    public PipelineMetadataService(final AmazonDynamoDB dynamoDB) {
         this.dynamoDb = dynamoDB;
     }
 
-    public Optional<List<Map<String, AttributeValue>>> successfulDependencies(String tableName, String exportDate, String ... products) {
-        return proceed.get() && dependenciesSucceeded(tableName, dependenciesMetadata(tableName, exportDate, products)) ?
-            Optional.of(dependenciesMetadata(tableName, exportDate, products)) : Optional.empty();
+    public Optional<List<Map<String, AttributeValue>>> successfulDependencies(final String tableName, final String exportDate,
+            final String ... products) {
+        boolean wtf = dependenciesSucceeded(tableName, dependenciesMetadata(tableName, exportDate, products));
+        System.out.println("WTF: " + wtf);
+        return proceed.get() && wtf ?
+            Optional.of(dependenciesMetadata(tableName, exportDate, products)): Optional.empty();
     }
 
     public void cancel() {
@@ -27,7 +30,8 @@ public class PipelineMetadataService {
         this.latch.countDown();
     }
 
-    private List<Map<String, AttributeValue>> dependenciesMetadata(String tableName, String exportDate, String ... products) {
+    private List<Map<String, AttributeValue>> dependenciesMetadata(final String tableName, final String exportDate,
+            final String ... products) {
         return Arrays.stream(products).map(product -> dependenciesMetadata(tableName, product, exportDate))
                 .reduce(new ArrayList<>(), (accumulation, next) -> {
                     accumulation.addAll(next);
@@ -35,11 +39,15 @@ public class PipelineMetadataService {
                 });
     }
 
-    private boolean dependenciesSucceeded(String tableName, List<Map<String, AttributeValue>> items) {
-        return items.stream().map(item -> completedSuccessfully(tableName, item)).filter(x -> !x).findFirst().orElse(true);
+    private Boolean dependenciesSucceeded(final String tableName, final List<Map<String, AttributeValue>> items) {
+        return items.stream()
+                .map(item -> completedSuccessfully(tableName, item))
+                .filter(x -> !x.isPresent() || !x.get())
+                .map(Optional::get)
+                .reduce(true, (acc, next) -> acc && next);
     }
 
-    private boolean completedSuccessfully(String tableName, Map<String, AttributeValue> item) {
+    private Optional<Boolean> completedSuccessfully(final String tableName, final Map<String, AttributeValue> item) {
         try {
             final AtomicBoolean succeeded = new AtomicBoolean(false);
             final ScheduledExecutorService dependencyCheckExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -51,13 +59,14 @@ public class PipelineMetadataService {
             latch.await();
             timeoutExecutor.shutdownNow();
             dependencyCheckExecutor.shutdownNow();
-            return succeeded.get();
+            return Optional.of(succeeded.get());
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            logger.error("Failed to check dependency '" + tableName + "', item: '" + item + "'", e);
+            return Optional.empty();
         }
     }
 
-    private void checkDependency(String tableName, Map<String, AttributeValue> item, AtomicBoolean succeeded) {
+    private void checkDependency(final String tableName, final Map<String, AttributeValue> item, final AtomicBoolean succeeded) {
         try {
             logger.info("Checking '" + itemString(item) + "'");
             GetItemRequest request = new GetItemRequest().withTableName(tableName).withKey(primaryKey(item));
@@ -74,8 +83,9 @@ public class PipelineMetadataService {
         }
     }
 
-    private List<Map<String, AttributeValue>> dependenciesMetadata(String tableName, String product, String exportDate) {
-        List<Map<String, AttributeValue>> results = new ArrayList<>();
+    private List<Map<String, AttributeValue>> dependenciesMetadata(final String tableName, final String product,
+            final String exportDate) {
+        final List<Map<String, AttributeValue>> results = new ArrayList<>();
         Map<String, AttributeValue> lastKeyEvaluatedKey = null;
         do {
             ScanRequest request = scanRequest(tableName, product, exportDate, lastKeyEvaluatedKey);
@@ -87,20 +97,21 @@ public class PipelineMetadataService {
         return results;
     }
 
-    private static Map<String, AttributeValue> primaryKey(Map<String, AttributeValue> item) {
+    private static Map<String, AttributeValue> primaryKey(final Map<String, AttributeValue> item) {
         return item.entrySet().stream()
                 .filter(entry -> entry.getKey().equals(CORRELATION_ID_FIELD) || entry.getKey()
                         .equals(DATA_PRODUCT_FIELD)).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    public static ScanRequest scanRequest(String tableName, String product, String exportDate, Map<String, AttributeValue> lastKeyEvaluatedKey) {
+    public static ScanRequest scanRequest(final String tableName, final String product, final String exportDate,
+            final Map<String, AttributeValue> lastKeyEvaluatedKey) {
         return new ScanRequest().withTableName(tableName)
                 .withFilterExpression("#product = :product and #export_date = :export_date")
                 .withExclusiveStartKey(lastKeyEvaluatedKey).withExpressionAttributeNames(nameMap())
                 .withExpressionAttributeValues(valueMap(product, exportDate));
     }
 
-    private static Map<String, AttributeValue> valueMap(String product, String exportDate) {
+    private static Map<String, AttributeValue> valueMap(final String product, final String exportDate) {
         Map<String, AttributeValue> valueMap = new HashMap<>();
         valueMap.put(":export_date", new AttributeValue().withS(exportDate));
         valueMap.put(":product", new AttributeValue().withS(product));
@@ -114,23 +125,23 @@ public class PipelineMetadataService {
         return nameMap;
     }
 
-    private static boolean hasFinished(String status) {
+    private static boolean hasFinished(final String status) {
         return hasSucceeded(status) || hasFailed(status);
     }
 
-    private static boolean hasFailed(String status) {
+    private static boolean hasFailed(final String status) {
         return hasStatus(FAILED_COMPLETION_STATUS, status);
     }
 
-    private static boolean hasSucceeded(String status) {
+    private static boolean hasSucceeded(final String status) {
         return hasStatus(SUCCESSFUL_COMPLETION_STATUS, status);
     }
 
-    private static boolean hasStatus(String required, String status) {
+    private static boolean hasStatus(final String required, final String status) {
         return required.equalsIgnoreCase(status);
     }
 
-    private static String itemString(Map<String, AttributeValue> item) {
+    private static String itemString(final Map<String, AttributeValue> item) {
         return item.get(CORRELATION_ID_FIELD).getS() + "/" + item.get(DATA_PRODUCT_FIELD).getS() + "/" + item.get(DATE_FIELD).getS();
     }
 
