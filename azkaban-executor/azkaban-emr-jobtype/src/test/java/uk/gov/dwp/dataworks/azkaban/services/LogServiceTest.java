@@ -19,6 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class LogServiceTest {
@@ -59,6 +60,17 @@ class LogServiceTest {
         LogService logService = new LogService(emr, logs, LOG_GROUP);
         logService.monitorStepLogs(CLUSTER_ID, STEP_ID);
         verify(logs, times(2)).getLogEvents(any());
+    }
+
+    @Test
+    public void shouldNotFetchLogsIfCancelled() {
+        AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
+        AWSLogs logs = mock(AWSLogs.class);
+        LogService logService = new LogService(emr, logs, LOG_GROUP);
+        logService.cancel();
+        logService.monitorStepLogs(CLUSTER_ID, STEP_ID);
+        verifyNoInteractions(emr);
+        verifyNoInteractions(logs);
     }
 
     private final static String INSTANCE_ID_1 = "INSTANCE_ID_1";

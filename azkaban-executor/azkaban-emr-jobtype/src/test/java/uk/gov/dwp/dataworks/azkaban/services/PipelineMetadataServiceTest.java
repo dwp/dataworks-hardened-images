@@ -1,17 +1,39 @@
 package uk.gov.dwp.dataworks.azkaban.services;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.model.*;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
+import com.amazonaws.services.dynamodbv2.model.GetItemResult;
+import com.amazonaws.services.dynamodbv2.model.ScanRequest;
+import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
-import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.CORRELATION_ID_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATA_PRODUCT_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATE_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.STATUS_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.scanRequest;
 
 class PipelineMetadataServiceTest {
 
@@ -72,7 +94,7 @@ class PipelineMetadataServiceTest {
         GetItemResult result = mock(GetItemResult.class);
 
         when(result.getItem()).thenReturn(inProgressItem).thenReturn(inProgressItem).thenReturn(inProgressItem)
-                .thenReturn(successfulItem);
+                              .thenReturn(successfulItem);
 
         when(dynamoDB.getItem(request)).thenReturn(result);
 
@@ -158,7 +180,8 @@ class PipelineMetadataServiceTest {
         GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(key);
 
         GetItemResult result = mock(GetItemResult.class);
-        when(result.getItem()).thenReturn(pendingItem).thenReturn(pendingItem).thenReturn(pendingItem).thenReturn(successfulItem);
+        when(result.getItem()).thenReturn(pendingItem).thenReturn(pendingItem).thenReturn(pendingItem)
+                              .thenReturn(successfulItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
         PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);

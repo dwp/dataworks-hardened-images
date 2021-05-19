@@ -24,6 +24,7 @@ dependencies {
     implementation "com.amazonaws:aws-java-sdk-emr:${awsVersion}"
     implementation "com.amazonaws:aws-java-sdk-lambda:${awsVersion}"
     implementation "com.amazonaws:aws-java-sdk-logs:${awsVersion}"
+    implementation "com.amazonaws:aws-java-sdk-sns:${awsVersion}"
     implementation "com.amazonaws:aws-java-sdk-sts:${awsVersion}"
     implementation("com.amazonaws:aws-java-sdk-dynamodb:${awsVersion}")
 
