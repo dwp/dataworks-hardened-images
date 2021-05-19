@@ -1,6 +1,8 @@
 package uk.gov.dwp.dataworks.azkaban.utility;
 
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
+import com.amazonaws.services.elasticmapreduce.model.CancelStepsRequest;
+import com.amazonaws.services.elasticmapreduce.model.CancelStepsResult;
 import com.amazonaws.services.elasticmapreduce.model.ClusterStatus;
 import com.amazonaws.services.elasticmapreduce.model.ClusterSummary;
 import com.amazonaws.services.elasticmapreduce.model.DescribeClusterRequest;
@@ -17,6 +19,8 @@ import com.amazonaws.services.elasticmapreduce.model.ListStepsResult;
 import com.amazonaws.services.elasticmapreduce.model.Step;
 import com.amazonaws.services.elasticmapreduce.model.StepStatus;
 import com.amazonaws.services.elasticmapreduce.model.StepSummary;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import uk.gov.dwp.dataworks.azkaban.model.EmrClusterStatus;
 import uk.gov.dwp.dataworks.azkaban.model.EmrStepStatus;
 
@@ -29,6 +33,22 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class EmrUtility {
+
+    public static void cancelSteps(AmazonElasticMapReduce emr, String clusterId) {
+        List<String> stepIds = EmrUtility.clusterSteps(emr, clusterId).stream()
+                                         .filter(s -> EmrStepStatus.valueOf(s.getStatus().getState()).isActive())
+                                         .map(StepSummary::getId).collect(Collectors.toList());
+
+        if (stepIds.size() > 0) {
+            CancelStepsRequest request = new CancelStepsRequest().withClusterId(clusterId).withStepIds(stepIds);
+            logger.info("Cancelling steps '" + stepIds + "' on clusterId: '" + clusterId + "'.");
+            CancelStepsResult result = emr.cancelSteps(request);
+            result.getCancelStepsInfoList().forEach(cancelInfo -> logger.info(
+                    "Cancelled step '" + cancelInfo.getStepId() + "', " + "cancellation status: '" + cancelInfo.getStatus()
+                            + "', " + "cancellation reason '" + cancelInfo.getReason() + "'."));
+        }
+    }
+
 
     public static boolean allStepsFinished(AmazonElasticMapReduce emr, String clusterId) {
         return clusterStepStatuses(emr, clusterId).noneMatch(EmrStepStatus::isActive);
@@ -116,4 +136,5 @@ public class EmrUtility {
         return EmrStepStatus.valueOf(x.getStatus().getState()) == EmrStepStatus.RUNNING;
     }
 
+    private final static Logger logger = LogManager.getLogger(EmrUtility.class);
 }

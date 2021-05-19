@@ -6,8 +6,8 @@ import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import uk.gov.dwp.dataworks.azkaban.model.InvocationPayload;
 import uk.gov.dwp.dataworks.azkaban.model.InvocationResult;
 
@@ -46,7 +46,7 @@ public class EmrLauncherLambdaService extends AbstractEmrLaunchingDelegate {
                                   .withInvocationType(InvocationType.RequestResponse);
     }
 
-    private final static Logger logger = LoggerFactory.getLogger(EmrLauncherLambdaService.class);
+    private final static Logger logger = LogManager.getLogger(EmrLauncherLambdaService.class);
     private final AWSLambda awsLambda;
     private final String functionName;
 }

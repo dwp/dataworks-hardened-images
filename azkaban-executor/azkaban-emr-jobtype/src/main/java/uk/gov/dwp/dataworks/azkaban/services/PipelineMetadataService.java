@@ -6,8 +6,8 @@ import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.GetItemResult;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -173,7 +173,7 @@ public class PipelineMetadataService extends AbstractEmrLaunchingDelegate {
     public final static String DATE_FIELD = "Date";
     private final static String SUCCESSFUL_COMPLETION_STATUS = "Completed";
     private final static String FAILED_COMPLETION_STATUS = "Failed";
-    private final static Logger logger = LoggerFactory.getLogger(PipelineMetadataService.class);
+    private final static Logger logger = LogManager.getLogger(PipelineMetadataService.class);
     private final AmazonDynamoDB dynamoDb;
     private final AtomicBoolean proceed = new AtomicBoolean(true);
     private CountDownLatch latch = new CountDownLatch(1);

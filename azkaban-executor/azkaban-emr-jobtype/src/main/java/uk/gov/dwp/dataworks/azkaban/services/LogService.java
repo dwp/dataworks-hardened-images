@@ -6,8 +6,8 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.GetLogEventsRequest;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.amazonaws.services.logs.model.OutputLogEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import uk.gov.dwp.dataworks.azkaban.model.EmrStepStatus;
 
 import java.util.List;
@@ -108,6 +108,6 @@ public class LogService extends AbstractEmrLaunchingDelegate {
     private final String logGroup;
     private final AmazonElasticMapReduce emr;
     private final AWSLogs awsLogs;
-    private final Logger logger = LoggerFactory.getLogger(LogService.class);
+    private final Logger logger = LogManager.getLogger(LogService.class);
     private CountDownLatch logMonitorLatch;
 }

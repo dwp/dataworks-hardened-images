@@ -1,7 +1,8 @@
 package uk.gov.dwp.dataworks.azkaban.services;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -12,6 +13,6 @@ public class AbstractEmrLaunchingDelegate {
         proceed.set(false);
     }
 
-    private final static Logger logger = LoggerFactory.getLogger(AbstractEmrLaunchingDelegate.class);
+    private final static Logger logger = LogManager.getLogger(AbstractEmrLaunchingDelegate.class);
     final AtomicBoolean proceed = new AtomicBoolean(true);
 }

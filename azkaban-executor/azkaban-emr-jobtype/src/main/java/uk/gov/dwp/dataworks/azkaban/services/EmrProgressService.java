@@ -2,8 +2,8 @@ package uk.gov.dwp.dataworks.azkaban.services;
 
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
 import com.amazonaws.services.elasticmapreduce.model.StepSummary;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import uk.gov.dwp.dataworks.azkaban.model.EmrClusterStatus;
 import uk.gov.dwp.dataworks.azkaban.utility.EmrUtility;
 
@@ -128,5 +128,5 @@ public class EmrProgressService extends AbstractEmrLaunchingDelegate {
     private final CountDownLatch stepsMonitorLatch;
     private final AmazonElasticMapReduce emr;
     private final LogService logService;
-    private final Logger logger = LoggerFactory.getLogger(EmrProgressService.class);
+    private final Logger logger = LogManager.getLogger(EmrProgressService.class);
 }

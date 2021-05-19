@@ -11,17 +11,20 @@ import uk.gov.dwp.dataworks.azkaban.model.InvocationResult;
 import uk.gov.dwp.dataworks.azkaban.services.EmrLauncherLambdaService;
 import uk.gov.dwp.dataworks.azkaban.services.EmrProgressService;
 import uk.gov.dwp.dataworks.azkaban.services.LogService;
-import uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService;
 import uk.gov.dwp.dataworks.azkaban.services.NotificationService;
+import uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService;
 import uk.gov.dwp.dataworks.azkaban.utility.ClientUtility;
+import uk.gov.dwp.dataworks.azkaban.utility.EmrUtility;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class EmrLauncherJob extends AbstractProcessJob {
+
 
     public EmrLauncherJob(final String jobId, final Props sysProps, final Props jobProps, final Logger log) {
         super(jobId, sysProps, jobProps, log);
@@ -32,6 +35,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
         String logGroup = this.getJobProps().getString(AWS_LOG_GROUP_PARAMETER_NAME, "/aws/emr/azkaban");
         AmazonElasticMapReduce emr = ClientUtility.amazonElasticMapReduce(awsRegion());
         AWSLogs logs = ClientUtility.awsLogs(awsRegion());
+        this.emr = emr;
         this.emrProgressService = new EmrProgressService(emr, new LogService(emr, logs, logGroup));
         this.notificationService = new NotificationService(ClientUtility.amazonSNS(awsRegion()),
                 this.getJobProps().getString(TOPIC_PARAMETER_NAME, "Monitoring"),
@@ -48,8 +52,8 @@ public class EmrLauncherJob extends AbstractProcessJob {
             this.notificationService.notifyStarted();
             boolean succeeded = dependencyMetadata().flatMap(emrLauncherLambdaService::invokeEmrLauncher)
                                                     .filter(InvocationResult::wasSuccessful)
-                                                    .map(InvocationResult::getClusterId).map(emrProgressService::observeEmr)
-                                                    .orElse(false);
+                                                    .map(InvocationResult::getClusterId).map(this::setGetClusterId)
+                                                    .map(emrProgressService::observeEmr).orElse(false);
 
             if (succeeded) {
                 this.notificationService.notifySucceeded();
@@ -61,12 +65,18 @@ public class EmrLauncherJob extends AbstractProcessJob {
         }
     }
 
+    private String setGetClusterId(String id) {
+        clusterId.set(Optional.of(id));
+        return id;
+    }
+
     @Override
     public void cancel() throws Exception {
         super.cancel();
         pipelineMetadataService.cancel();
         emrLauncherLambdaService.cancel();
         emrProgressService.cancel();
+        clusterId.get().ifPresent(id -> EmrUtility.cancelSteps(emr, id));
     }
 
     private Optional<InvocationPayload> dependencyMetadata() {
@@ -96,8 +106,10 @@ public class EmrLauncherJob extends AbstractProcessJob {
     public static final String AWS_LOG_GROUP_PARAMETER_NAME = "aws.log.group.name";
     public static final String CLUSTER_PARAMETER_NAME = "cluster.name";
     public static final String TOPIC_PARAMETER_NAME = "notification.topic.name";
+    private final AtomicReference<Optional<String>> clusterId = new AtomicReference<>();
     private final PipelineMetadataService pipelineMetadataService;
     private final EmrLauncherLambdaService emrLauncherLambdaService;
     private final EmrProgressService emrProgressService;
     private final NotificationService notificationService;
+    private final AmazonElasticMapReduce emr;
 }
