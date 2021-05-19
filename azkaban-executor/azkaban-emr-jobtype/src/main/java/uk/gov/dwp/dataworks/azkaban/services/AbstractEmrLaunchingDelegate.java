@@ -5,14 +5,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class AbstractCancellableService implements CancellableService {
+public class AbstractEmrLaunchingDelegate {
 
-    private final static Logger logger = LoggerFactory.getLogger(AbstractCancellableService.class);
-    final AtomicBoolean proceed = new AtomicBoolean(true);
-
-    @Override
     public void cancel() {
         logger.warn("Operation has been cancelled");
         proceed.set(false);
     }
+
+    private final static Logger logger = LoggerFactory.getLogger(AbstractEmrLaunchingDelegate.class);
+    final AtomicBoolean proceed = new AtomicBoolean(true);
 }

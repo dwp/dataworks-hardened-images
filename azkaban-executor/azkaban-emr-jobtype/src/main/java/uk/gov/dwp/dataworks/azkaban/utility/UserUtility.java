@@ -12,8 +12,6 @@ import static uk.gov.dwp.dataworks.azkaban.jobtype.EMRStep.USE_EMR_USER;
 
 public class UserUtility {
 
-    private final static Logger logger = Logger.getLogger(UserUtility.class);
-
     public static String effectiveUser(Props jobProps, Props systemProps) {
 
         String serviceUser = systemProps.getString(AZKABAN_SERVICE_USER, "");
@@ -53,4 +51,6 @@ public class UserUtility {
                 serviceUser.trim() :
                 (disallowProxyUser ? effectiveUser : groupFunction.apply(effectiveUser));
     }
+
+    private final static Logger logger = Logger.getLogger(UserUtility.class);
 }

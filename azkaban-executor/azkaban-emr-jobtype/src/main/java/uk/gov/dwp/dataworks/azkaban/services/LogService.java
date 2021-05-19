@@ -20,13 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.clusterStep;
 import static uk.gov.dwp.dataworks.azkaban.utility.LogUtility.clusterStepLogStreams;
 
-public class LogService extends AbstractCancellableService {
-
-    private final String logGroup;
-    private final AmazonElasticMapReduce emr;
-    private final AWSLogs awsLogs;
-    private final Logger logger = LoggerFactory.getLogger(EmrProgressService.class);
-    private CountDownLatch logMonitorLatch;
+public class LogService extends AbstractEmrLaunchingDelegate {
 
     public LogService(AmazonElasticMapReduce emr, AWSLogs awsLogs, String logGroup) {
         this.emr = emr;
@@ -69,6 +63,7 @@ public class LogService extends AbstractCancellableService {
             try {
                 final List<String> logStreams = clusterStepLogStreams(emr, awsLogs, clusterId, logGroup);
                 final Step step = clusterStep(emr, clusterId, stepId);
+
                 logger.info("Monitoring step '" + clusterId + "/" + step.getId() + "/" + step.getName() + "/" + step
                         .getStatus().getState() + "', log group: '" + this.logGroup + "', logStreams: '" + logStreams
                         + "'");
@@ -111,4 +106,9 @@ public class LogService extends AbstractCancellableService {
         }
     }
 
+    private final String logGroup;
+    private final AmazonElasticMapReduce emr;
+    private final AWSLogs awsLogs;
+    private final Logger logger = LoggerFactory.getLogger(EmrProgressService.class);
+    private CountDownLatch logMonitorLatch;
 }

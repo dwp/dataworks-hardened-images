@@ -31,15 +31,15 @@ class PipelineMetadataServiceTest {
         items.add(successfulItem);
         Map<String, AttributeValue> successfulKey = itemKey();
 
-        given(scanResult.getItems()).willReturn(items);
-        given(dynamoDB.scan(scanRequest)).willReturn(scanResult);
-        given(scanResult.getLastEvaluatedKey()).willReturn(null);
+        when(scanResult.getItems()).thenReturn(items);
+        when(dynamoDB.scan(scanRequest)).thenReturn(scanResult);
+        when(scanResult.getLastEvaluatedKey()).thenReturn(null);
 
         GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(successfulKey);
 
         GetItemResult result = mock(GetItemResult.class);
-        given(result.getItem()).willReturn(successfulItem);
-        given(dynamoDB.getItem(request)).willReturn(result);
+        when(result.getItem()).thenReturn(successfulItem);
+        when(dynamoDB.getItem(request)).thenReturn(result);
 
         PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
         Optional<List<Map<String, AttributeValue>>> successes = metadataService
@@ -63,18 +63,18 @@ class PipelineMetadataServiceTest {
         successfulItems.add(successfulItem);
         Map<String, AttributeValue> itemKey = itemKey();
 
-        given(scanResult.getItems()).willReturn(items).willReturn(successfulItems);
-        given(dynamoDB.scan(scanRequest)).willReturn(scanResult);
-        given(scanResult.getLastEvaluatedKey()).willReturn(null);
+        when(scanResult.getItems()).thenReturn(items).thenReturn(successfulItems);
+        when(dynamoDB.scan(scanRequest)).thenReturn(scanResult);
+        when(scanResult.getLastEvaluatedKey()).thenReturn(null);
 
         GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(itemKey);
 
         GetItemResult result = mock(GetItemResult.class);
 
-        given(result.getItem()).willReturn(inProgressItem).willReturn(inProgressItem).willReturn(inProgressItem)
-                .willReturn(successfulItem);
+        when(result.getItem()).thenReturn(inProgressItem).thenReturn(inProgressItem).thenReturn(inProgressItem)
+                .thenReturn(successfulItem);
 
-        given(dynamoDB.getItem(request)).willReturn(result);
+        when(dynamoDB.getItem(request)).thenReturn(result);
 
         PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
         Optional<List<Map<String, AttributeValue>>> successes = metadataService
@@ -98,20 +98,19 @@ class PipelineMetadataServiceTest {
         items.add(failedItem);
         Map<String, AttributeValue> successfulKey = itemKey();
 
-        given(scanResult.getItems()).willReturn(items);
-        given(dynamoDB.scan(scanRequest)).willReturn(scanResult);
-        given(scanResult.getLastEvaluatedKey()).willReturn(null);
+        when(scanResult.getItems()).thenReturn(items);
+        when(dynamoDB.scan(scanRequest)).thenReturn(scanResult);
+        when(scanResult.getLastEvaluatedKey()).thenReturn(null);
 
         GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(successfulKey);
 
         GetItemResult result = mock(GetItemResult.class);
-        given(result.getItem()).willReturn(failedItem);
-        given(dynamoDB.getItem(request)).willReturn(result);
+        when(result.getItem()).thenReturn(failedItem);
+        when(dynamoDB.getItem(request)).thenReturn(result);
 
         PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
         Optional<List<Map<String, AttributeValue>>> successes = metadataService
                 .successfulDependencies(METADATA_TABLE, EXPORT_DATE, PRODUCT_1);
-        System.out.println(successes);
         assertFalse(successes.isPresent());
     }
 
@@ -125,15 +124,15 @@ class PipelineMetadataServiceTest {
         items.add(pendingItem);
         Map<String, AttributeValue> key = itemKey();
 
-        given(scanResult.getItems()).willReturn(items);
-        given(dynamoDB.scan(scanRequest)).willReturn(scanResult);
-        given(scanResult.getLastEvaluatedKey()).willReturn(null);
+        when(scanResult.getItems()).thenReturn(items);
+        when(dynamoDB.scan(scanRequest)).thenReturn(scanResult);
+        when(scanResult.getLastEvaluatedKey()).thenReturn(null);
 
         GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(key);
 
         GetItemResult result = mock(GetItemResult.class);
-        given(result.getItem()).willReturn(pendingItem);
-        given(dynamoDB.getItem(request)).willReturn(result);
+        when(result.getItem()).thenReturn(pendingItem);
+        when(dynamoDB.getItem(request)).thenReturn(result);
 
         PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
         Optional<List<Map<String, AttributeValue>>> successes = metadataService
@@ -152,15 +151,15 @@ class PipelineMetadataServiceTest {
         items.add(pendingItem);
         Map<String, AttributeValue> key = itemKey();
 
-        given(scanResult.getItems()).willReturn(items);
-        given(dynamoDB.scan(scanRequest)).willReturn(scanResult);
-        given(scanResult.getLastEvaluatedKey()).willReturn(null);
+        when(scanResult.getItems()).thenReturn(items);
+        when(dynamoDB.scan(scanRequest)).thenReturn(scanResult);
+        when(scanResult.getLastEvaluatedKey()).thenReturn(null);
 
         GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(key);
 
         GetItemResult result = mock(GetItemResult.class);
-        given(result.getItem()).willReturn(pendingItem).willReturn(pendingItem).willReturn(pendingItem).willReturn(successfulItem);
-        given(dynamoDB.getItem(request)).willReturn(result);
+        when(result.getItem()).thenReturn(pendingItem).thenReturn(pendingItem).thenReturn(pendingItem).thenReturn(successfulItem);
+        when(dynamoDB.getItem(request)).thenReturn(result);
         PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
         executorService.schedule(metadataService::cancel, 15, TimeUnit.MILLISECONDS);
@@ -177,23 +176,23 @@ class PipelineMetadataServiceTest {
         Map<String, AttributeValue> successfulItem1 = tableItem(CORRELATION_ID_1, STATUS_COMPLETED);
         page1Items.add(successfulItem1);
         ScanResult scanResult1 = mock(ScanResult.class);
-        given(scanResult1.getItems()).willReturn(page1Items);
-        given(scanResult1.getLastEvaluatedKey()).willReturn(itemKey());
+        when(scanResult1.getItems()).thenReturn(page1Items);
+        when(scanResult1.getLastEvaluatedKey()).thenReturn(itemKey());
 
         List<Map<String, AttributeValue>> page2Items = new ArrayList<>();
         Map<String, AttributeValue> successfulItem2 = tableItem(CORRELATION_ID_2, STATUS_COMPLETED);
         page2Items.add(successfulItem2);
         ScanResult scanResult2 = mock(ScanResult.class);
-        given(scanResult2.getItems()).willReturn(page2Items);
-        given(scanResult2.getLastEvaluatedKey()).willReturn(null);
+        when(scanResult2.getItems()).thenReturn(page2Items);
+        when(scanResult2.getLastEvaluatedKey()).thenReturn(null);
 
-        given(dynamoDB.scan(any(ScanRequest.class))).willReturn(scanResult1, scanResult2, scanResult1, scanResult2);
+        when(dynamoDB.scan(any(ScanRequest.class))).thenReturn(scanResult1, scanResult2, scanResult1, scanResult2);
 
         GetItemResult result1 = mock(GetItemResult.class);
-        given(result1.getItem()).willReturn(successfulItem1);
+        when(result1.getItem()).thenReturn(successfulItem1);
         GetItemResult result2 = mock(GetItemResult.class);
-        given(result2.getItem()).willReturn(successfulItem2);
-        given(dynamoDB.getItem(any(GetItemRequest.class))).willReturn(result1, result2);
+        when(result2.getItem()).thenReturn(successfulItem2);
+        when(dynamoDB.getItem(any(GetItemRequest.class))).thenReturn(result1, result2);
 
         PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
         Optional<List<Map<String, AttributeValue>>> successes = metadataService

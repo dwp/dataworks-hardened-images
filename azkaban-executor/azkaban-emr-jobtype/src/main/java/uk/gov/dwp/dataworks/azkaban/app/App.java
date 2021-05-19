@@ -4,7 +4,10 @@ import azkaban.utils.Props;
 import org.apache.log4j.Logger;
 import uk.gov.dwp.dataworks.azkaban.jobtype.EmrLauncherJob;
 
-import static uk.gov.dwp.dataworks.azkaban.jobtype.EmrLauncherJob.*;
+import static uk.gov.dwp.dataworks.azkaban.jobtype.EmrLauncherJob.AWS_LOG_GROUP_NAME;
+import static uk.gov.dwp.dataworks.azkaban.jobtype.EmrLauncherJob.EMR_LAUNCHER_LAMBDA_PARAMETER_NAME;
+import static uk.gov.dwp.dataworks.azkaban.jobtype.EmrLauncherJob.EXPORT_DATE_PARAMETER_NAME;
+import static uk.gov.dwp.dataworks.azkaban.jobtype.EmrLauncherJob.JOB_DEPENDENCIES_PARAMETER_NAME;
 
 public class App {
     public static void main(String[] args) {
@@ -19,6 +22,6 @@ public class App {
         String jobId = "job-id";
         EmrLauncherJob emrLauncher = new EmrLauncherJob(jobId, systemProperties, jobProperties, jobLogger);
         emrLauncher.run();
-        System.out.println("Emrlauncher run has completed.");
+        System.out.println("EmrLauncherJob has completed.");
     }
 }

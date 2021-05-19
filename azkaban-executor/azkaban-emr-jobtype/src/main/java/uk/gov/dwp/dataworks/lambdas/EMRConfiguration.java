@@ -5,7 +5,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 public class EMRConfiguration {
-    private Overrides overrides;
+    private final Overrides overrides;
 
     private S3Overrides s3Overrides;
 
@@ -48,7 +48,7 @@ public class EMRConfiguration {
 
     public static class Overrides {
 
-        private String name;
+        private final String name;
 
         public Overrides(String name) {
             this.name = name;
@@ -62,7 +62,7 @@ public class EMRConfiguration {
 
     public static class S3Overrides {
 
-        private String config;
+        private final String config;
 
         public S3Overrides(String config) {
             this.config = config;

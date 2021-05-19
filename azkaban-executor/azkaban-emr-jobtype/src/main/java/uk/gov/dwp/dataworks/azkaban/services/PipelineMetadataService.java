@@ -1,11 +1,20 @@
 package uk.gov.dwp.dataworks.azkaban.services;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.model.*;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
+import com.amazonaws.services.dynamodbv2.model.GetItemResult;
+import com.amazonaws.services.dynamodbv2.model.ScanRequest;
+import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -13,18 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class PipelineMetadataService extends AbstractCancellableService {
-
-    public final static String CORRELATION_ID_FIELD = "Correlation_Id";
-    public final static String DATA_PRODUCT_FIELD = "DataProduct";
-    public final static String STATUS_FIELD = "Status";
-    public final static String DATE_FIELD = "Date";
-    private final static String SUCCESSFUL_COMPLETION_STATUS = "Completed";
-    private final static String FAILED_COMPLETION_STATUS = "Failed";
-    private final static Logger logger = LoggerFactory.getLogger(PipelineMetadataService.class);
-    private final AmazonDynamoDB dynamoDb;
-    private final AtomicBoolean proceed = new AtomicBoolean(true);
-    private CountDownLatch latch = new CountDownLatch(1);
+public class PipelineMetadataService extends AbstractEmrLaunchingDelegate {
 
     public PipelineMetadataService(final AmazonDynamoDB dynamoDB) {
         this.dynamoDb = dynamoDB;
@@ -168,4 +166,16 @@ public class PipelineMetadataService extends AbstractCancellableService {
 
         return results;
     }
+
+    public final static String CORRELATION_ID_FIELD = "Correlation_Id";
+    public final static String DATA_PRODUCT_FIELD = "DataProduct";
+    public final static String STATUS_FIELD = "Status";
+    public final static String DATE_FIELD = "Date";
+    private final static String SUCCESSFUL_COMPLETION_STATUS = "Completed";
+    private final static String FAILED_COMPLETION_STATUS = "Failed";
+    private final static Logger logger = LoggerFactory.getLogger(PipelineMetadataService.class);
+    private final AmazonDynamoDB dynamoDb;
+    private final AtomicBoolean proceed = new AtomicBoolean(true);
+    private CountDownLatch latch = new CountDownLatch(1);
+
 }

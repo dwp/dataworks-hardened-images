@@ -8,11 +8,6 @@ import java.util.Objects;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class InvocationResultMetadata {
 
-    private final static Integer SUCCESSFUL_RESPONSE_CODE = 200;
-    private String requestId;
-    private Integer statusCode;
-    private Integer retryAttempts;
-
     public boolean wasSuccessful() {
         return SUCCESSFUL_RESPONSE_CODE.equals(statusCode);
     }
@@ -68,4 +63,9 @@ public class InvocationResultMetadata {
     public void setRetryAttempts(Integer retryAttempts) {
         this.retryAttempts = retryAttempts;
     }
+
+    private final static Integer SUCCESSFUL_RESPONSE_CODE = 200;
+    private String requestId;
+    private Integer statusCode;
+    private Integer retryAttempts;
 }

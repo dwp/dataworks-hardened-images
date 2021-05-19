@@ -13,11 +13,7 @@ import uk.gov.dwp.dataworks.azkaban.domain.InvocationResult;
 
 import java.util.Optional;
 
-public class EmrLauncherLambdaService extends AbstractCancellableService {
-
-    private final static Logger logger = LoggerFactory.getLogger(EmrLauncherLambdaService.class);
-    private final AWSLambda awsLambda;
-    private final String functionName;
+public class EmrLauncherLambdaService extends AbstractEmrLaunchingDelegate {
 
     public EmrLauncherLambdaService(final AWSLambda awsLambda, final String functionName) {
         this.awsLambda = awsLambda;
@@ -49,4 +45,8 @@ public class EmrLauncherLambdaService extends AbstractCancellableService {
                                   .withPayload(new ObjectMapper().writeValueAsString(payload))
                                   .withInvocationType(InvocationType.RequestResponse);
     }
+
+    private final static Logger logger = LoggerFactory.getLogger(EmrLauncherLambdaService.class);
+    private final AWSLambda awsLambda;
+    private final String functionName;
 }

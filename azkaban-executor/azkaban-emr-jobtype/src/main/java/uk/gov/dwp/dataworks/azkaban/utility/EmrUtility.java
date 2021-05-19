@@ -1,18 +1,46 @@
 package uk.gov.dwp.dataworks.azkaban.utility;
 
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
-import com.amazonaws.services.elasticmapreduce.model.*;
+import com.amazonaws.services.elasticmapreduce.model.ClusterStatus;
+import com.amazonaws.services.elasticmapreduce.model.ClusterSummary;
+import com.amazonaws.services.elasticmapreduce.model.DescribeClusterRequest;
+import com.amazonaws.services.elasticmapreduce.model.DescribeClusterResult;
+import com.amazonaws.services.elasticmapreduce.model.DescribeStepRequest;
+import com.amazonaws.services.elasticmapreduce.model.DescribeStepResult;
+import com.amazonaws.services.elasticmapreduce.model.Instance;
+import com.amazonaws.services.elasticmapreduce.model.ListClustersRequest;
+import com.amazonaws.services.elasticmapreduce.model.ListClustersResult;
+import com.amazonaws.services.elasticmapreduce.model.ListInstancesRequest;
+import com.amazonaws.services.elasticmapreduce.model.ListInstancesResult;
+import com.amazonaws.services.elasticmapreduce.model.ListStepsRequest;
+import com.amazonaws.services.elasticmapreduce.model.ListStepsResult;
+import com.amazonaws.services.elasticmapreduce.model.Step;
+import com.amazonaws.services.elasticmapreduce.model.StepStatus;
+import com.amazonaws.services.elasticmapreduce.model.StepSummary;
 import uk.gov.dwp.dataworks.azkaban.domain.EmrClusterStatus;
 import uk.gov.dwp.dataworks.azkaban.domain.EmrStepStatus;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class EmrUtility {
 
     public static boolean allStepsFinished(AmazonElasticMapReduce emr, String clusterId) {
+        return clusterStepStatuses(emr, clusterId).noneMatch(EmrStepStatus::isActive);
+    }
+
+    public static boolean allStepsSucceeded(AmazonElasticMapReduce emr, String clusterId) {
+        return clusterStepStatuses(emr, clusterId).allMatch(s -> s == EmrStepStatus.COMPLETED);
+    }
+
+    private static Stream<EmrStepStatus> clusterStepStatuses(AmazonElasticMapReduce emr, String clusterId) {
         return clusterSteps(emr, clusterId).stream().map(StepSummary::getStatus).map(StepStatus::getState)
-                                           .map(EmrStepStatus::valueOf).noneMatch(EmrStepStatus::isActive);
+                                           .map(EmrStepStatus::valueOf);
     }
 
     public static EmrClusterStatus clusterStatus(AmazonElasticMapReduce emr, String clusterId) {

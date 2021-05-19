@@ -18,16 +18,16 @@ public class LogUtility {
     public static List<String> clusterStepLogStreams(AmazonElasticMapReduce emr, AWSLogs logs, String clusterId,
             String logGroup) {
         final Set<String> clusterInstances = clusterInstances(emr, clusterId);
-        DescribeLogStreamsRequest req = new DescribeLogStreamsRequest().withLogGroupName(logGroup);
+        DescribeLogStreamsRequest request = new DescribeLogStreamsRequest().withLogGroupName(logGroup);
         String nextToken;
         final List<String> logStreams = new ArrayList<>();
         do {
-            final DescribeLogStreamsResult res = logs.describeLogStreams(req);
-            logStreams.addAll(res.getLogStreams().stream().map(LogStream::getLogStreamName)
+            final DescribeLogStreamsResult result = logs.describeLogStreams(request);
+            logStreams.addAll(result.getLogStreams().stream().map(LogStream::getLogStreamName)
                                  .filter(logStream -> clusterInstances.stream().anyMatch(logStream::contains))
                                  .collect(Collectors.toList()));
-            nextToken = res.getNextToken();
-            req = new DescribeLogStreamsRequest().withLogGroupName(logGroup).withNextToken(nextToken);
+            nextToken = result.getNextToken();
+            request = new DescribeLogStreamsRequest().withLogGroupName(logGroup).withNextToken(nextToken);
         }
         while (nextToken != null);
 

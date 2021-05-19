@@ -15,10 +15,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.CORRELATION_ID_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATE_FIELD;
 
@@ -33,7 +36,7 @@ class EmrLauncherLambdaServiceTest {
         result.setMetadata(metadata);
         InvokeResult invokeResult = new InvokeResult();
         invokeResult.setPayload(ByteBuffer.wrap(new ObjectMapper().writeValueAsBytes(result)));
-        given(lambda.invoke(any())).willReturn(invokeResult);
+        when(lambda.invoke(any())).thenReturn(invokeResult);
         EmrLauncherLambdaService service = new EmrLauncherLambdaService(lambda, LAMBDA_NAME);
         Optional<InvocationResult> optionalResult = service.invokeEmrLauncher(payload());
         assertTrue(optionalResult.isPresent());
@@ -49,7 +52,7 @@ class EmrLauncherLambdaServiceTest {
         result.setMetadata(metadata);
         InvokeResult invokeResult = new InvokeResult();
         invokeResult.setPayload(ByteBuffer.wrap(new ObjectMapper().writeValueAsBytes(result)));
-        given(lambda.invoke(any())).willReturn(invokeResult);
+        when(lambda.invoke(any())).thenReturn(invokeResult);
         EmrLauncherLambdaService service = new EmrLauncherLambdaService(lambda, LAMBDA_NAME);
         Optional<InvocationResult> optionalResult = service.invokeEmrLauncher(payload());
         assertTrue(optionalResult.isPresent());
@@ -65,10 +68,10 @@ class EmrLauncherLambdaServiceTest {
         result.setMetadata(metadata);
         InvokeResult invokeResult = new InvokeResult();
         invokeResult.setPayload(ByteBuffer.wrap(new ObjectMapper().writeValueAsBytes(result)));
-        given(lambda.invoke(any())).willThrow(new RuntimeException("FAILED"));
+        when(lambda.invoke(any())).thenThrow(new RuntimeException("FAILED"));
         EmrLauncherLambdaService service = new EmrLauncherLambdaService(lambda, LAMBDA_NAME);
         Optional<InvocationResult> optionalResult = service.invokeEmrLauncher(payload());
-        assertTrue(optionalResult.isEmpty());
+        assertFalse(optionalResult.isPresent());
     }
 
     @Test
@@ -78,7 +81,7 @@ class EmrLauncherLambdaServiceTest {
         service.cancel();
         Optional<InvocationResult> optionalResult = service.invokeEmrLauncher(payload());
         verifyNoInteractions(lambda);
-        assertTrue(optionalResult.isEmpty());
+        assertFalse(optionalResult.isPresent());
     }
 
     private InvocationPayload payload() {
