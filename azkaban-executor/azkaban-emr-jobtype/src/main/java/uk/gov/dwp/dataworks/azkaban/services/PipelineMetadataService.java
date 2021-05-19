@@ -55,8 +55,8 @@ public class PipelineMetadataService extends AbstractCancellableService {
             final ScheduledExecutorService timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
             timeoutExecutor.schedule(latch::countDown, pollTimeoutSeconds(), TimeUnit.MILLISECONDS);
             latch.await();
-            timeoutExecutor.shutdown();
-            dependencyCheckExecutor.shutdown();
+            timeoutExecutor.shutdownNow();
+            dependencyCheckExecutor.shutdownNow();
             return Optional.of(succeeded.get());
         } catch (InterruptedException e) {
             logger.error("Failed to check dependency '" + tableName + "', item: '" + item + "'", e);

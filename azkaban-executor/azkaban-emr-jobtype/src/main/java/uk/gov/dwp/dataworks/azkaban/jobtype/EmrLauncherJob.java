@@ -34,12 +34,11 @@ public class EmrLauncherJob extends AbstractProcessJob {
 
     @Override
     public void run() {
-        emrProgressService.observeEmr("j-2JE1DZ31QZQ1I");
-//        dependencyMetadata()
-//                .flatMap(emrLauncherLambdaService::invokeEmrLauncher)
-//                .filter(InvocationResult::wasSuccessful)
-//                .map(InvocationResult::getClusterId)
-//                .ifPresent(emrProgressService::observeEmr);
+        dependencyMetadata()
+                .flatMap(emrLauncherLambdaService::invokeEmrLauncher)
+                .filter(InvocationResult::wasSuccessful)
+                .map(InvocationResult::getClusterId)
+                .ifPresent(emrProgressService::observeEmr);
     }
 
     private Optional<InvocationPayload> dependencyMetadata() {

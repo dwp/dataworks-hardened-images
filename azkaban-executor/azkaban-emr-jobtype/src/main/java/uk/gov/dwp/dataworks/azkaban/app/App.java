@@ -19,5 +19,6 @@ public class App {
         String jobId = "job-id";
         EmrLauncherJob emrLauncher = new EmrLauncherJob(jobId, systemProperties, jobProperties, jobLogger);
         emrLauncher.run();
+        System.out.println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX emrlauncher run has completed.");
     }
 }

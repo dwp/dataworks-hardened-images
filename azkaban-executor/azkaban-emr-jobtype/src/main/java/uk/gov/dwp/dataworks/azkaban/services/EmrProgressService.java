@@ -4,7 +4,6 @@ import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
 import com.amazonaws.services.elasticmapreduce.model.Step;
 import com.amazonaws.services.elasticmapreduce.model.StepSummary;
 import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.model.AWSLogsException;
 import com.amazonaws.services.logs.model.GetLogEventsRequest;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.amazonaws.services.logs.model.OutputLogEvent;
@@ -30,112 +29,154 @@ public class EmrProgressService extends AbstractCancellableService {
         this.emr = emr;
         this.clusterStartupLatch = new CountDownLatch(1);
         this.stepsMonitorLatch = new CountDownLatch(1);
-        this.stepMonitorLatch = new CountDownLatch(1);
+        this.logMonitorLatch = new CountDownLatch(1);
         this.logGroup = logGroup;
         this.awsLogs = awsLogs;
     }
 
     public void observeEmr(String clusterId) {
-        if (proceed.get()) {
-            monitorClusterStartUp(clusterId).filter(x -> x == EmrClusterStatus.RUNNING)
-                    .ifPresent(status -> monitorSteps(clusterId));
+        try {
+            if (proceed.get()) {
+                monitorClusterStartUp(clusterId).filter(x -> x == EmrClusterStatus.RUNNING)
+                        .ifPresent(status -> monitorSteps(clusterId));
+                logger.info("Cluster " + clusterId + " monitoring complete");
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private Optional<EmrClusterStatus> monitorClusterStartUp(String clusterId) {
-        try {
-            if (proceed.get()) {
-                logger.info("Monitoring '" + clusterId + "'");
-                final ScheduledExecutorService startupMonitorExecutor = Executors.newSingleThreadScheduledExecutor();
-                startupMonitorExecutor
-                        .scheduleAtFixedRate(() -> checkClusterStatus(clusterId), 10, 10, TimeUnit.SECONDS);
-                clusterStartupLatch.await();
-                startupMonitorExecutor.shutdown();
-                return Optional.of(clusterStatus(emr, clusterId));
-            } else {
-                return Optional.empty();
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+    private Optional<EmrClusterStatus> monitorClusterStartUp(String clusterId) throws InterruptedException {
+        if (proceed.get()) {
+            logger.info("Monitoring '" + clusterId + "'");
+            final ScheduledExecutorService startupMonitorExecutor = Executors.newSingleThreadScheduledExecutor();
+            startupMonitorExecutor.scheduleAtFixedRate(() -> checkClusterStatus(clusterId), 10, 10, TimeUnit.SECONDS);
+            clusterStartupLatch.await();
+            logger.info("Shutting down startUp executor");
+            startupMonitorExecutor.shutdownNow();
+            logger.info(
+                    "Shut down startUp executor, shutdown: " + startupMonitorExecutor.isShutdown() + ", terminated: "
+                            + startupMonitorExecutor.isTerminated());
+            return Optional.of(clusterStatus(emr, clusterId));
+        } else {
             return Optional.empty();
         }
     }
 
-    private void monitorSteps(String clusterId) {
-        if (proceed.get()) {
-            try {
-                logger.info("Cluster is running, monitoring steps.");
-                final ScheduledExecutorService stepsMonitorExecutor = Executors.newSingleThreadScheduledExecutor();
-                stepsMonitorExecutor.scheduleWithFixedDelay(() -> {
-                    clusterSteps(emr, clusterId).stream()
-                            .filter(x -> EmrStepStatus.valueOf(x.getStatus().getState()) == EmrStepStatus.RUNNING)
-                            .findFirst().map(StepSummary::getId).ifPresent(stepId -> monitorStep(clusterId, stepId));
-
-                    if (allStepsFinished(emr, clusterId)) {
-                        logger.info("Cluster " + clusterId + " all steps completed: " + completedSteps(emr, clusterId) + ".");
-                        stepsMonitorLatch.countDown();
-                    } else {
-                        logger.info("Cluster " + clusterId + " has incomplete steps: " + incompleteSteps(emr, clusterId) + ".");
-                    }
-
-                }, 0, 1, TimeUnit.SECONDS);
-
-                stepsMonitorLatch.await();
-                stepsMonitorExecutor.shutdown();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+    private void checkClusterStatus(String clusterId) {
+        try {
+            EmrClusterStatus state = clusterStatus(emr, clusterId);
+            logger.info("Cluster '" + clusterId + "', status is '" + state + "'.");
+            if (state == EmrClusterStatus.RUNNING || state.hasCompleted()) {
+                clusterStartupLatch.countDown();
             }
+        } catch (Exception e) {
+            logger.error("Error encountered monitoring cluster status: '" + e.getMessage() + "'", e);
+            clusterStartupLatch.countDown();
         }
     }
 
-    private void monitorStep(String clusterId, String stepId) {
 
+    private void monitorSteps(String clusterId) {
+        try {
+            if (proceed.get()) {
+                logger.info("Cluster is running, monitoring steps.");
+                final ScheduledExecutorService stepsMonitorExecutor = Executors.newSingleThreadScheduledExecutor();
+                stepsMonitorExecutor.scheduleWithFixedDelay(() -> {
+                    checkForStepCompletion(clusterId);
+                }, 0, 5, TimeUnit.SECONDS);
+
+                stepsMonitorLatch.await();
+                logger.info("Shutting down stepsMonitor executor");
+                stepsMonitorExecutor.shutdownNow();
+                logger.info("Shut down stepsMonitor executor, shutdown: " + stepsMonitorExecutor.isShutdown()
+                        + ", terminated: " + stepsMonitorExecutor.isTerminated());
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void checkForStepCompletion(String clusterId) {
+        try {
+            clusterSteps(emr, clusterId).stream()
+                    .filter(x -> EmrStepStatus.valueOf(x.getStatus().getState()) == EmrStepStatus.RUNNING)
+                    .findFirst().map(StepSummary::getId).ifPresent(stepId -> monitorStepLogs(clusterId, stepId));
+
+            if (allStepsFinished(emr, clusterId)) {
+                logger.info("Cluster " + clusterId + " all steps completed: " + completedSteps(emr, clusterId)
+                        + ".");
+                stepsMonitorLatch.countDown();
+            } else {
+                logger.info("Cluster " + clusterId + " has incomplete steps: " + incompleteSteps(emr, clusterId)
+                        + ".");
+            }
+        } catch (Exception e) {
+            logger.error("Error encountered monitoring steps: '" + e.getMessage() + "'", e);
+            stepsMonitorLatch.countDown();
+        }
+    }
+
+    private void monitorStepLogs(String clusterId, String stepId) {
         try {
             final ScheduledExecutorService logsMonitorExecutor = Executors.newSingleThreadScheduledExecutor();
-            final List<String> logStreams = clusterStepLogStreams(emr, awsLogs, clusterId, logGroup);
-            final GetLogEventsRequest logEventsRequest = new GetLogEventsRequest().withLogGroupName(this.logGroup)
-                    .withStartFromHead(true);
-            stepMonitorLatch = new CountDownLatch(1);
+            logMonitorLatch = new CountDownLatch(1);
             AtomicReference<String> logStreamToken = new AtomicReference<>();
             logsMonitorExecutor.scheduleWithFixedDelay(() -> {
-                try {
-                    Step step = clusterStep(emr, clusterId, stepId);
-                    logger.info("Monitoring step '" + clusterId + "/" + step.getId() + "/" + step.getName() + "/" + step
-                            .getStatus().getState() + "', log group: '" + this.logGroup + "', logStream: '" + stepId
-                            + "'");
-
-                    logStreams.stream().filter(s -> s.contains(step.getName())).findFirst().ifPresent(logStream -> {
-                        boolean logsDrained = false;
-                        do {
-                            GetLogEventsResult result = awsLogs.getLogEvents(logEventsRequest.withLogStreamName(logStream));
-                            String nextToken = result.getNextForwardToken();
-                            if (nextToken != null && !nextToken.equals(logStreamToken.get())) {
-                                result.getEvents().stream().map(OutputLogEvent::getMessage)
-                                        .map(String::trim)
-                                        .forEach(message -> logger.info("Step '" + step.getName() + "/" + step.getId() + "': " + message));
-                            } else {
-                                logger.info("Step '" + step.getName() + "/" + step.getId() + "/" + step.getStatus().getState() + "': no new logs.");
-                                logsDrained = true;
-                            }
-                            logStreamToken.set(nextToken);
-                            logEventsRequest.setNextToken(logStreamToken.get());
-                            System.out.println("===============================================================================");
-                        } while (!logsDrained);
-                    });
-
-                    if (!EmrStepStatus.valueOf(step.getStatus().getState()).isActive()) {
-                        stepMonitorLatch.countDown();
-                    }
-                } catch (AWSLogsException e) {
-                    logger.info("Failed to get logs: '" + e.getMessage() + "'");
-                }
+                drainLogStream(clusterId, stepId, logStreamToken);
             }, 0, 5, TimeUnit.SECONDS);
 
-            stepMonitorLatch.await();
-            logsMonitorExecutor.shutdown();
-            awsLogs.getLogEvents(logEventsRequest);
+            logMonitorLatch.await();
+            logger.info("Shutting down " + stepId + " logsMonitor executor");
+            logsMonitorExecutor.shutdownNow();
+            logger.info(
+                    "Shut down " + stepId + " logsMonitor executor: " + "shutdown: " + logsMonitorExecutor.isShutdown()
+                            + " terminated: " + logsMonitorExecutor.isTerminated());
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void drainLogStream(String clusterId, String stepId, AtomicReference<String> logStreamToken) {
+        final GetLogEventsRequest logEventsRequest = new GetLogEventsRequest().withLogGroupName(this.logGroup)
+                .withStartFromHead(true);
+        try {
+            final List<String> logStreams = clusterStepLogStreams(emr, awsLogs, clusterId, logGroup);
+            Step step = clusterStep(emr, clusterId, stepId);
+            logger.info("Monitoring step '" + clusterId + "/" + step.getId() + "/" + step.getName() + "/" + step
+                    .getStatus().getState() + "', log group: '" + this.logGroup + "', logStreams: '"
+                    + logStreams + "'");
+
+            logStreams.stream().filter(s -> s.contains(step.getName())).findFirst().ifPresent(logStream -> {
+                boolean logsDrained = false;
+                do {
+                    logger.info(
+                            "Fetching logs for '" + step.getName() + "/" + step.getId() + "/" + step.getStatus()
+                                    .getState() + "'.");
+                    GetLogEventsResult result = awsLogs
+                            .getLogEvents(logEventsRequest.withLogStreamName(logStream));
+                    String nextToken = result.getNextForwardToken();
+                    if (nextToken != null && !nextToken.equals(logStreamToken.get())) {
+                        result.getEvents().stream().map(OutputLogEvent::getMessage).map(String::trim).forEach(
+                                message -> logger.info("Step '" + step.getName() + "/" + step.getId() + "': "
+                                        + message));
+                    } else {
+                        logger.info("Step '" + step.getName() + "/" + step.getId() + "/" + step.getStatus()
+                                .getState() + "': no new logs.");
+                        logsDrained = true;
+                    }
+                    logStreamToken.set(nextToken);
+                    logEventsRequest.setNextToken(logStreamToken.get());
+                }
+                while (!logsDrained && EmrStepStatus.valueOf(step.getStatus().getState()).isActive());
+            });
+
+            if (!EmrStepStatus.valueOf(step.getStatus().getState()).isActive()) {
+                logMonitorLatch.countDown();
+            }
+        } catch (Exception e) {
+            logger.error("Error encountered monitoring logs: '" + e.getMessage() + "'", e);
+            logMonitorLatch.countDown();
         }
     }
 
@@ -144,20 +185,12 @@ public class EmrProgressService extends AbstractCancellableService {
         super.cancel();
         this.clusterStartupLatch.countDown();
         this.stepsMonitorLatch.countDown();
-        this.stepMonitorLatch.countDown();
-    }
-
-    private void checkClusterStatus(String clusterId) {
-        EmrClusterStatus state = clusterStatus(emr, clusterId);
-        logger.info("Cluster '" + clusterId + "', status is '" + state + "'.");
-        if (state == EmrClusterStatus.RUNNING || state.hasCompleted()) {
-            clusterStartupLatch.countDown();
-        }
+        this.logMonitorLatch.countDown();
     }
 
     private final CountDownLatch clusterStartupLatch;
     private final CountDownLatch stepsMonitorLatch;
-    private CountDownLatch stepMonitorLatch;
+    private CountDownLatch logMonitorLatch;
     private final String logGroup;
     private final AmazonElasticMapReduce emr;
     private final AWSLogs awsLogs;
