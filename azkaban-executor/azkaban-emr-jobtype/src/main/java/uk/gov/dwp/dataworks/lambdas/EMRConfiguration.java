@@ -3,15 +3,15 @@ package uk.gov.dwp.dataworks.lambdas;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 public class EMRConfiguration {
     private final Overrides overrides;
 
     private S3Overrides s3Overrides;
 
-    public EMRConfiguration(String name, String config){
+    public EMRConfiguration(String name, String config) {
         this.overrides = new Overrides(name);
-        if (config != null){
+        if (config != null) {
             this.s3Overrides = new S3Overrides(config);
         }
     }
@@ -19,13 +19,15 @@ public class EMRConfiguration {
     public static EMRConfigurationBuilder builder() {
         return new EMRConfigurationBuilder();
     }
+
     public Overrides getOverrides() {
         return overrides;
     }
 
     @JsonProperty("s3_overrides")
-    public S3Overrides getS3Overrides() { return s3Overrides; }
-
+    public S3Overrides getS3Overrides() {
+        return s3Overrides;
+    }
 
     public static class EMRConfigurationBuilder {
         private String name;

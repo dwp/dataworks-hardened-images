@@ -23,48 +23,16 @@ public class ClientUtility {
         return useDevEnvironmentRemotely() ? assumedRoleLogsClient(region) : logsClient(region);
     }
 
-    public static AmazonDynamoDB amazonDynamoDb(String region) {
-        return useDevEnvironmentRemotely() ? assumedRoleDynamoDbClient(region) : dynamoDbClient(region);
-    }
-
-    public static AWSLambda amazonLambda(String region) {
-        return useDevEnvironmentRemotely() ? assumedRoleLambdaClient(region) : lambdaClient(region);
-    }
-
-    public static AmazonElasticMapReduce amazonElasticMapReduce(String region) {
-        return useDevEnvironmentRemotely() ? assumedRoleEmrClient(region) : emrClient(region);
-    }
-
-    private static AmazonDynamoDB dynamoDbClient(String region) {
-        return AmazonDynamoDBClientBuilder.standard().withRegion(region).build();
-    }
-
-    private static AmazonDynamoDB assumedRoleDynamoDbClient(String region) {
-        return assumedRoleClientBuilder(AmazonDynamoDBClientBuilder.standard(), region);
-    }
-
-    private static AWSLogs logsClient(String region) {
-        return AWSLogsClientBuilder.standard().withRegion(region).build();
+    private static boolean useDevEnvironmentRemotely() {
+        return "true".equals(System.getenv("AWS_USE_DEVELOPMENT_REMOTELY"));
     }
 
     private static AWSLogs assumedRoleLogsClient(String region) {
         return assumedRoleClientBuilder(AWSLogsClientBuilder.standard(), region);
     }
 
-    private static AWSLambda lambdaClient(String region) {
-        return AWSLambdaClientBuilder.standard().withRegion(region).build();
-    }
-
-    private static AWSLambda assumedRoleLambdaClient(String region) {
-        return assumedRoleClientBuilder(AWSLambdaClientBuilder.standard(), region);
-    }
-
-    private static AmazonElasticMapReduce emrClient(String region) {
-        return AmazonElasticMapReduceClientBuilder.standard().withRegion(region).build();
-    }
-
-    private static AmazonElasticMapReduce assumedRoleEmrClient(String region) {
-        return assumedRoleClientBuilder(AmazonElasticMapReduceClientBuilder.standard(), region);
+    private static AWSLogs logsClient(String region) {
+        return AWSLogsClientBuilder.standard().withRegion(region).build();
     }
 
     private static <B extends AwsSyncClientBuilder<B, C>, C> C assumedRoleClientBuilder(B builder, String region) {
@@ -83,7 +51,39 @@ public class ClientUtility {
         return result.getCredentials();
     }
 
-    private static boolean useDevEnvironmentRemotely() {
-        return "true".equals(System.getenv("AWS_USE_DEVELOPMENT_REMOTELY"));
+    public static AmazonDynamoDB amazonDynamoDb(String region) {
+        return useDevEnvironmentRemotely() ? assumedRoleDynamoDbClient(region) : dynamoDbClient(region);
+    }
+
+    private static AmazonDynamoDB assumedRoleDynamoDbClient(String region) {
+        return assumedRoleClientBuilder(AmazonDynamoDBClientBuilder.standard(), region);
+    }
+
+    private static AmazonDynamoDB dynamoDbClient(String region) {
+        return AmazonDynamoDBClientBuilder.standard().withRegion(region).build();
+    }
+
+    public static AWSLambda amazonLambda(String region) {
+        return useDevEnvironmentRemotely() ? assumedRoleLambdaClient(region) : lambdaClient(region);
+    }
+
+    private static AWSLambda assumedRoleLambdaClient(String region) {
+        return assumedRoleClientBuilder(AWSLambdaClientBuilder.standard(), region);
+    }
+
+    private static AWSLambda lambdaClient(String region) {
+        return AWSLambdaClientBuilder.standard().withRegion(region).build();
+    }
+
+    public static AmazonElasticMapReduce amazonElasticMapReduce(String region) {
+        return useDevEnvironmentRemotely() ? assumedRoleEmrClient(region) : emrClient(region);
+    }
+
+    private static AmazonElasticMapReduce assumedRoleEmrClient(String region) {
+        return assumedRoleClientBuilder(AmazonElasticMapReduceClientBuilder.standard(), region);
+    }
+
+    private static AmazonElasticMapReduce emrClient(String region) {
+        return AmazonElasticMapReduceClientBuilder.standard().withRegion(region).build();
     }
 }

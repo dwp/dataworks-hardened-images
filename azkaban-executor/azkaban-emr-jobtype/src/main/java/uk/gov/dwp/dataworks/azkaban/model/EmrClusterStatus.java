@@ -1,4 +1,4 @@
-package uk.gov.dwp.dataworks.azkaban.domain;
+package uk.gov.dwp.dataworks.azkaban.model;
 
 public enum EmrClusterStatus {
     BOOTSTRAPPING(true, false), RUNNING(true, false), STARTING(true, false), TERMINATED(false,

@@ -1,4 +1,4 @@
-package uk.gov.dwp.dataworks.azkaban.domain;
+package uk.gov.dwp.dataworks.azkaban.model;
 
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.fasterxml.jackson.databind.ObjectMapper;

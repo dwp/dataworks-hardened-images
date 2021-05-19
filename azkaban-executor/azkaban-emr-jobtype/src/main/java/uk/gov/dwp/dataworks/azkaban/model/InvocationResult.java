@@ -1,4 +1,4 @@
-package uk.gov.dwp.dataworks.azkaban.domain;
+package uk.gov.dwp.dataworks.azkaban.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -7,6 +7,10 @@ import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class InvocationResult {
+
+    private InvocationResultMetadata metadata;
+    private String clusterId;
+    private String clusterArn;
 
     public boolean wasSuccessful() {
         return metadata != null && metadata.wasSuccessful();
@@ -63,9 +67,5 @@ public class InvocationResult {
     public void setMetadata(InvocationResultMetadata metadata) {
         this.metadata = metadata;
     }
-
-    private InvocationResultMetadata metadata;
-    private String clusterId;
-    private String clusterArn;
 
 }

@@ -1,4 +1,4 @@
-package uk.gov.dwp.dataworks.azkaban.domain;
+package uk.gov.dwp.dataworks.azkaban.model;
 
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -11,6 +11,12 @@ import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.CORR
 import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATE_FIELD;
 
 public class InvocationPayload {
+
+    private final static String DEFAULT_VALUE = "NOT_SET";
+    private final String correlationId;
+    private final String prefix;
+    private final String snapshotType;
+    private final String exportDate;
 
     private InvocationPayload(String correlationId, String prefix, String snapshotType, String exportDate) {
         this.correlationId = correlationId;
@@ -71,11 +77,5 @@ public class InvocationPayload {
     public String getExportDate() {
         return exportDate;
     }
-
-    private final static String DEFAULT_VALUE = "NOT_SET";
-    private final String correlationId;
-    private final String prefix;
-    private final String snapshotType;
-    private final String exportDate;
 
 }

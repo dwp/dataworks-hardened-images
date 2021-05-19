@@ -24,8 +24,8 @@ public class LogUtility {
         do {
             final DescribeLogStreamsResult result = logs.describeLogStreams(request);
             logStreams.addAll(result.getLogStreams().stream().map(LogStream::getLogStreamName)
-                                 .filter(logStream -> clusterInstances.stream().anyMatch(logStream::contains))
-                                 .collect(Collectors.toList()));
+                                    .filter(logStream -> clusterInstances.stream().anyMatch(logStream::contains))
+                                    .collect(Collectors.toList()));
             nextToken = result.getNextToken();
             request = new DescribeLogStreamsRequest().withLogGroupName(logGroup).withNextToken(nextToken);
         }

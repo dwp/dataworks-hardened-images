@@ -7,11 +7,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AbstractEmrLaunchingDelegate {
 
+    private final static Logger logger = LoggerFactory.getLogger(AbstractEmrLaunchingDelegate.class);
+    final AtomicBoolean proceed = new AtomicBoolean(true);
+
     public void cancel() {
         logger.warn("Operation has been cancelled");
         proceed.set(false);
     }
-
-    private final static Logger logger = LoggerFactory.getLogger(AbstractEmrLaunchingDelegate.class);
-    final AtomicBoolean proceed = new AtomicBoolean(true);
 }

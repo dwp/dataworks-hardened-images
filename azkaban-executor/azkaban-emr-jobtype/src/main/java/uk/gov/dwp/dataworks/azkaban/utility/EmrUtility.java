@@ -17,8 +17,8 @@ import com.amazonaws.services.elasticmapreduce.model.ListStepsResult;
 import com.amazonaws.services.elasticmapreduce.model.Step;
 import com.amazonaws.services.elasticmapreduce.model.StepStatus;
 import com.amazonaws.services.elasticmapreduce.model.StepSummary;
-import uk.gov.dwp.dataworks.azkaban.domain.EmrClusterStatus;
-import uk.gov.dwp.dataworks.azkaban.domain.EmrStepStatus;
+import uk.gov.dwp.dataworks.azkaban.model.EmrClusterStatus;
+import uk.gov.dwp.dataworks.azkaban.model.EmrStepStatus;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,19 +34,29 @@ public class EmrUtility {
         return clusterStepStatuses(emr, clusterId).noneMatch(EmrStepStatus::isActive);
     }
 
-    public static boolean allStepsSucceeded(AmazonElasticMapReduce emr, String clusterId) {
-        return clusterStepStatuses(emr, clusterId).allMatch(s -> s == EmrStepStatus.COMPLETED);
-    }
-
     private static Stream<EmrStepStatus> clusterStepStatuses(AmazonElasticMapReduce emr, String clusterId) {
         return clusterSteps(emr, clusterId).stream().map(StepSummary::getStatus).map(StepStatus::getState)
                                            .map(EmrStepStatus::valueOf);
+    }
+
+    public static List<StepSummary> clusterSteps(AmazonElasticMapReduce emr, String clusterId) {
+        ListStepsRequest request = new ListStepsRequest().withClusterId(clusterId);
+        ListStepsResult result = emr.listSteps(request);
+        return result.getSteps();
+    }
+
+    public static boolean allStepsSucceeded(AmazonElasticMapReduce emr, String clusterId) {
+        return clusterStepStatuses(emr, clusterId).allMatch(s -> s == EmrStepStatus.COMPLETED);
     }
 
     public static EmrClusterStatus clusterStatus(AmazonElasticMapReduce emr, String clusterId) {
         DescribeClusterResult clusterDetails = emr.describeCluster(describeClusterRequest(clusterId));
         ClusterStatus status = clusterDetails.getCluster().getStatus();
         return EmrClusterStatus.valueOf(status.getState());
+    }
+
+    private static DescribeClusterRequest describeClusterRequest(String clusterId) {
+        return new DescribeClusterRequest().withClusterId(clusterId);
     }
 
     public static String incompleteSteps(AmazonElasticMapReduce emr, String clusterId) {
@@ -93,10 +103,6 @@ public class EmrUtility {
         return clusters;
     }
 
-    public static boolean isRunning(StepSummary x) {
-        return EmrStepStatus.valueOf(x.getStatus().getState()) == EmrStepStatus.RUNNING;
-    }
-
     private static ListClustersRequest clusterRequest(String marker) {
         ListClustersRequest clustersRequest = new ListClustersRequest();
         clustersRequest.setClusterStates(Arrays.asList("STARTING", "BOOTSTRAPPING", "WAITING", "RUNNING"));
@@ -106,14 +112,8 @@ public class EmrUtility {
         return clustersRequest;
     }
 
-    public static List<StepSummary> clusterSteps(AmazonElasticMapReduce emr, String clusterId) {
-        ListStepsRequest request = new ListStepsRequest().withClusterId(clusterId);
-        ListStepsResult result = emr.listSteps(request);
-        return result.getSteps();
-    }
-
-    private static DescribeClusterRequest describeClusterRequest(String clusterId) {
-        return new DescribeClusterRequest().withClusterId(clusterId);
+    public static boolean isRunning(StepSummary x) {
+        return EmrStepStatus.valueOf(x.getStatus().getState()) == EmrStepStatus.RUNNING;
     }
 
 }

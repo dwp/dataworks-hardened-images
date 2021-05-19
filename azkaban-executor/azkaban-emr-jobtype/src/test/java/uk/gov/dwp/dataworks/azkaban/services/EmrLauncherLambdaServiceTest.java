@@ -6,9 +6,9 @@ import com.amazonaws.services.lambda.model.InvokeResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import uk.gov.dwp.dataworks.azkaban.domain.InvocationPayload;
-import uk.gov.dwp.dataworks.azkaban.domain.InvocationResult;
-import uk.gov.dwp.dataworks.azkaban.domain.InvocationResultMetadata;
+import uk.gov.dwp.dataworks.azkaban.model.InvocationPayload;
+import uk.gov.dwp.dataworks.azkaban.model.InvocationResult;
+import uk.gov.dwp.dataworks.azkaban.model.InvocationResultMetadata;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;

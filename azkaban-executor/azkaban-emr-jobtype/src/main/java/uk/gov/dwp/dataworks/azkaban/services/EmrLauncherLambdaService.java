@@ -8,12 +8,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.dwp.dataworks.azkaban.domain.InvocationPayload;
-import uk.gov.dwp.dataworks.azkaban.domain.InvocationResult;
+import uk.gov.dwp.dataworks.azkaban.model.InvocationPayload;
+import uk.gov.dwp.dataworks.azkaban.model.InvocationResult;
 
 import java.util.Optional;
 
 public class EmrLauncherLambdaService extends AbstractEmrLaunchingDelegate {
+
+    private final static Logger logger = LoggerFactory.getLogger(EmrLauncherLambdaService.class);
+    private final AWSLambda awsLambda;
+    private final String functionName;
 
     public EmrLauncherLambdaService(final AWSLambda awsLambda, final String functionName) {
         this.awsLambda = awsLambda;
@@ -45,8 +49,4 @@ public class EmrLauncherLambdaService extends AbstractEmrLaunchingDelegate {
                                   .withPayload(new ObjectMapper().writeValueAsString(payload))
                                   .withInvocationType(InvocationType.RequestResponse);
     }
-
-    private final static Logger logger = LoggerFactory.getLogger(EmrLauncherLambdaService.class);
-    private final AWSLambda awsLambda;
-    private final String functionName;
 }

@@ -8,7 +8,7 @@ import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.amazonaws.services.logs.model.OutputLogEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.dwp.dataworks.azkaban.domain.EmrStepStatus;
+import uk.gov.dwp.dataworks.azkaban.model.EmrStepStatus;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -21,6 +21,12 @@ import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.clusterStep;
 import static uk.gov.dwp.dataworks.azkaban.utility.LogUtility.clusterStepLogStreams;
 
 public class LogService extends AbstractEmrLaunchingDelegate {
+
+    private final String logGroup;
+    private final AmazonElasticMapReduce emr;
+    private final AWSLogs awsLogs;
+    private final Logger logger = LoggerFactory.getLogger(LogService.class);
+    private CountDownLatch logMonitorLatch;
 
     public LogService(AmazonElasticMapReduce emr, AWSLogs awsLogs, String logGroup) {
         this.emr = emr;
@@ -40,20 +46,14 @@ public class LogService extends AbstractEmrLaunchingDelegate {
                                 TimeUnit.SECONDS);
 
                 logMonitorLatch.await();
-                logger.info("Shutting down " + stepId + " logsMonitor executor");
+                logger.info("Shutting down '" + stepId + "' logsMonitor executor.");
                 logsMonitorExecutor.shutdownNow();
-                logger.info("Shut down " + stepId + " logsMonitor executor: " + "shutdown: " + logsMonitorExecutor
-                        .isShutdown() + " terminated: " + logsMonitorExecutor.isTerminated());
+                logger.info("Shut down '" + stepId + "' logsMonitor executor: " + "shutdown: " + logsMonitorExecutor
+                        .isShutdown() + ", terminated: " + logsMonitorExecutor.isTerminated() + ".");
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    @Override
-    public void cancel() {
-        super.cancel();
-        this.logMonitorLatch.countDown();
     }
 
     private void checkLogStream(String clusterId, String stepId, AtomicReference<String> logStreamToken) {
@@ -63,7 +63,6 @@ public class LogService extends AbstractEmrLaunchingDelegate {
             try {
                 final List<String> logStreams = clusterStepLogStreams(emr, awsLogs, clusterId, logGroup);
                 final Step step = clusterStep(emr, clusterId, stepId);
-
                 logger.info("Monitoring step '" + clusterId + "/" + step.getId() + "/" + step.getName() + "/" + step
                         .getStatus().getState() + "', log group: '" + this.logGroup + "', logStreams: '" + logStreams
                         + "'");
@@ -106,9 +105,9 @@ public class LogService extends AbstractEmrLaunchingDelegate {
         }
     }
 
-    private final String logGroup;
-    private final AmazonElasticMapReduce emr;
-    private final AWSLogs awsLogs;
-    private final Logger logger = LoggerFactory.getLogger(EmrProgressService.class);
-    private CountDownLatch logMonitorLatch;
+    @Override
+    public void cancel() {
+        super.cancel();
+        this.logMonitorLatch.countDown();
+    }
 }
