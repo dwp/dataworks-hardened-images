@@ -22,12 +22,6 @@ import static uk.gov.dwp.dataworks.azkaban.utility.LogUtility.clusterStepLogStre
 
 public class LogService extends AbstractEmrLaunchingDelegate {
 
-    private final String logGroup;
-    private final AmazonElasticMapReduce emr;
-    private final AWSLogs awsLogs;
-    private final Logger logger = LoggerFactory.getLogger(LogService.class);
-    private CountDownLatch logMonitorLatch;
-
     public LogService(AmazonElasticMapReduce emr, AWSLogs awsLogs, String logGroup) {
         this.emr = emr;
         this.logMonitorLatch = new CountDownLatch(1);
@@ -110,4 +104,10 @@ public class LogService extends AbstractEmrLaunchingDelegate {
         super.cancel();
         this.logMonitorLatch.countDown();
     }
+
+    private final String logGroup;
+    private final AmazonElasticMapReduce emr;
+    private final AWSLogs awsLogs;
+    private final Logger logger = LoggerFactory.getLogger(LogService.class);
+    private CountDownLatch logMonitorLatch;
 }

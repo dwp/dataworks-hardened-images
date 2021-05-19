@@ -15,10 +15,6 @@ import java.util.Optional;
 
 public class EmrLauncherLambdaService extends AbstractEmrLaunchingDelegate {
 
-    private final static Logger logger = LoggerFactory.getLogger(EmrLauncherLambdaService.class);
-    private final AWSLambda awsLambda;
-    private final String functionName;
-
     public EmrLauncherLambdaService(final AWSLambda awsLambda, final String functionName) {
         this.awsLambda = awsLambda;
         this.functionName = functionName;
@@ -49,4 +45,8 @@ public class EmrLauncherLambdaService extends AbstractEmrLaunchingDelegate {
                                   .withPayload(new ObjectMapper().writeValueAsString(payload))
                                   .withInvocationType(InvocationType.RequestResponse);
     }
+
+    private final static Logger logger = LoggerFactory.getLogger(EmrLauncherLambdaService.class);
+    private final AWSLambda awsLambda;
+    private final String functionName;
 }

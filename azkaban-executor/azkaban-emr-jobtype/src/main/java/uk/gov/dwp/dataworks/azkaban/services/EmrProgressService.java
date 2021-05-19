@@ -22,12 +22,6 @@ import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.incompleteSteps;
 
 public class EmrProgressService extends AbstractEmrLaunchingDelegate {
 
-    private final CountDownLatch clusterStartupLatch;
-    private final CountDownLatch stepsMonitorLatch;
-    private final AmazonElasticMapReduce emr;
-    private final LogService logService;
-    private final Logger logger = LoggerFactory.getLogger(EmrProgressService.class);
-
     public EmrProgressService(AmazonElasticMapReduce emr, LogService logService) {
         this.emr = emr;
         this.clusterStartupLatch = new CountDownLatch(1);
@@ -129,4 +123,10 @@ public class EmrProgressService extends AbstractEmrLaunchingDelegate {
         this.clusterStartupLatch.countDown();
         this.stepsMonitorLatch.countDown();
     }
+
+    private final CountDownLatch clusterStartupLatch;
+    private final CountDownLatch stepsMonitorLatch;
+    private final AmazonElasticMapReduce emr;
+    private final LogService logService;
+    private final Logger logger = LoggerFactory.getLogger(EmrProgressService.class);
 }

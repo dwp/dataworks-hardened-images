@@ -12,12 +12,6 @@ import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATE
 
 public class InvocationPayload {
 
-    private final static String DEFAULT_VALUE = "NOT_SET";
-    private final String correlationId;
-    private final String prefix;
-    private final String snapshotType;
-    private final String exportDate;
-
     private InvocationPayload(String correlationId, String prefix, String snapshotType, String exportDate) {
         this.correlationId = correlationId;
         this.prefix = prefix;
@@ -77,5 +71,11 @@ public class InvocationPayload {
     public String getExportDate() {
         return exportDate;
     }
+
+    private final static String DEFAULT_VALUE = "NOT_SET";
+    private final String correlationId;
+    private final String prefix;
+    private final String snapshotType;
+    private final String exportDate;
 
 }

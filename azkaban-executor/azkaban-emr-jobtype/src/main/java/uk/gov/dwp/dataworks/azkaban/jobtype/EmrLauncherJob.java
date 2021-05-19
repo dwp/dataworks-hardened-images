@@ -44,14 +44,21 @@ public class EmrLauncherJob extends AbstractProcessJob {
 
     @Override
     public void run() {
-        this.notificationService.notifyStarted();
-//        boolean succeeded = dependencyMetadata().flatMap(emrLauncherLambdaService::invokeEmrLauncher)
-//                                                .filter(InvocationResult::wasSuccessful)
-//                                                .map(InvocationResult::getClusterId).map(emrProgressService::observeEmr)
-//                                                .orElse(false);
+        try {
+            this.notificationService.notifyStarted();
+            boolean succeeded = dependencyMetadata().flatMap(emrLauncherLambdaService::invokeEmrLauncher)
+                                                    .filter(InvocationResult::wasSuccessful)
+                                                    .map(InvocationResult::getClusterId).map(emrProgressService::observeEmr)
+                                                    .orElse(false);
 
-        this.notificationService.notifySucceeded();
-        this.notificationService.notifyFailed();
+            if (succeeded) {
+                this.notificationService.notifySucceeded();
+            } else {
+                this.notificationService.notifyFailed();
+            }
+        } catch (Exception e) {
+            this.notificationService.notifyFailed();
+        }
     }
 
     @Override

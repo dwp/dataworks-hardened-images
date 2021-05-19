@@ -24,17 +24,6 @@ import java.util.stream.Collectors;
 
 public class PipelineMetadataService extends AbstractEmrLaunchingDelegate {
 
-    public final static String CORRELATION_ID_FIELD = "Correlation_Id";
-    public final static String DATA_PRODUCT_FIELD = "DataProduct";
-    public final static String STATUS_FIELD = "Status";
-    public final static String DATE_FIELD = "Date";
-    private final static String SUCCESSFUL_COMPLETION_STATUS = "Completed";
-    private final static String FAILED_COMPLETION_STATUS = "Failed";
-    private final static Logger logger = LoggerFactory.getLogger(PipelineMetadataService.class);
-    private final AmazonDynamoDB dynamoDb;
-    private final AtomicBoolean proceed = new AtomicBoolean(true);
-    private CountDownLatch latch = new CountDownLatch(1);
-
     public PipelineMetadataService(final AmazonDynamoDB dynamoDB) {
         this.dynamoDb = dynamoDB;
     }
@@ -178,4 +167,14 @@ public class PipelineMetadataService extends AbstractEmrLaunchingDelegate {
         return results;
     }
 
+    public final static String CORRELATION_ID_FIELD = "Correlation_Id";
+    public final static String DATA_PRODUCT_FIELD = "DataProduct";
+    public final static String STATUS_FIELD = "Status";
+    public final static String DATE_FIELD = "Date";
+    private final static String SUCCESSFUL_COMPLETION_STATUS = "Completed";
+    private final static String FAILED_COMPLETION_STATUS = "Failed";
+    private final static Logger logger = LoggerFactory.getLogger(PipelineMetadataService.class);
+    private final AmazonDynamoDB dynamoDb;
+    private final AtomicBoolean proceed = new AtomicBoolean(true);
+    private CountDownLatch latch = new CountDownLatch(1);
 }
