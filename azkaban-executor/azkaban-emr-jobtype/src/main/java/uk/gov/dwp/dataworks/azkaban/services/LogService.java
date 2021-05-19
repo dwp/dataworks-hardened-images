@@ -22,6 +22,12 @@ import static uk.gov.dwp.dataworks.azkaban.utility.LogUtility.clusterStepLogStre
 
 public class LogService extends AbstractCancellableService {
 
+    private final String logGroup;
+    private final AmazonElasticMapReduce emr;
+    private final AWSLogs awsLogs;
+    private final Logger logger = LoggerFactory.getLogger(EmrProgressService.class);
+    private CountDownLatch logMonitorLatch;
+
     public LogService(AmazonElasticMapReduce emr, AWSLogs awsLogs, String logGroup) {
         this.emr = emr;
         this.logMonitorLatch = new CountDownLatch(1);
@@ -59,7 +65,7 @@ public class LogService extends AbstractCancellableService {
     private void checkLogStream(String clusterId, String stepId, AtomicReference<String> logStreamToken) {
         if (proceed.get()) {
             final GetLogEventsRequest logEventsRequest = new GetLogEventsRequest().withLogGroupName(this.logGroup)
-                    .withStartFromHead(true);
+                                                                                  .withStartFromHead(true);
             try {
                 final List<String> logStreams = clusterStepLogStreams(emr, awsLogs, clusterId, logGroup);
                 final Step step = clusterStep(emr, clusterId, stepId);
@@ -68,7 +74,7 @@ public class LogService extends AbstractCancellableService {
                         + "'");
 
                 logStreams.stream().filter(s -> s.contains(step.getName())).findFirst()
-                        .ifPresent(logStream -> drainLogStream(logStreamToken, logEventsRequest, step, logStream));
+                          .ifPresent(logStream -> drainLogStream(logStreamToken, logEventsRequest, step, logStream));
 
                 if (!EmrStepStatus.valueOf(step.getStatus().getState()).isActive()) {
                     logMonitorLatch.countDown();
@@ -104,11 +110,5 @@ public class LogService extends AbstractCancellableService {
             while (!logsDrained && EmrStepStatus.valueOf(step.getStatus().getState()).isActive() && proceed.get());
         }
     }
-
-    private CountDownLatch logMonitorLatch;
-    private final String logGroup;
-    private final AmazonElasticMapReduce emr;
-    private final AWSLogs awsLogs;
-    private final Logger logger = LoggerFactory.getLogger(EmrProgressService.class);
 
 }

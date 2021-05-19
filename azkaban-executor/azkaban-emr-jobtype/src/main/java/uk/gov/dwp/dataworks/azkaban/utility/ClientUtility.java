@@ -23,7 +23,6 @@ public class ClientUtility {
         return useDevEnvironmentRemotely() ? assumedRoleLogsClient(region) : logsClient(region);
     }
 
-
     public static AmazonDynamoDB amazonDynamoDb(String region) {
         return useDevEnvironmentRemotely() ? assumedRoleDynamoDbClient(region) : dynamoDbClient(region);
     }
@@ -77,7 +76,8 @@ public class ClientUtility {
 
     private static Credentials credentials(String region) {
         AssumeRoleRequest roleRequest = new AssumeRoleRequest().withRoleArn(System.getenv("AWS_ASSUMED_ROLE"))
-                .withRoleSessionName("development-session").withDurationSeconds(60 * 60);
+                                                               .withRoleSessionName("development-session")
+                                                               .withDurationSeconds(60 * 60);
         AWSSecurityTokenService client = AWSSecurityTokenServiceClientBuilder.standard().withRegion(region).build();
         AssumeRoleResult result = client.assumeRole(roleRequest);
         return result.getCredentials();

@@ -17,6 +17,12 @@ import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.*;
 
 public class EmrProgressService extends AbstractCancellableService {
 
+    private final CountDownLatch clusterStartupLatch;
+    private final CountDownLatch stepsMonitorLatch;
+    private final AmazonElasticMapReduce emr;
+    private final LogService logService;
+    private final Logger logger = LoggerFactory.getLogger(EmrProgressService.class);
+
     public EmrProgressService(AmazonElasticMapReduce emr, LogService logService) {
         this.emr = emr;
         this.clusterStartupLatch = new CountDownLatch(1);
@@ -28,7 +34,7 @@ public class EmrProgressService extends AbstractCancellableService {
         if (proceed.get()) {
             try {
                 monitorClusterStartUp(clusterId).filter(x -> x == EmrClusterStatus.RUNNING)
-                        .ifPresent(status -> monitorSteps(clusterId));
+                                                .ifPresent(status -> monitorSteps(clusterId));
                 logger.info("Cluster " + clusterId + " monitoring complete");
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -90,7 +96,7 @@ public class EmrProgressService extends AbstractCancellableService {
         if (proceed.get()) {
             try {
                 clusterSteps(emr, clusterId).stream().filter(EmrUtility::isRunning).findFirst().map(StepSummary::getId)
-                        .ifPresent(stepId -> logService.monitorStepLogs(clusterId, stepId));
+                                            .ifPresent(stepId -> logService.monitorStepLogs(clusterId, stepId));
                 if (allStepsFinished(emr, clusterId)) {
                     logger.info(
                             "Cluster " + clusterId + " all steps completed: " + completedSteps(emr, clusterId) + ".");
@@ -113,10 +119,4 @@ public class EmrProgressService extends AbstractCancellableService {
         this.clusterStartupLatch.countDown();
         this.stepsMonitorLatch.countDown();
     }
-
-    private final CountDownLatch clusterStartupLatch;
-    private final CountDownLatch stepsMonitorLatch;
-    private final AmazonElasticMapReduce emr;
-    private final LogService logService;
-    private final Logger logger = LoggerFactory.getLogger(EmrProgressService.class);
 }

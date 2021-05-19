@@ -12,7 +12,7 @@ public class EmrUtility {
 
     public static boolean allStepsFinished(AmazonElasticMapReduce emr, String clusterId) {
         return clusterSteps(emr, clusterId).stream().map(StepSummary::getStatus).map(StepStatus::getState)
-                .map(EmrStepStatus::valueOf).noneMatch(EmrStepStatus::isActive);
+                                           .map(EmrStepStatus::valueOf).noneMatch(EmrStepStatus::isActive);
     }
 
     public static EmrClusterStatus clusterStatus(AmazonElasticMapReduce emr, String clusterId) {
@@ -22,23 +22,23 @@ public class EmrUtility {
     }
 
     public static String incompleteSteps(AmazonElasticMapReduce emr, String clusterId) {
-        return clusterSteps(emr, clusterId).stream().filter(s -> EmrStepStatus.valueOf(s.getStatus().getState()).isActive())
-                .map(x -> x.getId() + "/" + x.getName() + "/" + x.getStatus().getState())
-                .collect(Collectors.joining(", "));
+        return clusterSteps(emr, clusterId).stream()
+                                           .filter(s -> EmrStepStatus.valueOf(s.getStatus().getState()).isActive())
+                                           .map(x -> x.getId() + "/" + x.getName() + "/" + x.getStatus().getState())
+                                           .collect(Collectors.joining(", "));
     }
 
     public static String completedSteps(AmazonElasticMapReduce emr, String clusterId) {
-        return clusterSteps(emr, clusterId).stream().filter(s -> !EmrStepStatus.valueOf(s.getStatus().getState()).isActive())
-                .map(x -> x.getId() + "/" + x.getName() + "/" + x.getStatus().getState())
-                .collect(Collectors.joining(", "));
+        return clusterSteps(emr, clusterId).stream()
+                                           .filter(s -> !EmrStepStatus.valueOf(s.getStatus().getState()).isActive())
+                                           .map(x -> x.getId() + "/" + x.getName() + "/" + x.getStatus().getState())
+                                           .collect(Collectors.joining(", "));
     }
-
 
     public static Set<String> clusterInstances(AmazonElasticMapReduce emr, String clusterId) {
         final ListInstancesRequest instancesRequest = new ListInstancesRequest().withClusterId(clusterId);
         final ListInstancesResult instancesResult = emr.listInstances(instancesRequest);
-        return instancesResult.getInstances().stream()
-                .map(Instance::getEc2InstanceId).collect(Collectors.toSet());
+        return instancesResult.getInstances().stream().map(Instance::getEc2InstanceId).collect(Collectors.toSet());
     }
 
     public static Step clusterStep(AmazonElasticMapReduce emr, String clusterId, String stepId) {
@@ -49,7 +49,7 @@ public class EmrUtility {
 
     public static Optional<String> activeClusterId(AmazonElasticMapReduce emr, String clusterName) {
         return activeClusterSummaries(emr).stream().filter(x -> x.getName().equals(clusterName))
-                .map(ClusterSummary::getId).findFirst();
+                                          .map(ClusterSummary::getId).findFirst();
     }
 
     public static List<ClusterSummary> activeClusterSummaries(AmazonElasticMapReduce emr) {
@@ -59,7 +59,8 @@ public class EmrUtility {
             ListClustersResult clustersResult = emr.listClusters(clusterRequest(marker));
             marker = clustersResult.getMarker();
             clusters.addAll(clustersResult.getClusters());
-        } while (marker != null && !marker.trim().equals(""));
+        }
+        while (marker != null && !marker.trim().equals(""));
 
         return clusters;
     }
@@ -67,7 +68,6 @@ public class EmrUtility {
     public static boolean isRunning(StepSummary x) {
         return EmrStepStatus.valueOf(x.getStatus().getState()) == EmrStepStatus.RUNNING;
     }
-
 
     private static ListClustersRequest clusterRequest(String marker) {
         ListClustersRequest clustersRequest = new ListClustersRequest();

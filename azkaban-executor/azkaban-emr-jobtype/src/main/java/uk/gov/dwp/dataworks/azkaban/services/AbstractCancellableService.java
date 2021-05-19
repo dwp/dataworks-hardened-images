@@ -7,13 +7,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AbstractCancellableService implements CancellableService {
 
+    private final static Logger logger = LoggerFactory.getLogger(AbstractCancellableService.class);
+    final AtomicBoolean proceed = new AtomicBoolean(true);
+
     @Override
     public void cancel() {
         logger.warn("Operation has been cancelled");
         proceed.set(false);
     }
-
-    final AtomicBoolean proceed = new AtomicBoolean(true);
-
-    private final static Logger logger = LoggerFactory.getLogger(AbstractCancellableService.class);
 }

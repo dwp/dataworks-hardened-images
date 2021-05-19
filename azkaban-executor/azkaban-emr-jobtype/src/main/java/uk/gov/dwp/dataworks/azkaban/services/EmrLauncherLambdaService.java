@@ -15,6 +15,10 @@ import java.util.Optional;
 
 public class EmrLauncherLambdaService extends AbstractCancellableService {
 
+    private final static Logger logger = LoggerFactory.getLogger(EmrLauncherLambdaService.class);
+    private final AWSLambda awsLambda;
+    private final String functionName;
+
     public EmrLauncherLambdaService(final AWSLambda awsLambda, final String functionName) {
         this.awsLambda = awsLambda;
         this.functionName = functionName;
@@ -42,11 +46,7 @@ public class EmrLauncherLambdaService extends AbstractCancellableService {
 
     private InvokeRequest invokeRequest(InvocationPayload payload) throws JsonProcessingException {
         return new InvokeRequest().withFunctionName(this.functionName)
-                .withPayload(new ObjectMapper().writeValueAsString(payload))
-                .withInvocationType(InvocationType.RequestResponse);
+                                  .withPayload(new ObjectMapper().writeValueAsString(payload))
+                                  .withInvocationType(InvocationType.RequestResponse);
     }
-
-    private final AWSLambda awsLambda;
-    private final String functionName;
-    private final static Logger logger = LoggerFactory.getLogger(EmrLauncherLambdaService.class);
 }

@@ -12,10 +12,28 @@ import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATE
 
 public class InvocationPayload {
 
+    private final static String DEFAULT_VALUE = "NOT_SET";
+    private final String correlationId;
+    private final String prefix;
+    private final String snapshotType;
+    private final String exportDate;
+
+    private InvocationPayload(String correlationId, String prefix, String snapshotType, String exportDate) {
+        this.correlationId = correlationId;
+        this.prefix = prefix;
+        this.snapshotType = snapshotType;
+        this.exportDate = exportDate;
+    }
+
     public static InvocationPayload from(Map<String, AttributeValue> entry) {
         return new InvocationPayload(attributeValue(entry, CORRELATION_ID_FIELD),
                 attributeValue(entry, "S3_Prefix_Analytical_DataSet", "S3_Prefix", "S3_Prefix_Snapshots"),
                 attributeValue(entry, "Snapshot_Type"), attributeValue(entry, DATE_FIELD));
+    }
+
+    private static String attributeValue(Map<String, AttributeValue> map, String... keys) {
+        return Arrays.stream(keys).filter(map::containsKey).map(map::get).map(AttributeValue::getS).findFirst()
+                     .orElse(DEFAULT_VALUE);
     }
 
     @Override
@@ -40,13 +58,6 @@ public class InvocationPayload {
         return Objects.hash(correlationId, prefix, snapshotType, exportDate);
     }
 
-    private InvocationPayload(String correlationId, String prefix, String snapshotType, String exportDate) {
-        this.correlationId = correlationId;
-        this.prefix = prefix;
-        this.snapshotType = snapshotType;
-        this.exportDate = exportDate;
-    }
-
     @JsonProperty("correlation_id")
     public String getCorrelationId() {
         return correlationId;
@@ -66,17 +77,5 @@ public class InvocationPayload {
     public String getExportDate() {
         return exportDate;
     }
-
-    private static String attributeValue(Map<String, AttributeValue> map, String... keys) {
-        return Arrays.stream(keys).filter(map::containsKey).map(map::get).map(AttributeValue::getS).findFirst()
-                .orElse(DEFAULT_VALUE);
-    }
-
-    private final String correlationId;
-    private final String prefix;
-    private final String snapshotType;
-    private final String exportDate;
-
-    private final static String DEFAULT_VALUE = "NOT_SET";
 
 }

@@ -1,13 +1,11 @@
 package uk.gov.dwp.dataworks.azkaban.domain;
 
 public enum EmrClusterStatus {
-    BOOTSTRAPPING(true, false),
-    RUNNING(true, false),
-    STARTING(true, false),
-    TERMINATED(false, true),
-    TERMINATED_WITH_ERRORS(false, true),
-    TERMINATING(true, true),
-    WAITING(true, true);
+    BOOTSTRAPPING(true, false), RUNNING(true, false), STARTING(true, false), TERMINATED(false,
+            true), TERMINATED_WITH_ERRORS(false, true), TERMINATING(true, true), WAITING(true, true);
+
+    final boolean active;
+    final boolean completed;
 
     EmrClusterStatus(boolean active, boolean completed) {
         this.active = active;
@@ -21,7 +19,4 @@ public enum EmrClusterStatus {
     public boolean hasCompleted() {
         return completed;
     }
-
-    final boolean active;
-    final boolean completed;
 }
