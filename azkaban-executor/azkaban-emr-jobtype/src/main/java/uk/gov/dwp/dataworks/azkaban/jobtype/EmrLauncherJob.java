@@ -50,6 +50,8 @@ public class EmrLauncherJob extends AbstractProcessJob {
 //                                                .map(InvocationResult::getClusterId).map(emrProgressService::observeEmr)
 //                                                .orElse(false);
 
+        this.notificationService.notifySucceeded();
+        this.notificationService.notifyFailed();
     }
 
     @Override
