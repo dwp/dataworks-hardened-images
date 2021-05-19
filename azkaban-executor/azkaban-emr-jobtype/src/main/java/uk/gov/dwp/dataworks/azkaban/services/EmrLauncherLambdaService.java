@@ -21,20 +21,21 @@ public class EmrLauncherLambdaService extends AbstractCancellableService {
     }
 
     public Optional<InvocationResult> invokeEmrLauncher(final InvocationPayload payload) {
-        try {
-            if (proceed.get()) {
+        if (proceed.get()) {
+            try {
                 logger.info("Invoking lambda '" + functionName + "', payload: '" + payload + "'");
                 InvokeResult result = awsLambda.invoke(invokeRequest(payload));
-                logger.info("Invoked lambda '" + functionName + "', payload: '" + payload + "', result: '" + result + "'");
+                logger.info(
+                        "Invoked lambda '" + functionName + "', payload: '" + payload + "', result: '" + result + "'");
                 String resultPayload = new String(result.getPayload().array());
                 return Optional.of(new ObjectMapper().readValue(resultPayload, InvocationResult.class));
-            } else {
-                logger.warn("Not invoking lambda, due to cancellation.");
+            } catch (Exception e) {
+                logger.error("Failed to invoke lambda launcher, function: " + functionName + "', payload: '" + payload
+                        + "', message: '" + e.getMessage() + "'.", e);
                 return Optional.empty();
             }
-        } catch (Exception e) {
-            logger.error("Failed to invoke lambda launcher, function: " + functionName + "', payload: '" + payload
-                    + "', message: '" + e.getMessage() + "'.", e);
+        } else {
+            logger.warn("Not invoking lambda, due to cancellation.");
             return Optional.empty();
         }
     }

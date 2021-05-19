@@ -3,11 +3,15 @@ package uk.gov.dwp.dataworks.azkaban.jobtype;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
+import com.amazonaws.services.logs.AWSLogs;
+import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import org.apache.log4j.Logger;
 import uk.gov.dwp.dataworks.azkaban.domain.InvocationPayload;
 import uk.gov.dwp.dataworks.azkaban.domain.InvocationResult;
 import uk.gov.dwp.dataworks.azkaban.services.EmrLauncherLambdaService;
 import uk.gov.dwp.dataworks.azkaban.services.EmrProgressService;
+import uk.gov.dwp.dataworks.azkaban.services.LogService;
 import uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService;
 import uk.gov.dwp.dataworks.azkaban.utility.ClientUtility;
 
@@ -26,10 +30,9 @@ public class EmrLauncherJob extends AbstractProcessJob {
                 jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
 
         String logGroup = this.getJobProps().getString(AWS_LOG_GROUP_NAME, "/aws/emr/azkaban");
-
-        this.emrProgressService = new EmrProgressService(ClientUtility.amazonElasticMapReduce(awsRegion()),
-                ClientUtility.amazonLogsClient(awsRegion()),
-                logGroup);
+        AmazonElasticMapReduce emr = ClientUtility.amazonElasticMapReduce(awsRegion());
+        AWSLogs logs = ClientUtility.amazonLogsClient(awsRegion());
+        this.emrProgressService = new EmrProgressService(emr, new LogService(emr, logs, logGroup));
     }
 
     @Override

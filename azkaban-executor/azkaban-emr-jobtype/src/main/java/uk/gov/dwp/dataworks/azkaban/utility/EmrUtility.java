@@ -64,6 +64,11 @@ public class EmrUtility {
         return clusters;
     }
 
+    public static boolean isRunning(StepSummary x) {
+        return EmrStepStatus.valueOf(x.getStatus().getState()) == EmrStepStatus.RUNNING;
+    }
+
+
     private static ListClustersRequest clusterRequest(String marker) {
         ListClustersRequest clustersRequest = new ListClustersRequest();
         clustersRequest.setClusterStates(Arrays.asList("STARTING", "BOOTSTRAPPING", "WAITING", "RUNNING"));
