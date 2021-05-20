@@ -13,7 +13,7 @@ import uk.gov.dwp.dataworks.azkaban.model.InvocationResult;
 
 import java.util.Optional;
 
-public class EmrLauncherLambdaService extends AbstractEmrLaunchingDelegate {
+public class EmrLauncherLambdaService extends CancellableService {
 
     public EmrLauncherLambdaService(final AWSLambda awsLambda, final String functionName) {
         this.awsLambda = awsLambda;
@@ -26,7 +26,7 @@ public class EmrLauncherLambdaService extends AbstractEmrLaunchingDelegate {
                 logger.info("Invoking lambda '" + functionName + "', payload: '" + payload + "'");
                 InvokeResult result = awsLambda.invoke(invokeRequest(payload));
                 logger.info(
-                        "Invoked lambda '" + functionName + "', payload: '" + payload + "', result: '" + result + "'");
+                        "Invoked lambda '" + functionName + "', payload: '" + payload + "', result: '" + result.getStatusCode() + "'");
                 String resultPayload = new String(result.getPayload().array());
                 return Optional.of(new ObjectMapper().readValue(resultPayload, InvocationResult.class));
             } catch (Exception e) {

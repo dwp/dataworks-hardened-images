@@ -20,7 +20,7 @@ import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.clusterSteps;
 import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.completedSteps;
 import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.incompleteSteps;
 
-public class EmrProgressService extends AbstractEmrLaunchingDelegate {
+public class EmrProgressService extends CancellableService {
 
     public EmrProgressService(AmazonElasticMapReduce emr, LogService logService) {
         this.emr = emr;

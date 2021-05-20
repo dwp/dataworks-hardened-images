@@ -11,7 +11,6 @@ public class NotificationService {
     public NotificationService(AmazonSNS sns, String topicName, String clusterName) {
         this.sns = sns;
         this.topic = SnsUtility.topicWithName(sns, topicName);
-        System.out.println("TOPIC: '" + topicName + ": " + this.topic + "'.");
         this.clusterName = clusterName;
     }
 

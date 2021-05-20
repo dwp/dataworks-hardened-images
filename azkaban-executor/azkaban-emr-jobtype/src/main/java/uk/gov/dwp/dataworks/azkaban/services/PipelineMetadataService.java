@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class PipelineMetadataService extends AbstractEmrLaunchingDelegate {
+public class PipelineMetadataService extends CancellableService {
 
     public PipelineMetadataService(final AmazonDynamoDB dynamoDB) {
         this.dynamoDb = dynamoDB;

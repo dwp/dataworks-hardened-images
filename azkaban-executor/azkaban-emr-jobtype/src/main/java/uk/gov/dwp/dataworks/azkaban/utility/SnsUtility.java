@@ -21,7 +21,8 @@ public class SnsUtility {
             nextToken = result.getNextToken();
         } while (nextToken != null);
 
-        return topics.stream().filter(topic -> topic.getTopicArn().matches("^.+:" + topicName + "$")).findFirst();
+        return topics.stream()
+                     .filter(topic -> topic.getTopicArn().matches("^.+:" + topicName + "$")).findFirst();
     }
 
 }
