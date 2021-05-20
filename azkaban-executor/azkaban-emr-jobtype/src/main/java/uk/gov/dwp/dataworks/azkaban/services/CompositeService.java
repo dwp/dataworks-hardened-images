@@ -23,25 +23,31 @@ public class CompositeService extends CancellableService {
         this.emr = emr;
     }
 
-    public void launchClusterAndWaitForStepCompletion(String metadataTableName, String exportDate, String ... dependencies) {
+    public boolean launchClusterAndWaitForStepCompletion(String metadataTableName, String exportDate, String ... dependencies) {
         try {
             this.notificationService.notifyStarted();
             boolean succeeded = dependencyMetadata(metadataTableName, exportDate, dependencies)
+                    .filter(x -> proceed.get())
                     .flatMap(emrLauncherLambdaService::invokeEmrLauncher)
                     .filter(InvocationResult::wasSuccessful)
-                    .map(InvocationResult::getClusterId).map(this::setGetClusterId)
+                    .map(InvocationResult::getClusterId)
+                    .map(this::setGetClusterId)
+                    .filter(x -> proceed.get())
                     .map(emrProgressService::observeEmr).orElse(false);
 
             if (succeeded) {
                 this.notificationService.notifySucceeded();
+                return true;
             } else {
                 this.notificationService.notifyFailed();
+                return false;
             }
         } catch (Exception e) {
             this.notificationService.notifyFailed();
+            return false;
         }
-
     }
+
 
     @Override
     public void cancel() {

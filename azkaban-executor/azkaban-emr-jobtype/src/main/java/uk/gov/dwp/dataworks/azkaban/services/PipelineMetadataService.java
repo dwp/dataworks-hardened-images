@@ -28,10 +28,12 @@ public class PipelineMetadataService extends CancellableService {
         this.dynamoDb = dynamoDB;
     }
 
-    private static Map<String, AttributeValue> primaryKey(final Map<String, AttributeValue> item) {
-        return item.entrySet().stream().filter(entry -> entry.getKey().equals(CORRELATION_ID_FIELD) || entry.getKey()
-                                                                                                            .equals(DATA_PRODUCT_FIELD))
-                   .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    public Optional<List<Map<String, AttributeValue>>> successfulDependencies(final String tableName,
+            final String exportDate, final String... products) {
+        return proceed.get() && dependenciesSucceeded(tableName,
+                dependenciesMetadata(tableName, exportDate, products)) ?
+                Optional.of(dependenciesMetadata(tableName, exportDate, products)) :
+                Optional.empty();
     }
 
     public static ScanRequest scanRequest(final String tableName, final String product, final String exportDate,
@@ -41,6 +43,19 @@ public class PipelineMetadataService extends CancellableService {
                                 .withExclusiveStartKey(lastKeyEvaluatedKey).withExpressionAttributeNames(nameMap())
                                 .withExpressionAttributeValues(valueMap(product, exportDate));
     }
+
+    @Override
+    public void cancel() {
+        super.cancel();
+        this.latch.countDown();
+    }
+
+    private static Map<String, AttributeValue> primaryKey(final Map<String, AttributeValue> item) {
+        return item.entrySet().stream().filter(entry -> entry.getKey().equals(CORRELATION_ID_FIELD) || entry.getKey()
+                                                                                                            .equals(DATA_PRODUCT_FIELD))
+                   .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
 
     private static Map<String, AttributeValue> valueMap(final String product, final String exportDate) {
         Map<String, AttributeValue> valueMap = new HashMap<>();
@@ -83,20 +98,6 @@ public class PipelineMetadataService extends CancellableService {
 
     private static int pollTimeoutSeconds() {
         return Integer.parseInt(System.getProperty("poll.timeout.milliseconds", "3600000"));
-    }
-
-    public Optional<List<Map<String, AttributeValue>>> successfulDependencies(final String tableName,
-            final String exportDate, final String... products) {
-        return proceed.get() && dependenciesSucceeded(tableName,
-                dependenciesMetadata(tableName, exportDate, products)) ?
-                Optional.of(dependenciesMetadata(tableName, exportDate, products)) :
-                Optional.empty();
-    }
-
-    @Override
-    public void cancel() {
-        super.cancel();
-        this.latch.countDown();
     }
 
     private List<Map<String, AttributeValue>> dependenciesMetadata(final String tableName, final String exportDate,

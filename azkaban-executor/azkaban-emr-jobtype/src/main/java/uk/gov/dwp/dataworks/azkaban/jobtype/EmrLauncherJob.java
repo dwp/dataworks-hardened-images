@@ -23,8 +23,11 @@ public class EmrLauncherJob extends AbstractProcessJob {
     }
 
     @Override
-    public void run() {
-        service().launchClusterAndWaitForStepCompletion(metadataTableName(), exportDate(), dependencies());
+    public void run() throws Exception {
+        boolean successful = service().launchClusterAndWaitForStepCompletion(metadataTableName(), exportDate(), dependencies());
+        if (!successful) {
+            throw new Exception("Job failed");
+        }
     }
 
     @Override

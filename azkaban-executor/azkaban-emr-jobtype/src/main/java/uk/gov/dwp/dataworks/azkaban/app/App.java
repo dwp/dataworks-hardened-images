@@ -11,7 +11,7 @@ import static uk.gov.dwp.dataworks.azkaban.jobtype.EmrLauncherJob.EXPORT_DATE_PA
 import static uk.gov.dwp.dataworks.azkaban.jobtype.EmrLauncherJob.JOB_DEPENDENCIES_PARAMETER_NAME;
 
 public class App {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
         Props jobProperties = Props
                 .of(JOB_DEPENDENCIES_PARAMETER_NAME, "ADG-incremental", EXPORT_DATE_PARAMETER_NAME, "2021-05-12",
