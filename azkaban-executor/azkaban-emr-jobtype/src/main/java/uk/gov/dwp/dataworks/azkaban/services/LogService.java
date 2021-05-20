@@ -31,35 +31,36 @@ public class LogService extends CancellableService {
 
     public void monitorStepLogs(String clusterId, String stepId) {
         if (proceed.get()) {
-            try {
-                final ScheduledExecutorService logsMonitorExecutor = Executors.newSingleThreadScheduledExecutor();
-                logMonitorLatch = new CountDownLatch(1);
-                final AtomicReference<String> logStreamToken = new AtomicReference<>();
-                logsMonitorExecutor
-                        .scheduleWithFixedDelay(() -> checkLogStream(clusterId, stepId, logStreamToken), 0, 5,
-                                TimeUnit.SECONDS);
+            if (logGroup != null && logGroup.trim().length() > 0)
+                try {
+                    final ScheduledExecutorService logsMonitorExecutor = Executors.newSingleThreadScheduledExecutor();
+                    logMonitorLatch = new CountDownLatch(1);
+                    final AtomicReference<String> logStreamToken = new AtomicReference<>();
+                    logsMonitorExecutor
+                            .scheduleWithFixedDelay(() -> checkLogStream(clusterId, stepId, logStreamToken), 0, 5,
+                                    TimeUnit.SECONDS);
 
-                logMonitorLatch.await();
-                logger.info("Shutting down '" + stepId + "' logsMonitor executor.");
-                logsMonitorExecutor.shutdownNow();
-                logger.info("Shut down '" + stepId + "' logsMonitor executor: " + "shutdown: " + logsMonitorExecutor
-                        .isShutdown() + ", terminated: " + logsMonitorExecutor.isTerminated() + ".");
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+                    logMonitorLatch.await();
+                    logger.info("Shutting down '" + stepId + "' logsMonitor executor.");
+                    logsMonitorExecutor.shutdownNow();
+                    logger.info("Shut down '" + stepId + "' logsMonitor executor: " + "shutdown: " + logsMonitorExecutor
+                            .isShutdown() + ", terminated: " + logsMonitorExecutor.isTerminated() + ".");
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
         }
     }
 
     private void checkLogStream(String clusterId, String stepId, AtomicReference<String> logStreamToken) {
         if (proceed.get()) {
-            final GetLogEventsRequest logEventsRequest = new GetLogEventsRequest().withLogGroupName(this.logGroup)
+            final GetLogEventsRequest logEventsRequest = new GetLogEventsRequest().withLogGroupName(logGroup)
                                                                                   .withStartFromHead(true);
             try {
                 final List<String> logStreams = clusterStepLogStreams(emr, awsLogs, clusterId, logGroup);
                 final Step step = clusterStep(emr, clusterId, stepId);
+
                 logger.info("Monitoring step '" + clusterId + "/" + step.getId() + "/" + step.getName() + "/" + step
-                        .getStatus().getState() + "', log group: '" + this.logGroup + "', logStreams: '" + logStreams
-                        + "'");
+                        .getStatus().getState() + "', log group: '" + logGroup + "', logStreams: '" + logStreams + "'");
 
                 logStreams.stream().filter(s -> s.contains(step.getName())).findFirst()
                           .ifPresent(logStream -> drainLogStream(logStreamToken, logEventsRequest, step, logStream));

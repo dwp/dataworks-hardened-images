@@ -57,48 +57,6 @@ public class PipelineMetadataService extends CancellableService {
     }
 
 
-    private static Map<String, AttributeValue> valueMap(final String product, final String exportDate) {
-        Map<String, AttributeValue> valueMap = new HashMap<>();
-        valueMap.put(":export_date", new AttributeValue().withS(exportDate));
-        valueMap.put(":product", new AttributeValue().withS(product));
-        return valueMap;
-    }
-
-    private static Map<String, String> nameMap() {
-        Map<String, String> nameMap = new HashMap<>();
-        nameMap.put("#export_date", DATE_FIELD);
-        nameMap.put("#product", DATA_PRODUCT_FIELD);
-        return nameMap;
-    }
-
-    private static boolean hasFinished(final String status) {
-        return hasSucceeded(status) || hasFailed(status);
-    }
-
-    private static boolean hasFailed(final String status) {
-        return hasStatus(FAILED_COMPLETION_STATUS, status);
-    }
-
-    private static boolean hasSucceeded(final String status) {
-        return hasStatus(SUCCESSFUL_COMPLETION_STATUS, status);
-    }
-
-    private static boolean hasStatus(final String required, final String status) {
-        return required.equalsIgnoreCase(status);
-    }
-
-    private static String itemString(final Map<String, AttributeValue> item) {
-        return item.get(CORRELATION_ID_FIELD).getS() + "/" + item.get(DATA_PRODUCT_FIELD).getS() + "/" + item
-                .get(DATE_FIELD).getS();
-    }
-
-    private static int pollIntervalSeconds() {
-        return Integer.parseInt(System.getProperty("poll.interval.milliseconds", "10000"));
-    }
-
-    private static int pollTimeoutSeconds() {
-        return Integer.parseInt(System.getProperty("poll.timeout.milliseconds", "3600000"));
-    }
 
     private List<Map<String, AttributeValue>> dependenciesMetadata(final String tableName, final String exportDate,
             final String... products) {
@@ -166,6 +124,49 @@ public class PipelineMetadataService extends CancellableService {
         while (lastKeyEvaluatedKey != null);
 
         return results;
+    }
+
+    private static Map<String, AttributeValue> valueMap(final String product, final String exportDate) {
+        Map<String, AttributeValue> valueMap = new HashMap<>();
+        valueMap.put(":export_date", new AttributeValue().withS(exportDate));
+        valueMap.put(":product", new AttributeValue().withS(product));
+        return valueMap;
+    }
+
+    private static Map<String, String> nameMap() {
+        Map<String, String> nameMap = new HashMap<>();
+        nameMap.put("#export_date", DATE_FIELD);
+        nameMap.put("#product", DATA_PRODUCT_FIELD);
+        return nameMap;
+    }
+
+    private static boolean hasFinished(final String status) {
+        return hasSucceeded(status) || hasFailed(status);
+    }
+
+    private static boolean hasFailed(final String status) {
+        return hasStatus(FAILED_COMPLETION_STATUS, status);
+    }
+
+    private static boolean hasSucceeded(final String status) {
+        return hasStatus(SUCCESSFUL_COMPLETION_STATUS, status);
+    }
+
+    private static boolean hasStatus(final String required, final String status) {
+        return required.equalsIgnoreCase(status);
+    }
+
+    private static String itemString(final Map<String, AttributeValue> item) {
+        return item.get(CORRELATION_ID_FIELD).getS() + "/" + item.get(DATA_PRODUCT_FIELD).getS() + "/" + item
+                .get(DATE_FIELD).getS();
+    }
+
+    private static int pollIntervalSeconds() {
+        return Integer.parseInt(System.getProperty("poll.interval.milliseconds", "10000"));
+    }
+
+    private static int pollTimeoutSeconds() {
+        return Integer.parseInt(System.getProperty("poll.timeout.milliseconds", "3600000"));
     }
 
     public final static String CORRELATION_ID_FIELD = "Correlation_Id";

@@ -55,7 +55,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
             EmrLauncherLambdaService emrLauncherLambdaService = new EmrLauncherLambdaService(
                     ClientUtility.amazonLambda(awsRegion()), jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
 
-            String logGroup = this.getJobProps().getString(AWS_LOG_GROUP_PARAMETER_NAME, "/aws/emr/azkaban");
+            String logGroup = this.getJobProps().getString(AWS_LOG_GROUP_PARAMETER_NAME, "");
             AmazonElasticMapReduce emr = ClientUtility.amazonElasticMapReduce(awsRegion());
             AWSLogs logs = ClientUtility.awsLogs(awsRegion());
 

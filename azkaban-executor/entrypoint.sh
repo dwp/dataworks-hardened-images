@@ -51,6 +51,7 @@ mv /azkaban-exec-server/conf/start-exec.sh /azkaban-exec-server/bin/start-exec.s
 mv /azkaban-exec-server/conf/internal-start-executor.sh /azkaban-exec-server/bin/internal/internal-start-executor.sh
 mv /azkaban-exec-server/conf/commonprivate.properties /azkaban-exec-server/plugins/jobtypes/commonprivate.properties
 mv /azkaban-exec-server/conf/private.properties /azkaban-exec-server/plugins/jobtypes/emr/private.properties
+mv /azkaban-exec-server/conf/launchemr-private.properties /azkaban-exec-server/plugins/jobtypes/launchemr/private.properties
 chmod +x /azkaban-exec-server/bin/start-exec.sh
 chmod +x /azkaban-exec-server/bin/internal/internal-start-executor.sh
 

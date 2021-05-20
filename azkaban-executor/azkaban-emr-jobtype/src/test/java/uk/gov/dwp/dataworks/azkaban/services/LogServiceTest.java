@@ -11,6 +11,8 @@ import com.amazonaws.services.logs.model.DescribeLogStreamsResult;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.amazonaws.services.logs.model.LogStream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,6 +70,17 @@ class LogServiceTest {
         AWSLogs logs = mock(AWSLogs.class);
         LogService logService = new LogService(emr, logs, LOG_GROUP);
         logService.cancel();
+        logService.monitorStepLogs(CLUSTER_ID, STEP_ID);
+        verifyNoInteractions(emr);
+        verifyNoInteractions(logs);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    public void shouldNotFetchLogsIfNoLogGroupSupplied(String logGroup) {
+        AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
+        AWSLogs logs = mock(AWSLogs.class);
+        LogService logService = new LogService(emr, logs, logGroup);
         logService.monitorStepLogs(CLUSTER_ID, STEP_ID);
         verifyNoInteractions(emr);
         verifyNoInteractions(logs);
