@@ -41,6 +41,9 @@ dependencies {
     extraLibs "com.amazonaws:aws-java-sdk-emr:${awsVersion}"
     extraLibs "com.amazonaws:aws-java-sdk-lambda:${awsVersion}"
     extraLibs "com.amazonaws:aws-java-sdk-logs:${awsVersion}"
+    extraLibs "com.amazonaws:aws-java-sdk-sns:${awsVersion}"
+    extraLibs "com.amazonaws:aws-java-sdk-sts:${awsVersion}"
+    extraLibs "com.amazonaws:aws-java-sdk-dynamodb:${awsVersion}"
 }
 
 test {
