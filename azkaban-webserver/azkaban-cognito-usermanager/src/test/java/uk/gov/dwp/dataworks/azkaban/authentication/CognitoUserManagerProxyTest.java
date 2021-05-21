@@ -10,10 +10,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthenticationResultType;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthResponse;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.NotAuthorizedException;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 
 import java.util.function.Consumer;
 
@@ -39,9 +36,12 @@ public class CognitoUserManagerProxyTest {
     public void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        when(mockProps.getString("aws.region", "EU-WEST-2")).thenReturn("EU-WEST-2");
+        when(mockProps.getString("cognito.userPoolName")).thenReturn("userPool");
+        when(mockProps.getString("aws.region", "eu-west-2")).thenReturn("eu-west-2");
         when(mockProps.getString("cognito.clientId")).thenReturn("testClientId");
         when(mockProps.getString("cognito.clientSecret")).thenReturn("clientSecret");
+        when(mockProps.getString("http.proxyHost")).thenReturn("localhost");
+        when(mockProps.getString("http.proxyPort")).thenReturn("8000");
     }
 
     @Test
@@ -49,6 +49,7 @@ public class CognitoUserManagerProxyTest {
 
         when(mockResponse.authenticationResult()).thenReturn(mockResultType);
         when(mockCognitoIdentityProvider.initiateAuth((Consumer<InitiateAuthRequest.Builder>) Mockito.any())).thenReturn(mockResponse);
+        when(mockResponse.challengeName()).thenReturn(null);
         CognitoUserManagerProxy proxy = new CognitoUserManagerProxy(mockProps);
         proxy.setIdentityProvider(mockCognitoIdentityProvider);
 
@@ -64,10 +65,21 @@ public class CognitoUserManagerProxyTest {
 
         when(mockResponse.authenticationResult()).thenReturn(null);
         when(mockCognitoIdentityProvider.initiateAuth((Consumer<InitiateAuthRequest.Builder>) Mockito.any())).thenThrow(NotAuthorizedException.class);
+        when(mockResponse.challengeName()).thenReturn(null);
 
         CognitoUserManagerProxy proxy = new CognitoUserManagerProxy(mockProps);
         assertThatExceptionOfType(UserManagerException.class).isThrownBy( () -> {
             User result = proxy.getUser("user", "bad");
         }).withMessageStartingWith("User pool client testClientId does not exist.");
     }
+
+    @Test
+    public void shouldUseProxy() throws Exception {
+        when(mockProps.containsKey(Mockito.any())).thenReturn(true);
+        CognitoUserManagerProxy proxy = new CognitoUserManagerProxy(mockProps);
+        assertThatExceptionOfType(UserManagerException.class).isThrownBy( () -> {
+            User result = proxy.getUser("user", "bad");
+        }).withMessageStartingWith("Unable to execute HTTP request:");
+    }
+
 }
