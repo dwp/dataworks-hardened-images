@@ -1,18 +1,44 @@
 package uk.gov.dwp.dataworks.azkaban.services;
 
-
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import uk.gov.dwp.dataworks.azkaban.jobtype.EmrLauncherJob;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CancellableService {
 
+    public void info(String message) {
+        if (this.parent != null) {
+            this.parent.info(message);
+        }
+    }
+
+    public void warn(String message) {
+        if (this.parent != null) {
+            this.parent.warn(message);
+        }
+    }
+
+    public void error(String message) {
+        if (this.parent != null) {
+            this.parent.error(message);
+        }
+    }
+
+    public void error(String message, Throwable t) {
+        if (this.parent != null) {
+            this.parent.error(message, t);
+        }
+    }
+
     public void cancel() {
-        logger.warn("Operation has been cancelled");
+        warn("Operation has been cancelled");
         proceed.set(false);
     }
 
-    private final static Logger logger = LogManager.getLogger(CancellableService.class);
+    public void setParent(EmrLauncherJob parent) {
+        this.parent = parent;
+    }
+
     final AtomicBoolean proceed = new AtomicBoolean(true);
+    private EmrLauncherJob parent;
 }

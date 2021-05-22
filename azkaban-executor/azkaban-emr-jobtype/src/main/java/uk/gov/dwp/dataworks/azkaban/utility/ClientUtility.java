@@ -1,5 +1,6 @@
 package uk.gov.dwp.dataworks.azkaban.utility;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.client.builder.AwsSyncClientBuilder;
@@ -46,7 +47,7 @@ public class ClientUtility {
     }
 
     private static AWSLogs logsClient(String region) {
-        return AWSLogsClientBuilder.standard().withRegion(region).build();
+        return clientBuilder(AWSLogsClientBuilder.standard(), region);
     }
 
     private static AmazonDynamoDB assumedRoleDynamoDbClient(String region) {
@@ -54,7 +55,7 @@ public class ClientUtility {
     }
 
     private static AmazonDynamoDB dynamoDbClient(String region) {
-        return AmazonDynamoDBClientBuilder.standard().withRegion(region).build();
+        return clientBuilder(AmazonDynamoDBClientBuilder.standard(), region);
     }
 
     private static AWSLambda assumedRoleLambdaClient(String region) {
@@ -62,7 +63,7 @@ public class ClientUtility {
     }
 
     private static AWSLambda lambdaClient(String region) {
-        return AWSLambdaClientBuilder.standard().withRegion(region).build();
+        return clientBuilder(AWSLambdaClientBuilder.standard(), region);
     }
 
     private static AmazonSNS assumedRoleSnsClient(String region) {
@@ -70,7 +71,7 @@ public class ClientUtility {
     }
 
     private static AmazonSNS snsClient(String region) {
-        return AmazonSNSClientBuilder.standard().withRegion(region).build();
+        return clientBuilder(AmazonSNSClientBuilder.standard(), region);
     }
 
     private static AmazonElasticMapReduce assumedRoleEmrClient(String region) {
@@ -78,7 +79,7 @@ public class ClientUtility {
     }
 
     private static AmazonElasticMapReduce emrClient(String region) {
-        return AmazonElasticMapReduceClientBuilder.standard().withRegion(region).build();
+        return clientBuilder(AmazonElasticMapReduceClientBuilder.standard(), region);
     }
 
     private static <B extends AwsSyncClientBuilder<B, C>, C> C assumedRoleClientBuilder(B builder, String region) {
@@ -86,6 +87,13 @@ public class ClientUtility {
         return builder.withRegion(region).withCredentials(new AWSStaticCredentialsProvider(
                 new BasicSessionCredentials(credentials.getAccessKeyId(), credentials.getSecretAccessKey(),
                         credentials.getSessionToken()))).build();
+    }
+
+    private static <B extends AwsSyncClientBuilder<B, C>, C> C clientBuilder(B builder, String region) {
+        return builder.withRegion(region)
+                      .withClientConfiguration(new ClientConfiguration().withSocketTimeout(120_000))
+//                      .withRegion(region)
+                      .build();
     }
 
     private static Credentials credentials(String region) {

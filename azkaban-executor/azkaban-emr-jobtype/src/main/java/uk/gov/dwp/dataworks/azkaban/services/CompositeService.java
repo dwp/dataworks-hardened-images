@@ -43,6 +43,7 @@ public class CompositeService extends CancellableService {
                 return false;
             }
         } catch (Exception e) {
+            error("Job failed", e);
             this.notificationService.notifyFailed();
             return false;
         }

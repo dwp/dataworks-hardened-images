@@ -52,21 +52,24 @@ public class EmrLauncherJob extends AbstractProcessJob {
         if (_service == null) {
             PipelineMetadataService pipelineMetadataService = new PipelineMetadataService(
                     ClientUtility.amazonDynamoDb(awsRegion()));
+            pipelineMetadataService.setParent(this);
             EmrLauncherLambdaService emrLauncherLambdaService = new EmrLauncherLambdaService(
                     ClientUtility.amazonLambda(awsRegion()), jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
-
+            emrLauncherLambdaService.setParent(this);
             String logGroup = this.getJobProps().getString(AWS_LOG_GROUP_PARAMETER_NAME, "");
             AmazonElasticMapReduce emr = ClientUtility.amazonElasticMapReduce(awsRegion());
             AWSLogs logs = ClientUtility.awsLogs(awsRegion());
-
-            EmrProgressService emrProgressService = new EmrProgressService(emr, new LogService(emr, logs, logGroup));
-
+            LogService logService = new LogService(emr, logs, logGroup);
+            logService.setParent(this);
+            EmrProgressService emrProgressService = new EmrProgressService(emr, logService);
+            emrProgressService.setParent(this);
             NotificationService notificationService = new NotificationService(ClientUtility.amazonSNS(awsRegion()),
                     this.getJobProps().getString(TOPIC_PARAMETER_NAME, "Monitoring"),
                     jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
 
             this._service = new CompositeService(pipelineMetadataService, emrLauncherLambdaService, emrProgressService,
                     notificationService, emr);
+            this._service.setParent(this);
 
         }
         return _service;

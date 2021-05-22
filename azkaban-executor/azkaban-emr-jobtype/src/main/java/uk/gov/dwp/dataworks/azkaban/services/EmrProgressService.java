@@ -2,8 +2,6 @@ package uk.gov.dwp.dataworks.azkaban.services;
 
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
 import com.amazonaws.services.elasticmapreduce.model.StepSummary;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 import uk.gov.dwp.dataworks.azkaban.model.EmrClusterStatus;
 import uk.gov.dwp.dataworks.azkaban.utility.EmrUtility;
 
@@ -44,13 +42,13 @@ public class EmrProgressService extends CancellableService {
 
     private Optional<EmrClusterStatus> monitorClusterStartUp(String clusterId) throws InterruptedException {
         if (proceed.get()) {
-            logger.info("Monitoring '" + clusterId + "'");
+            info("Monitoring '" + clusterId + "'");
             final ScheduledExecutorService startupMonitorExecutor = Executors.newSingleThreadScheduledExecutor();
             startupMonitorExecutor.scheduleAtFixedRate(() -> checkClusterStatus(clusterId), 0, 10, TimeUnit.SECONDS);
             clusterStartupLatch.await();
-            logger.info("Shutting down startupMonitorExecutor executor");
+            info("Shutting down startupMonitorExecutor executor");
             startupMonitorExecutor.shutdownNow();
-            logger.info("Shut down startupMonitorExecutor executor, shutdown: " + startupMonitorExecutor.isShutdown()
+            info("Shut down startupMonitorExecutor executor, shutdown: " + startupMonitorExecutor.isShutdown()
                     + ", terminated: " + startupMonitorExecutor.isTerminated());
             return Optional.of(clusterStatus(emr, clusterId));
         } else {
@@ -61,18 +59,18 @@ public class EmrProgressService extends CancellableService {
     private boolean monitorSteps(String clusterId) {
         if (proceed.get()) {
             try {
-                logger.info("Cluster is running, monitoring steps.");
+                info("Cluster is running, monitoring steps.");
                 final ScheduledExecutorService stepsMonitorExecutor = Executors.newSingleThreadScheduledExecutor();
                 stepsMonitorExecutor
                         .scheduleWithFixedDelay(() -> checkForStepCompletion(clusterId), 0, 5, TimeUnit.SECONDS);
                 stepsMonitorLatch.await();
-                logger.info("Shutting down stepsMonitor executor");
+                info("Shutting down stepsMonitor executor");
                 stepsMonitorExecutor.shutdownNow();
-                logger.info("Shut down stepsMonitor executor, shutdown: " + stepsMonitorExecutor.isShutdown()
+                info("Shut down stepsMonitor executor, shutdown: " + stepsMonitorExecutor.isShutdown()
                         + ", terminated: " + stepsMonitorExecutor.isTerminated());
                 return allStepsSucceeded(emr, clusterId);
             } catch (InterruptedException e) {
-                logger.error("Steps monitoring interrupted", e);
+                error("Steps monitoring interrupted", e);
                 return false;
             }
         } else {
@@ -84,12 +82,12 @@ public class EmrProgressService extends CancellableService {
         if (proceed.get()) {
             try {
                 final EmrClusterStatus state = clusterStatus(emr, clusterId);
-                logger.info("Cluster '" + clusterId + "', status is '" + state + "'.");
+                info("Cluster '" + clusterId + "', status is '" + state + "'.");
                 if (state == EmrClusterStatus.RUNNING || state.hasCompleted()) {
                     clusterStartupLatch.countDown();
                 }
             } catch (Exception e) {
-                logger.error("Error encountered monitoring cluster status: '" + e.getMessage() + "'", e);
+                error("Error encountered monitoring cluster status: '" + e.getMessage() + "'", e);
                 clusterStartupLatch.countDown();
             }
         }
@@ -102,15 +100,13 @@ public class EmrProgressService extends CancellableService {
                                             .ifPresent(stepId -> logService.monitorStepLogs(clusterId, stepId));
                 if (allStepsFinished(emr, clusterId)) {
 
-                    logger.info(
-                            "Cluster '" + clusterId + "' all steps completed: " + completedSteps(emr, clusterId) + ".");
+                    info("Cluster '" + clusterId + "' all steps completed: " + completedSteps(emr, clusterId) + ".");
                     stepsMonitorLatch.countDown();
                 } else {
-                    logger.info("Cluster '" + clusterId + "' has incomplete steps: " + incompleteSteps(emr, clusterId)
-                            + ".");
+                    info("Cluster '" + clusterId + "' has incomplete steps: " + incompleteSteps(emr, clusterId) + ".");
                 }
             } catch (Exception e) {
-                logger.error("Error encountered monitoring steps: '" + e.getMessage() + "'", e);
+                error("Error encountered monitoring steps: '" + e.getMessage() + "'", e);
                 stepsMonitorLatch.countDown();
             }
         }
@@ -128,5 +124,4 @@ public class EmrProgressService extends CancellableService {
     private final CountDownLatch stepsMonitorLatch;
     private final AmazonElasticMapReduce emr;
     private final LogService logService;
-    private final Logger logger = LogManager.getLogger(EmrProgressService.class);
 }

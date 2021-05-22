@@ -6,8 +6,6 @@ import com.amazonaws.services.logs.AWSLogs;
 import com.amazonaws.services.logs.model.GetLogEventsRequest;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.amazonaws.services.logs.model.OutputLogEvent;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 import uk.gov.dwp.dataworks.azkaban.model.EmrStepStatus;
 
 import java.util.List;
@@ -41,9 +39,9 @@ public class LogService extends CancellableService {
                                     TimeUnit.SECONDS);
 
                     logMonitorLatch.await();
-                    logger.info("Shutting down '" + stepId + "' logsMonitor executor.");
+                    info("Shutting down '" + stepId + "' logsMonitor executor.");
                     logsMonitorExecutor.shutdownNow();
-                    logger.info("Shut down '" + stepId + "' logsMonitor executor: " + "shutdown: " + logsMonitorExecutor
+                    info("Shut down '" + stepId + "' logsMonitor executor: " + "shutdown: " + logsMonitorExecutor
                             .isShutdown() + ", terminated: " + logsMonitorExecutor.isTerminated() + ".");
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -59,7 +57,7 @@ public class LogService extends CancellableService {
                 final List<String> logStreams = clusterStepLogStreams(emr, awsLogs, clusterId, logGroup);
                 final Step step = clusterStep(emr, clusterId, stepId);
 
-                logger.info("Monitoring step '" + clusterId + "/" + step.getId() + "/" + step.getName() + "/" + step
+                info("Monitoring step '" + clusterId + "/" + step.getId() + "/" + step.getName() + "/" + step
                         .getStatus().getState() + "', log group: '" + logGroup + "', logStreams: '" + logStreams + "'");
 
                 logStreams.stream().filter(s -> s.contains(step.getName())).findFirst()
@@ -69,7 +67,7 @@ public class LogService extends CancellableService {
                     logMonitorLatch.countDown();
                 }
             } catch (Exception e) {
-                logger.error("Error encountered monitoring logs: '" + e.getMessage() + "'", e);
+                error("Error encountered monitoring logs: '" + e.getMessage() + "'", e);
                 logMonitorLatch.countDown();
             }
         }
@@ -80,16 +78,15 @@ public class LogService extends CancellableService {
         if (proceed.get()) {
             boolean logsDrained = false;
             do {
-                logger.info(
-                        "Fetching logs for '" + step.getName() + "/" + step.getId() + "/" + step.getStatus().getState()
-                                + "'.");
+                info("Fetching logs for '" + step.getName() + "/" + step.getId() + "/" + step.getStatus().getState()
+                        + "'.");
                 final GetLogEventsResult result = awsLogs.getLogEvents(logEventsRequest.withLogStreamName(logStream));
                 final String nextToken = result.getNextForwardToken();
                 if (nextToken != null && !nextToken.equals(logStreamToken.get())) {
-                    result.getEvents().stream().map(OutputLogEvent::getMessage).map(String::trim).forEach(
-                            message -> logger.info("Step '" + step.getName() + "/" + step.getId() + "': " + message));
+                    result.getEvents().stream().map(OutputLogEvent::getMessage).map(String::trim)
+                          .forEach(message -> info("Step '" + step.getName() + "/" + step.getId() + "': " + message));
                 } else {
-                    logger.info("Step '" + step.getName() + "/" + step.getId() + "/" + step.getStatus().getState()
+                    info("Step '" + step.getName() + "/" + step.getId() + "/" + step.getStatus().getState()
                             + "': no new logs.");
                     logsDrained = true;
                 }
@@ -109,6 +106,5 @@ public class LogService extends CancellableService {
     private final String logGroup;
     private final AmazonElasticMapReduce emr;
     private final AWSLogs awsLogs;
-    private final Logger logger = LogManager.getLogger(LogService.class);
     private CountDownLatch logMonitorLatch;
 }

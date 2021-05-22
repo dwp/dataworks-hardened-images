@@ -6,8 +6,6 @@ import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.GetItemResult;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,8 +54,6 @@ public class PipelineMetadataService extends CancellableService {
                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-
-
     private List<Map<String, AttributeValue>> dependenciesMetadata(final String tableName, final String exportDate,
             final String... products) {
         return Arrays.stream(products).map(product -> dependenciesMetadata(tableName, product, exportDate))
@@ -88,7 +84,7 @@ public class PipelineMetadataService extends CancellableService {
             dependencyCheckExecutor.shutdownNow();
             return Optional.of(succeeded.get());
         } catch (InterruptedException e) {
-            logger.error("Failed to check dependency '" + tableName + "', item: '" + item + "'", e);
+            error("Failed to check dependency '" + tableName + "', item: '" + item + "'", e);
             return Optional.empty();
         }
     }
@@ -96,18 +92,18 @@ public class PipelineMetadataService extends CancellableService {
     private void checkDependency(final String tableName, final Map<String, AttributeValue> item,
             final AtomicBoolean succeeded) {
         try {
-            logger.info("Checking '" + itemString(item) + "'");
+            info("Checking '" + itemString(item) + "'");
             GetItemRequest request = new GetItemRequest().withTableName(tableName).withKey(primaryKey(item));
             GetItemResult result = dynamoDb.getItem(request);
             String status = result.getItem().get(STATUS_FIELD).getS();
-            logger.info("Checked '" + itemString(item) + "', status is '" + status + "'.");
+            info("Checked '" + itemString(item) + "', status is '" + status + "'.");
             if (hasFinished(status)) {
-                logger.info("Dependency '" + itemString(item) + "' has completed, status is '" + status + "'.");
+                info("Dependency '" + itemString(item) + "' has completed, status is '" + status + "'.");
                 succeeded.set(hasSucceeded(status));
                 latch.countDown();
             }
         } catch (Exception e) {
-            logger.error("Failed to check item:", e);
+            error("Failed to check item:", e);
         }
     }
 
@@ -175,7 +171,6 @@ public class PipelineMetadataService extends CancellableService {
     public final static String DATE_FIELD = "Date";
     private final static String SUCCESSFUL_COMPLETION_STATUS = "Completed";
     private final static String FAILED_COMPLETION_STATUS = "Failed";
-    private final static Logger logger = LogManager.getLogger(PipelineMetadataService.class);
     private final AmazonDynamoDB dynamoDb;
     private final AtomicBoolean proceed = new AtomicBoolean(true);
     private CountDownLatch latch = new CountDownLatch(1);
