@@ -1,5 +1,6 @@
 package uk.gov.dwp.dataworks.azkaban.services;
 
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.ListTopicsRequest;
 import com.amazonaws.services.sns.model.ListTopicsResult;
@@ -12,10 +13,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,19 +42,18 @@ class NotificationServiceTest {
     @Test
     public void shouldFindTopicAndNotifyFailure() {
         AmazonSNS sns = sns(true);
+        AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
         NotificationService service = new NotificationService(sns, MATCHING_TOPIC_NAME, CLUSTER_NAME);
         service.notifyFailed();
         verifySnsInteractions(sns, "failed");
     }
 
     @Test
-    public void shouldNotNotifyIfNoTopicFound() {
+    public void shouldThrowExceptionIfNoMatchingTopicFound() {
         AmazonSNS sns = sns(false);
-        NotificationService service = new NotificationService(sns, MATCHING_TOPIC_NAME, CLUSTER_NAME);
-        service.notifyStarted();
-        service.notifySucceeded();
-        service.notifyFailed();
-        verify(sns, never()).publish(any(), any());
+        RuntimeException e = assertThrows(RuntimeException.class,
+                () -> new NotificationService(sns, NON_MATCHING_TOPIC_NAME, CLUSTER_NAME));
+        assertEquals("Could not find configured SNS topic: '" + NON_MATCHING_TOPIC_NAME + "'", e.getMessage());
     }
 
     private AmazonSNS sns(boolean addMatchingTopic) {
@@ -80,7 +80,6 @@ class NotificationServiceTest {
             when(matchingTopic.getTopicArn()).thenReturn("arn:aws:sns:" + MATCHING_TOPIC_NAME);
             page2Results.set(50, matchingTopic);
         }
-
 
         ListTopicsResult result2 = mock(ListTopicsResult.class);
         when(result2.getTopics()).thenReturn(page2Results);

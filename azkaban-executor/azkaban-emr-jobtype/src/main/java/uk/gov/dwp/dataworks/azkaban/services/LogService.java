@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.clusterStep;
 import static uk.gov.dwp.dataworks.azkaban.utility.LogUtility.clusterStepLogStreams;
 
-public class LogService extends CancellableService {
+public class LogService extends EmrLaunchingDelegateService {
 
     public LogService(AmazonElasticMapReduce emr, AWSLogs awsLogs, String logGroup) {
         this.emr = emr;
@@ -78,8 +78,7 @@ public class LogService extends CancellableService {
         if (proceed.get()) {
             boolean logsDrained = false;
             do {
-                info("Fetching logs for '" + step.getName() + "/" + step.getId() + "/" + step.getStatus().getState()
-                        + "'.");
+                info("Fetching logs for '" + step.getName() + "/" + step.getId() + "/" + step.getStatus().getState() + "'.");
                 final GetLogEventsResult result = awsLogs.getLogEvents(logEventsRequest.withLogStreamName(logStream));
                 final String nextToken = result.getNextForwardToken();
                 if (nextToken != null && !nextToken.equals(logStreamToken.get())) {

@@ -9,9 +9,10 @@ import uk.gov.dwp.dataworks.azkaban.utility.EmrUtility;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class CompositeService extends CancellableService {
+public class CompositeService extends EmrLaunchingDelegateService {
 
     public CompositeService(PipelineMetadataService pipelineMetadataService,
             EmrLauncherLambdaService emrLauncherLambdaService, EmrProgressService emrProgressService,
@@ -23,10 +24,13 @@ public class CompositeService extends CancellableService {
         this.emr = emr;
     }
 
-    public boolean launchClusterAndWaitForStepCompletion(String metadataTableName, String exportDate, String ... dependencies) {
+    public boolean launchClusterAndWaitForStepCompletion(String ... dependencies) {
         try {
             this.notificationService.notifyStarted();
-            boolean succeeded = dependencyMetadata(metadataTableName, exportDate, dependencies)
+//            this.pipelineMetadataService.registerStarted(UUID.randomUUID().toString());
+//            this.pipelineMetadataService.registerInvoked(metadataTableName, exportDate, "NEW_CORRELATION_ID_" + UUID.randomUUID());
+//            return true;
+            boolean succeeded = dependencyMetadata(dependencies)
                     .filter(x -> proceed.get())
                     .flatMap(emrLauncherLambdaService::invokeEmrLauncher)
                     .filter(InvocationResult::wasSuccessful)
@@ -59,15 +63,15 @@ public class CompositeService extends CancellableService {
         clusterId.get().ifPresent(id -> EmrUtility.cancelSteps(emr, id));
     }
 
-    private Optional<InvocationPayload> dependencyMetadata(String metadataTableName, String exportDate, String ... dependencies) {
-        return completedDependencies(metadataTableName, exportDate, dependencies)
+    private Optional<InvocationPayload> dependencyMetadata(String ... dependencies) {
+        return completedDependencies(dependencies)
                 .filter(xs -> xs.size() > 0)
                 .map(xs -> xs.get(0))
                 .map(InvocationPayload::from);
     }
 
-    private Optional<List<Map<String, AttributeValue>>> completedDependencies(String metadataTableName, String exportDate, String ... dependencies) {
-        return pipelineMetadataService.successfulDependencies(metadataTableName, exportDate, dependencies);
+    private Optional<List<Map<String, AttributeValue>>> completedDependencies(String ... dependencies) {
+        return pipelineMetadataService.successfulDependencies(dependencies);
     }
 
     private String setGetClusterId(String id) {

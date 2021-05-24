@@ -46,7 +46,7 @@ class CompositeServiceTest {
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
 
-        verify(pipelineMetadataService, times(1)).successfulDependencies(any(), any(), any());
+        verify(pipelineMetadataService, times(1)).successfulDependencies(any());
         verifyNoMoreInteractions(pipelineMetadataService);
 
         verify(emrLauncherLambdaService, times(1)).invokeEmrLauncher(any());
@@ -78,7 +78,7 @@ class CompositeServiceTest {
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
 
-        verify(pipelineMetadataService, times(1)).successfulDependencies(any(), any(), any());
+        verify(pipelineMetadataService, times(1)).successfulDependencies(any());
         verifyNoMoreInteractions(pipelineMetadataService);
 
         verifyNoInteractions(emrLauncherLambdaService);
@@ -107,7 +107,7 @@ class CompositeServiceTest {
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
 
-        verify(pipelineMetadataService, times(1)).successfulDependencies(any(), any(), any());
+        verify(pipelineMetadataService, times(1)).successfulDependencies(any());
         verifyNoMoreInteractions(pipelineMetadataService);
 
         verifyNoInteractions(emrLauncherLambdaService);
@@ -140,7 +140,7 @@ class CompositeServiceTest {
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
 
-        verify(pipelineMetadataService, times(1)).successfulDependencies(any(), any(), any());
+        verify(pipelineMetadataService, times(1)).successfulDependencies(any());
         verifyNoMoreInteractions(pipelineMetadataService);
 
         verify(emrLauncherLambdaService, times(1)).invokeEmrLauncher(any());
@@ -172,7 +172,7 @@ class CompositeServiceTest {
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
 
-        verify(pipelineMetadataService, times(1)).successfulDependencies(any(), any(), any());
+        verify(pipelineMetadataService, times(1)).successfulDependencies(any());
         verifyNoMoreInteractions(pipelineMetadataService);
 
         verify(emrLauncherLambdaService, times(1)).invokeEmrLauncher(any());
@@ -210,7 +210,7 @@ class CompositeServiceTest {
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
 
-        verify(pipelineMetadataService, times(1)).successfulDependencies(any(), any(), any());
+        verify(pipelineMetadataService, times(1)).successfulDependencies(any());
         verifyNoMoreInteractions(pipelineMetadataService);
 
         verify(emrLauncherLambdaService, times(1)).invokeEmrLauncher(any());
@@ -242,7 +242,7 @@ class CompositeServiceTest {
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
 
-        verify(pipelineMetadataService, times(1)).successfulDependencies(any(), any(), any());
+        verify(pipelineMetadataService, times(1)).successfulDependencies(any());
         verifyNoMoreInteractions(pipelineMetadataService);
         verify(notificationService, times(1)).notifyStarted();
         verify(notificationService, times(1)).notifyFailed();

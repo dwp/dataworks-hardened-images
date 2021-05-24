@@ -33,7 +33,6 @@ import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.CORR
 import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATA_PRODUCT_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATE_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.STATUS_FIELD;
-import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.scanRequest;
 
 class PipelineMetadataServiceTest {
 
@@ -46,7 +45,6 @@ class PipelineMetadataServiceTest {
     @Test
     public void shouldReturnSuccessfulItem() {
         AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
-        ScanRequest scanRequest = scanRequest(METADATA_TABLE, PRODUCT_1, EXPORT_DATE, null);
         ScanResult scanResult = mock(ScanResult.class);
         List<Map<String, AttributeValue>> items = new ArrayList<>();
         Map<String, AttributeValue> successfulItem = tableItem(CORRELATION_ID_1, STATUS_COMPLETED);
@@ -54,7 +52,7 @@ class PipelineMetadataServiceTest {
         Map<String, AttributeValue> successfulKey = itemKey();
 
         when(scanResult.getItems()).thenReturn(items);
-        when(dynamoDB.scan(scanRequest)).thenReturn(scanResult);
+        when(dynamoDB.scan(any())).thenReturn(scanResult);
         when(scanResult.getLastEvaluatedKey()).thenReturn(null);
 
         GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(successfulKey);
@@ -63,9 +61,9 @@ class PipelineMetadataServiceTest {
         when(result.getItem()).thenReturn(successfulItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
 
-        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
-        Optional<List<Map<String, AttributeValue>>> successes = metadataService
-                .successfulDependencies(METADATA_TABLE, EXPORT_DATE, PRODUCT_1);
+        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB, DATA_PRODUCT,
+                METADATA_TABLE, EXPORT_DATE);
+        Optional<List<Map<String, AttributeValue>>> successes = metadataService.successfulDependencies(PRODUCT_1);
         assertTrue(successes.isPresent());
         List<Map<String, AttributeValue>> item = successes.get();
         assertEquals(1, item.size());
@@ -75,7 +73,6 @@ class PipelineMetadataServiceTest {
     @Test
     public void shouldReturnEventuallySuccessfulItem() {
         AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
-        ScanRequest scanRequest = scanRequest(METADATA_TABLE, PRODUCT_1, EXPORT_DATE, null);
         ScanResult scanResult = mock(ScanResult.class);
         List<Map<String, AttributeValue>> items = new ArrayList<>();
         Map<String, AttributeValue> inProgressItem = tableItem(CORRELATION_ID_1, STATUS_PENDING);
@@ -86,7 +83,7 @@ class PipelineMetadataServiceTest {
         Map<String, AttributeValue> itemKey = itemKey();
 
         when(scanResult.getItems()).thenReturn(items).thenReturn(successfulItems);
-        when(dynamoDB.scan(scanRequest)).thenReturn(scanResult);
+        when(dynamoDB.scan(any())).thenReturn(scanResult);
         when(scanResult.getLastEvaluatedKey()).thenReturn(null);
 
         GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(itemKey);
@@ -98,22 +95,21 @@ class PipelineMetadataServiceTest {
 
         when(dynamoDB.getItem(request)).thenReturn(result);
 
-        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
-        Optional<List<Map<String, AttributeValue>>> successes = metadataService
-                .successfulDependencies(METADATA_TABLE, EXPORT_DATE, PRODUCT_1);
+        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB, DATA_PRODUCT,
+                METADATA_TABLE, EXPORT_DATE);
+        Optional<List<Map<String, AttributeValue>>> successes = metadataService.successfulDependencies(PRODUCT_1);
         assertTrue(successes.isPresent());
         List<Map<String, AttributeValue>> item = successes.get();
         assertEquals(1, item.size());
         assertEquals(successfulItem, item.get(0));
         verify(dynamoDB, times(4)).getItem(request);
-        verify(dynamoDB, times(2)).scan(scanRequest);
+        verify(dynamoDB, times(2)).scan(any());
         verifyNoMoreInteractions(dynamoDB);
     }
 
     @Test
     public void shouldNotReturnFailedItem() {
         AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
-        ScanRequest scanRequest = scanRequest(METADATA_TABLE, PRODUCT_1, EXPORT_DATE, null);
         ScanResult scanResult = mock(ScanResult.class);
         List<Map<String, AttributeValue>> items = new ArrayList<>();
         Map<String, AttributeValue> failedItem = tableItem(CORRELATION_ID_1, STATUS_FAILED);
@@ -121,7 +117,7 @@ class PipelineMetadataServiceTest {
         Map<String, AttributeValue> successfulKey = itemKey();
 
         when(scanResult.getItems()).thenReturn(items);
-        when(dynamoDB.scan(scanRequest)).thenReturn(scanResult);
+        when(dynamoDB.scan(any())).thenReturn(scanResult);
         when(scanResult.getLastEvaluatedKey()).thenReturn(null);
 
         GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(successfulKey);
@@ -130,16 +126,15 @@ class PipelineMetadataServiceTest {
         when(result.getItem()).thenReturn(failedItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
 
-        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
-        Optional<List<Map<String, AttributeValue>>> successes = metadataService
-                .successfulDependencies(METADATA_TABLE, EXPORT_DATE, PRODUCT_1);
+        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB, DATA_PRODUCT,
+                METADATA_TABLE, EXPORT_DATE);
+        Optional<List<Map<String, AttributeValue>>> successes = metadataService.successfulDependencies(PRODUCT_1);
         assertFalse(successes.isPresent());
     }
 
     @Test
     public void shouldNotReturnTimedOutItem() {
         AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
-        ScanRequest scanRequest = scanRequest(METADATA_TABLE, PRODUCT_1, EXPORT_DATE, null);
         ScanResult scanResult = mock(ScanResult.class);
         List<Map<String, AttributeValue>> items = new ArrayList<>();
         Map<String, AttributeValue> pendingItem = tableItem(CORRELATION_ID_1, STATUS_PENDING);
@@ -147,7 +142,7 @@ class PipelineMetadataServiceTest {
         Map<String, AttributeValue> key = itemKey();
 
         when(scanResult.getItems()).thenReturn(items);
-        when(dynamoDB.scan(scanRequest)).thenReturn(scanResult);
+        when(dynamoDB.scan(any())).thenReturn(scanResult);
         when(scanResult.getLastEvaluatedKey()).thenReturn(null);
 
         GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(key);
@@ -156,16 +151,15 @@ class PipelineMetadataServiceTest {
         when(result.getItem()).thenReturn(pendingItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
 
-        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
-        Optional<List<Map<String, AttributeValue>>> successes = metadataService
-                .successfulDependencies(METADATA_TABLE, EXPORT_DATE, PRODUCT_1);
+        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB, DATA_PRODUCT,
+                METADATA_TABLE, EXPORT_DATE);
+        Optional<List<Map<String, AttributeValue>>> successes = metadataService.successfulDependencies(PRODUCT_1);
         assertFalse(successes.isPresent());
     }
 
     @Test
     public void shouldNotReturnWhenCancelled() throws ExecutionException, InterruptedException {
         AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
-        ScanRequest scanRequest = scanRequest(METADATA_TABLE, PRODUCT_1, EXPORT_DATE, null);
         ScanResult scanResult = mock(ScanResult.class);
         List<Map<String, AttributeValue>> items = new ArrayList<>();
         Map<String, AttributeValue> pendingItem = tableItem(CORRELATION_ID_1, STATUS_PENDING);
@@ -174,7 +168,7 @@ class PipelineMetadataServiceTest {
         Map<String, AttributeValue> key = itemKey();
 
         when(scanResult.getItems()).thenReturn(items);
-        when(dynamoDB.scan(scanRequest)).thenReturn(scanResult);
+        when(dynamoDB.scan(any())).thenReturn(scanResult);
         when(scanResult.getLastEvaluatedKey()).thenReturn(null);
 
         GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(key);
@@ -183,11 +177,12 @@ class PipelineMetadataServiceTest {
         when(result.getItem()).thenReturn(pendingItem).thenReturn(pendingItem).thenReturn(pendingItem)
                               .thenReturn(successfulItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
-        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
+        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB, DATA_PRODUCT,
+                METADATA_TABLE, EXPORT_DATE);
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
         executorService.schedule(metadataService::cancel, 15, TimeUnit.MILLISECONDS);
         Future<Optional<List<Map<String, AttributeValue>>>> future = executorService
-                .submit(() -> metadataService.successfulDependencies(METADATA_TABLE, EXPORT_DATE, PRODUCT_1));
+                .submit(() -> metadataService.successfulDependencies(PRODUCT_1));
 
         assertFalse(future.get().isPresent());
     }
@@ -217,9 +212,10 @@ class PipelineMetadataServiceTest {
         when(result2.getItem()).thenReturn(successfulItem2);
         when(dynamoDB.getItem(any(GetItemRequest.class))).thenReturn(result1, result2);
 
-        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB);
+        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB, DATA_PRODUCT,
+                METADATA_TABLE, EXPORT_DATE);
         Optional<List<Map<String, AttributeValue>>> successes = metadataService
-                .successfulDependencies(METADATA_TABLE, EXPORT_DATE, PRODUCT_1);
+                .successfulDependencies(PRODUCT_1);
         assertTrue(successes.isPresent());
         List<Map<String, AttributeValue>> items = successes.get();
         assertEquals(2, items.size());
@@ -247,6 +243,7 @@ class PipelineMetadataServiceTest {
     private final static String CORRELATION_ID_1 = "CORRELATION_ID_1";
     private final static String CORRELATION_ID_2 = "CORRELATION_ID_2";
     private final static String PRODUCT_1 = "PRODUCT_1";
+    private final static String DATA_PRODUCT = "DATA_PRODUCT";
     private final static String EXPORT_DATE = "2021-05-15";
     private final static String STATUS_COMPLETED = "Completed";
     private final static String STATUS_PENDING = "Pending";

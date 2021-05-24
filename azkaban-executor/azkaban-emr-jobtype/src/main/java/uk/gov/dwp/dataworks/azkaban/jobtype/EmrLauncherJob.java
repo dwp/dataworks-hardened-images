@@ -2,6 +2,7 @@ package uk.gov.dwp.dataworks.azkaban.jobtype;
 
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
 import com.amazonaws.services.logs.AWSLogs;
 import org.apache.log4j.Logger;
@@ -24,7 +25,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
 
     @Override
     public void run() throws Exception {
-        boolean successful = service().launchClusterAndWaitForStepCompletion(metadataTableName(), exportDate(), dependencies());
+        boolean successful = service().launchClusterAndWaitForStepCompletion(dependencies());
         if (!successful) {
             throw new Exception("Job failed");
         }
@@ -32,7 +33,6 @@ public class EmrLauncherJob extends AbstractProcessJob {
 
     @Override
     public void cancel() throws Exception {
-        super.cancel();
         service().cancel();
     }
 
@@ -50,8 +50,9 @@ public class EmrLauncherJob extends AbstractProcessJob {
 
     private synchronized CompositeService service() {
         if (_service == null) {
-            PipelineMetadataService pipelineMetadataService = new PipelineMetadataService(
-                    ClientUtility.amazonDynamoDb(awsRegion()));
+            AmazonDynamoDB dynamoDB = ClientUtility.amazonDynamoDb(awsRegion());
+            String dataProduct = jobProps.getString(DATA_PRODUCT_NAME, jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
+            PipelineMetadataService pipelineMetadataService = new PipelineMetadataService(dynamoDB, dataProduct, metadataTableName(), exportDate());
             pipelineMetadataService.setParent(this);
             EmrLauncherLambdaService emrLauncherLambdaService = new EmrLauncherLambdaService(
                     ClientUtility.amazonLambda(awsRegion()), jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
@@ -63,7 +64,8 @@ public class EmrLauncherJob extends AbstractProcessJob {
             logService.setParent(this);
             EmrProgressService emrProgressService = new EmrProgressService(emr, logService);
             emrProgressService.setParent(this);
-            NotificationService notificationService = new NotificationService(ClientUtility.amazonSNS(awsRegion()),
+            NotificationService notificationService = new NotificationService(
+                    ClientUtility.amazonSNS(awsRegion()),
                     this.getJobProps().getString(TOPIC_PARAMETER_NAME, "Monitoring"),
                     jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
 
@@ -83,6 +85,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
     public final static String EXPORT_DATE_PARAMETER_NAME = "export.date";
     public final static String METADATA_TABLE_PARAMETER_NAME = "pipeline.metadata.table";
     public final static String EMR_LAUNCHER_LAMBDA_PARAMETER_NAME = "emr.launcher.lambda";
+    public final static String DATA_PRODUCT_NAME = "data.product";
     public static final String AWS_LOG_GROUP_PARAMETER_NAME = "aws.log.group.name";
     public static final String CLUSTER_PARAMETER_NAME = "cluster.name";
     public static final String TOPIC_PARAMETER_NAME = "notification.topic.name";
