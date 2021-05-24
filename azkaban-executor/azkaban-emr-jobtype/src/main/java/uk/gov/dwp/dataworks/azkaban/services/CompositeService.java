@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class CompositeService extends EmrLaunchingDelegateService {
+public class CompositeService extends DelegateService {
 
 
     public CompositeService(PipelineMetadataService pipelineMetadataService,

@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.clusterStep;
 import static uk.gov.dwp.dataworks.azkaban.utility.LogUtility.clusterStepLogStreams;
 
-public class LogService extends EmrLaunchingDelegateService {
+public class LogService extends DelegateService {
 
     public LogService(AmazonElasticMapReduce emr, AWSLogs awsLogs, String logGroup) {
         this.emr = emr;

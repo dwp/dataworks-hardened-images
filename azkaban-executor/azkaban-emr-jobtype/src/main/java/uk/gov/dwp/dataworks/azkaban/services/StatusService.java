@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public class StatusService implements MetadataTableBackedService {
+public class StatusService implements DynamoDbService {
 
     public StatusService(AmazonDynamoDB dynamoDB, String dataProduct, String metadataTableName) {
         this.dynamoDb = dynamoDB;

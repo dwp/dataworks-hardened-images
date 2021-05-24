@@ -4,7 +4,7 @@ import uk.gov.dwp.dataworks.azkaban.jobtype.EmrLauncherJob;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class EmrLaunchingDelegateService {
+public class DelegateService {
 
     public void info(String message) {
         if (this.parent != null) {

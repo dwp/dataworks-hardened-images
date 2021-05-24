@@ -11,7 +11,7 @@ import uk.gov.dwp.dataworks.azkaban.model.InvocationResult;
 
 import java.util.Optional;
 
-public class EmrLauncherLambdaService extends EmrLaunchingDelegateService {
+public class EmrLauncherLambdaService extends DelegateService {
 
     public EmrLauncherLambdaService(final AWSLambda awsLambda, final String functionName) {
         this.awsLambda = awsLambda;
