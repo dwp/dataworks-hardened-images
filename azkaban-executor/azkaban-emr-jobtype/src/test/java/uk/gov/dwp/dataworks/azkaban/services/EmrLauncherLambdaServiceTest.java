@@ -22,8 +22,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.CORRELATION_ID_FIELD;
-import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATE_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.CORRELATION_ID_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.DATE_FIELD;
 
 class EmrLauncherLambdaServiceTest {
 

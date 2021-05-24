@@ -14,10 +14,10 @@ import java.util.concurrent.atomic.AtomicReference;
 public class CompositeService extends DelegateService {
 
 
-    public CompositeService(PipelineMetadataService pipelineMetadataService,
+    public CompositeService(DependencyService dependencyService,
             EmrLauncherLambdaService emrLauncherLambdaService, EmrProgressService emrProgressService,
             NotificationService notificationService, StatusService statusService, AmazonElasticMapReduce emr) {
-        this.pipelineMetadataService = pipelineMetadataService;
+        this.dependencyService = dependencyService;
         this.emrLauncherLambdaService = emrLauncherLambdaService;
         this.emrProgressService = emrProgressService;
         this.notificationService = notificationService;
@@ -70,7 +70,7 @@ public class CompositeService extends DelegateService {
     @Override
     public void cancel() {
         super.cancel();
-        pipelineMetadataService.cancel();
+        dependencyService.cancel();
         emrLauncherLambdaService.cancel();
         emrProgressService.cancel();
         clusterId.get().ifPresent(id -> EmrUtility.cancelSteps(emr, id));
@@ -84,7 +84,7 @@ public class CompositeService extends DelegateService {
     }
 
     private Optional<List<Map<String, AttributeValue>>> completedDependencies(String ... dependencies) {
-        return pipelineMetadataService.successfulDependencies(dependencies);
+        return dependencyService.successfulDependencies(dependencies);
     }
 
     private String setGetClusterId(String id) {
@@ -93,7 +93,7 @@ public class CompositeService extends DelegateService {
     }
 
     private final AtomicReference<Optional<String>> clusterId = new AtomicReference<>();
-    private final PipelineMetadataService pipelineMetadataService;
+    private final DependencyService dependencyService;
     private final EmrLauncherLambdaService emrLauncherLambdaService;
     private final EmrProgressService emrProgressService;
     private final NotificationService notificationService;

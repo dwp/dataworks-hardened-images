@@ -29,12 +29,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.CORRELATION_ID_FIELD;
-import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATA_PRODUCT_FIELD;
-import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATE_FIELD;
-import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.STATUS_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.CORRELATION_ID_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.DATA_PRODUCT_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.DATE_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.STATUS_FIELD;
 
-class PipelineMetadataServiceTest {
+class DependencyServiceTest {
 
     @BeforeAll
     static void beforeAll() {
@@ -61,8 +61,7 @@ class PipelineMetadataServiceTest {
         when(result.getItem()).thenReturn(successfulItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
 
-        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB, DATA_PRODUCT,
-                METADATA_TABLE, EXPORT_DATE);
+        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
         Optional<List<Map<String, AttributeValue>>> successes = metadataService.successfulDependencies(PRODUCT_1);
         assertTrue(successes.isPresent());
         List<Map<String, AttributeValue>> item = successes.get();
@@ -95,8 +94,7 @@ class PipelineMetadataServiceTest {
 
         when(dynamoDB.getItem(request)).thenReturn(result);
 
-        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB, DATA_PRODUCT,
-                METADATA_TABLE, EXPORT_DATE);
+        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
         Optional<List<Map<String, AttributeValue>>> successes = metadataService.successfulDependencies(PRODUCT_1);
         assertTrue(successes.isPresent());
         List<Map<String, AttributeValue>> item = successes.get();
@@ -126,8 +124,7 @@ class PipelineMetadataServiceTest {
         when(result.getItem()).thenReturn(failedItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
 
-        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB, DATA_PRODUCT,
-                METADATA_TABLE, EXPORT_DATE);
+        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
         Optional<List<Map<String, AttributeValue>>> successes = metadataService.successfulDependencies(PRODUCT_1);
         assertFalse(successes.isPresent());
     }
@@ -151,8 +148,7 @@ class PipelineMetadataServiceTest {
         when(result.getItem()).thenReturn(pendingItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
 
-        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB, DATA_PRODUCT,
-                METADATA_TABLE, EXPORT_DATE);
+        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
         Optional<List<Map<String, AttributeValue>>> successes = metadataService.successfulDependencies(PRODUCT_1);
         assertFalse(successes.isPresent());
     }
@@ -177,8 +173,7 @@ class PipelineMetadataServiceTest {
         when(result.getItem()).thenReturn(pendingItem).thenReturn(pendingItem).thenReturn(pendingItem)
                               .thenReturn(successfulItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
-        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB, DATA_PRODUCT,
-                METADATA_TABLE, EXPORT_DATE);
+        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
         executorService.schedule(metadataService::cancel, 15, TimeUnit.MILLISECONDS);
         Future<Optional<List<Map<String, AttributeValue>>>> future = executorService
@@ -212,8 +207,7 @@ class PipelineMetadataServiceTest {
         when(result2.getItem()).thenReturn(successfulItem2);
         when(dynamoDB.getItem(any(GetItemRequest.class))).thenReturn(result1, result2);
 
-        PipelineMetadataService metadataService = new PipelineMetadataService(dynamoDB, DATA_PRODUCT,
-                METADATA_TABLE, EXPORT_DATE);
+        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
         Optional<List<Map<String, AttributeValue>>> successes = metadataService
                 .successfulDependencies(PRODUCT_1);
         assertTrue(successes.isPresent());
@@ -243,7 +237,6 @@ class PipelineMetadataServiceTest {
     private final static String CORRELATION_ID_1 = "CORRELATION_ID_1";
     private final static String CORRELATION_ID_2 = "CORRELATION_ID_2";
     private final static String PRODUCT_1 = "PRODUCT_1";
-    private final static String DATA_PRODUCT = "DATA_PRODUCT";
     private final static String EXPORT_DATE = "2021-05-15";
     private final static String STATUS_COMPLETED = "Completed";
     private final static String STATUS_PENDING = "Pending";

@@ -10,8 +10,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.CORRELATION_ID_FIELD;
-import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATE_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.CORRELATION_ID_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.DATE_FIELD;
 
 class InvocationPayloadTest {
 

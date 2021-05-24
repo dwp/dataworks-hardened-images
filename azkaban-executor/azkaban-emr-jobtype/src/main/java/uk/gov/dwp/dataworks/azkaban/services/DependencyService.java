@@ -20,12 +20,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class PipelineMetadataService extends DelegateService implements DynamoDbService {
+public class DependencyService extends DelegateService implements MetadataService {
 
-    public PipelineMetadataService(final AmazonDynamoDB dynamoDB, String dataProduct, String metadataTableName,
+    public DependencyService(final AmazonDynamoDB dynamoDB, String metadataTableName,
             String exportDate) {
         this.dynamoDb = dynamoDB;
-        this.dataProduct = dataProduct;
         this.metadataTableName = metadataTableName;
         this.exportDate = exportDate;
     }
@@ -165,10 +164,8 @@ public class PipelineMetadataService extends DelegateService implements DynamoDb
 
     private final static String SUCCESSFUL_COMPLETION_STATUS = "Completed";
     private final static String FAILED_COMPLETION_STATUS = "Failed";
-    private final String dataProduct;
     private final String metadataTableName;
     private final String exportDate;
-    private String correlationId;
 
     private final AmazonDynamoDB dynamoDb;
     private final AtomicBoolean proceed = new AtomicBoolean(true);

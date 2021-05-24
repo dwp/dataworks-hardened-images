@@ -1,6 +1,6 @@
 package uk.gov.dwp.dataworks.azkaban.services;
 
-public interface DynamoDbService {
+public interface MetadataService {
     String ANALYTICAL_DATASET_PREFIX_FIELD = "S3_Prefix_Analytical_DataSet";
     String CLUSTER_ID_FIELD = "Cluster_Id";
     String CORRELATION_ID_FIELD = "Correlation_Id";

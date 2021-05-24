@@ -39,10 +39,8 @@ public class EmrLauncherLambdaService extends DelegateService {
     }
 
     private InvokeRequest invokeRequest(InvocationPayload payload) throws JsonProcessingException {
-        String payloadBody = new ObjectMapper().writeValueAsString(payload);
-        System.out.println("===========================> '" + payloadBody + "'");
         return new InvokeRequest().withFunctionName(this.functionName)
-                                  .withPayload(payloadBody)
+                                  .withPayload(new ObjectMapper().writeValueAsString(payload))
                                   .withInvocationType(InvocationType.RequestResponse);
     }
 

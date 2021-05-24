@@ -7,8 +7,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 
-import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.CORRELATION_ID_FIELD;
-import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATE_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.CORRELATION_ID_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.DATE_FIELD;
 
 public class InvocationPayload {
 

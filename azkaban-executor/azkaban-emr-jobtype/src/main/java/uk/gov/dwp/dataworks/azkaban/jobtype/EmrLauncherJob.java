@@ -11,7 +11,7 @@ import uk.gov.dwp.dataworks.azkaban.services.EmrLauncherLambdaService;
 import uk.gov.dwp.dataworks.azkaban.services.EmrProgressService;
 import uk.gov.dwp.dataworks.azkaban.services.LogService;
 import uk.gov.dwp.dataworks.azkaban.services.NotificationService;
-import uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService;
+import uk.gov.dwp.dataworks.azkaban.services.DependencyService;
 import uk.gov.dwp.dataworks.azkaban.services.StatusService;
 import uk.gov.dwp.dataworks.azkaban.utility.ClientUtility;
 
@@ -53,8 +53,8 @@ public class EmrLauncherJob extends AbstractProcessJob {
         if (_service == null) {
             AmazonDynamoDB dynamoDB = ClientUtility.amazonDynamoDb(awsRegion());
             String dataProduct = jobProps.getString(DATA_PRODUCT_NAME, jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
-            PipelineMetadataService pipelineMetadataService = new PipelineMetadataService(dynamoDB, dataProduct, metadataTableName(), exportDate());
-            pipelineMetadataService.setParent(this);
+            DependencyService dependencyService = new DependencyService(dynamoDB, metadataTableName(), exportDate());
+            dependencyService.setParent(this);
             StatusService statusService = new StatusService(dynamoDB, dataProduct, metadataTableName());
             EmrLauncherLambdaService emrLauncherLambdaService = new EmrLauncherLambdaService(
                     ClientUtility.amazonLambda(awsRegion()), jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
@@ -71,7 +71,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
                     this.getJobProps().getString(TOPIC_PARAMETER_NAME, "Monitoring"),
                     jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
 
-            this._service = new CompositeService(pipelineMetadataService, emrLauncherLambdaService, emrProgressService,
+            this._service = new CompositeService(dependencyService, emrLauncherLambdaService, emrProgressService,
                     notificationService, statusService, emr);
             this._service.setParent(this);
 
