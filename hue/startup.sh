@@ -6,6 +6,15 @@ TMP_BACKUP_FILE=/tmp/huedb_backup.sql
 
 update_session_backup_file() {
   mkdir -p $BACKUP_DIR
+  if [ -f $BACKUP_DIR/$BACKUP_FILE ]
+  then
+    DELTA=$(diff $TMP_BACKUP_FILE $BACKUP_DIR/$BACKUP_FILE | wc -l)
+    # unchanged backups currently diff 8 lines
+    if [ $DELTA -lt 9 ]
+    then
+       return
+    fi
+  fi
   rm -f $BACKUP_DIR/$BACKUP_FILE
   cp $TMP_BACKUP_FILE $BACKUP_DIR/$BACKUP_FILE && echo "Session data backed up successfully"
 }
