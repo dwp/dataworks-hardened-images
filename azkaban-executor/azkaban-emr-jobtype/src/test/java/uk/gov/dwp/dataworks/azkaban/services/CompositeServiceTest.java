@@ -37,17 +37,22 @@ class CompositeServiceTest {
         when(emrProgressService.observeEmr(any())).thenReturn(true);
 
         NotificationService notificationService = mock(NotificationService.class);
-
+        StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
         CompositeService service = new CompositeService(pipelineMetadataService, emrLauncherLambdaService,
-                emrProgressService, notificationService, emr);
+                emrProgressService, notificationService, statusService, emr);
 
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
 
         verify(pipelineMetadataService, times(1)).successfulDependencies(any());
         verifyNoMoreInteractions(pipelineMetadataService);
+
+        verify(statusService, times(1)).registerDependenciesCompleted(any());
+        verify(statusService, times(1)).registerClusterId(any());
+        verify(statusService, times(1)).registerSuccess();
+        verifyNoMoreInteractions(statusService);
 
         verify(emrLauncherLambdaService, times(1)).invokeEmrLauncher(any());
         verifyNoMoreInteractions(emrLauncherLambdaService);
@@ -72,14 +77,18 @@ class CompositeServiceTest {
 
         EmrProgressService emrProgressService = mock(EmrProgressService.class);
         NotificationService notificationService = mock(NotificationService.class);
+        StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
         CompositeService service = new CompositeService(pipelineMetadataService, emrLauncherLambdaService,
-                emrProgressService, notificationService, emr);
+                emrProgressService, notificationService, statusService, emr);
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
 
         verify(pipelineMetadataService, times(1)).successfulDependencies(any());
         verifyNoMoreInteractions(pipelineMetadataService);
+
+        verify(statusService, times(1)).registerFailure();
+        verifyNoMoreInteractions(statusService);
 
         verifyNoInteractions(emrLauncherLambdaService);
         verifyNoInteractions(emrProgressService);
@@ -101,14 +110,18 @@ class CompositeServiceTest {
 
         EmrProgressService emrProgressService = mock(EmrProgressService.class);
         NotificationService notificationService = mock(NotificationService.class);
+        StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
         CompositeService service = new CompositeService(pipelineMetadataService, emrLauncherLambdaService,
-                emrProgressService, notificationService, emr);
+                emrProgressService, notificationService, statusService, emr);
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
 
         verify(pipelineMetadataService, times(1)).successfulDependencies(any());
         verifyNoMoreInteractions(pipelineMetadataService);
+
+        verify(statusService, times(1)).registerFailure();
+        verifyNoMoreInteractions(statusService);
 
         verifyNoInteractions(emrLauncherLambdaService);
         verifyNoInteractions(emrProgressService);
@@ -132,16 +145,21 @@ class CompositeServiceTest {
 
         EmrProgressService emrProgressService = mock(EmrProgressService.class);
         NotificationService notificationService = mock(NotificationService.class);
+        StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
         CompositeService service = new CompositeService(pipelineMetadataService, emrLauncherLambdaService,
-                emrProgressService, notificationService, emr);
+                emrProgressService, notificationService, statusService, emr);
 
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
 
         verify(pipelineMetadataService, times(1)).successfulDependencies(any());
         verifyNoMoreInteractions(pipelineMetadataService);
+
+        verify(statusService, times(1)).registerDependenciesCompleted(any());
+        verify(statusService, times(1)).registerFailure();
+        verifyNoMoreInteractions(statusService);
 
         verify(emrLauncherLambdaService, times(1)).invokeEmrLauncher(any());
         verifyNoMoreInteractions(emrLauncherLambdaService);
@@ -164,16 +182,21 @@ class CompositeServiceTest {
 
         EmrProgressService emrProgressService = mock(EmrProgressService.class);
         NotificationService notificationService = mock(NotificationService.class);
+        StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
         CompositeService service = new CompositeService(pipelineMetadataService, emrLauncherLambdaService,
-                emrProgressService, notificationService, emr);
+                emrProgressService, notificationService, statusService, emr);
 
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
 
         verify(pipelineMetadataService, times(1)).successfulDependencies(any());
         verifyNoMoreInteractions(pipelineMetadataService);
+
+        verify(statusService, times(1)).registerDependenciesCompleted(any());
+        verify(statusService, times(1)).registerFailure();
+        verifyNoMoreInteractions(statusService);
 
         verify(emrLauncherLambdaService, times(1)).invokeEmrLauncher(any());
         verifyNoMoreInteractions(emrLauncherLambdaService);
@@ -201,17 +224,22 @@ class CompositeServiceTest {
         when(emrProgressService.observeEmr(any())).thenReturn(false);
 
         NotificationService notificationService = mock(NotificationService.class);
-
+        StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
         CompositeService service = new CompositeService(pipelineMetadataService, emrLauncherLambdaService,
-                emrProgressService, notificationService, emr);
+                emrProgressService, notificationService, statusService, emr);
 
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
 
         verify(pipelineMetadataService, times(1)).successfulDependencies(any());
         verifyNoMoreInteractions(pipelineMetadataService);
+
+        verify(statusService, times(1)).registerDependenciesCompleted(any());
+        verify(statusService, times(1)).registerClusterId(any());
+        verify(statusService, times(1)).registerFailure();
+        verifyNoMoreInteractions(statusService);
 
         verify(emrLauncherLambdaService, times(1)).invokeEmrLauncher(any());
         verifyNoMoreInteractions(emrLauncherLambdaService);
@@ -235,15 +263,20 @@ class CompositeServiceTest {
         EmrLauncherLambdaService emrLauncherLambdaService = mock(EmrLauncherLambdaService.class);
         EmrProgressService emrProgressService = mock(EmrProgressService.class);
         NotificationService notificationService = mock(NotificationService.class);
+        StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
         CompositeService service = new CompositeService(pipelineMetadataService, emrLauncherLambdaService,
-                emrProgressService, notificationService, emr);
+                emrProgressService, notificationService, statusService, emr);
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
 
         verify(pipelineMetadataService, times(1)).successfulDependencies(any());
         verifyNoMoreInteractions(pipelineMetadataService);
+
+        verify(statusService, times(1)).registerFailure();
+        verifyNoMoreInteractions(statusService);
+
         verify(notificationService, times(1)).notifyStarted();
         verify(notificationService, times(1)).notifyFailed();
         verifyNoMoreInteractions(notificationService);

@@ -12,17 +12,21 @@ import static uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService.DATE
 
 public class InvocationPayload {
 
-    private InvocationPayload(String correlationId, String prefix, String snapshotType, String exportDate) {
+    private InvocationPayload(String correlationId, String analyticalDatasetPrefix, String snapshotPrefix,
+            String snapshotType, String exportDate) {
         this.correlationId = correlationId;
-        this.prefix = prefix;
+        this.analyticalDatasetPrefix = analyticalDatasetPrefix;
+        this.snapshotPrefix = snapshotPrefix;
         this.snapshotType = snapshotType;
         this.exportDate = exportDate;
     }
 
     public static InvocationPayload from(Map<String, AttributeValue> entry) {
         return new InvocationPayload(attributeValue(entry, CORRELATION_ID_FIELD),
-                attributeValue(entry, "S3_Prefix_Analytical_DataSet", "S3_Prefix", "S3_Prefix_Snapshots"),
-                attributeValue(entry, "Snapshot_Type"), attributeValue(entry, DATE_FIELD));
+                attributeValue(entry,"S3_Prefix_Analytical_DataSet"),
+                attributeValue(entry,"S3_Prefix_Snapshots"),
+                attributeValue(entry,"Snapshot_Type"),
+                attributeValue(entry, DATE_FIELD));
     }
 
     private static String attributeValue(Map<String, AttributeValue> map, String... keys) {
@@ -32,8 +36,9 @@ public class InvocationPayload {
 
     @Override
     public String toString() {
-        return "LambdaPayload{" + "correlationId='" + correlationId + '\'' + ", prefix='" + prefix + '\''
-                + ", snapshotType='" + snapshotType + '\'' + ", exportDate='" + exportDate + '\'' + '}';
+        return "InvocationPayload{" + "correlationId='" + correlationId + '\'' + ", analyticalDatasetPrefix='"
+                + analyticalDatasetPrefix + '\'' + ", snapshotPrefix='" + snapshotPrefix + '\'' + ", snapshotType='"
+                + snapshotType + '\'' + ", exportDate='" + exportDate + '\'' + '}';
     }
 
     @Override
@@ -43,13 +48,15 @@ public class InvocationPayload {
         if (o == null || getClass() != o.getClass())
             return false;
         InvocationPayload that = (InvocationPayload) o;
-        return Objects.equals(correlationId, that.correlationId) && Objects.equals(prefix, that.prefix) && Objects
-                .equals(snapshotType, that.snapshotType) && Objects.equals(exportDate, that.exportDate);
+        return Objects.equals(correlationId, that.correlationId) && Objects
+                .equals(analyticalDatasetPrefix, that.analyticalDatasetPrefix) && Objects
+                .equals(snapshotPrefix, that.snapshotPrefix) && Objects.equals(snapshotType, that.snapshotType)
+                && Objects.equals(exportDate, that.exportDate);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(correlationId, prefix, snapshotType, exportDate);
+        return Objects.hash(correlationId, analyticalDatasetPrefix, snapshotPrefix, snapshotType, exportDate);
     }
 
     @JsonProperty("correlation_id")
@@ -59,7 +66,15 @@ public class InvocationPayload {
 
     @JsonProperty("s3_prefix")
     public String getPrefix() {
-        return prefix;
+        return analyticalDatasetPrefix != null && !"NOT_SET".equals(analyticalDatasetPrefix) ? analyticalDatasetPrefix : snapshotPrefix;
+    }
+
+    public String getAnalyticalDatasetPrefix() {
+        return analyticalDatasetPrefix;
+    }
+
+    public String getSnapshotPrefix() {
+        return snapshotPrefix;
     }
 
     @JsonProperty("snapshot_type")
@@ -74,7 +89,8 @@ public class InvocationPayload {
 
     private final static String DEFAULT_VALUE = "NOT_SET";
     private final String correlationId;
-    private final String prefix;
+    private final String analyticalDatasetPrefix;
+    private final String snapshotPrefix;
     private final String snapshotType;
     private final String exportDate;
 

@@ -12,6 +12,7 @@ import uk.gov.dwp.dataworks.azkaban.services.EmrProgressService;
 import uk.gov.dwp.dataworks.azkaban.services.LogService;
 import uk.gov.dwp.dataworks.azkaban.services.NotificationService;
 import uk.gov.dwp.dataworks.azkaban.services.PipelineMetadataService;
+import uk.gov.dwp.dataworks.azkaban.services.StatusService;
 import uk.gov.dwp.dataworks.azkaban.utility.ClientUtility;
 
 import java.text.SimpleDateFormat;
@@ -54,6 +55,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
             String dataProduct = jobProps.getString(DATA_PRODUCT_NAME, jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
             PipelineMetadataService pipelineMetadataService = new PipelineMetadataService(dynamoDB, dataProduct, metadataTableName(), exportDate());
             pipelineMetadataService.setParent(this);
+            StatusService statusService = new StatusService(dynamoDB, dataProduct, metadataTableName());
             EmrLauncherLambdaService emrLauncherLambdaService = new EmrLauncherLambdaService(
                     ClientUtility.amazonLambda(awsRegion()), jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
             emrLauncherLambdaService.setParent(this);
@@ -70,7 +72,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
                     jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
 
             this._service = new CompositeService(pipelineMetadataService, emrLauncherLambdaService, emrProgressService,
-                    notificationService, emr);
+                    notificationService, statusService, emr);
             this._service.setParent(this);
 
         }

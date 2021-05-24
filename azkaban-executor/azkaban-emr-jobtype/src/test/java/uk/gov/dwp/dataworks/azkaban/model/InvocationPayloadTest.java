@@ -33,9 +33,9 @@ class InvocationPayloadTest {
         InvocationPayload payload = InvocationPayload.from(from);
         assertEquals(DEFAULT_VALUE, payload.getCorrelationId());
         assertEquals(DEFAULT_VALUE, payload.getSnapshotType());
-        assertEquals(DEFAULT_VALUE, payload.getPrefix());
+        assertEquals(DEFAULT_VALUE, payload.getAnalyticalDatasetPrefix());
         assertEquals(DEFAULT_VALUE, payload.getExportDate());
-        assertEquals(DEFAULT_VALUE, payload.getPrefix());
+        assertEquals(DEFAULT_VALUE, payload.getAnalyticalDatasetPrefix());
     }
 
     @Test
@@ -53,19 +53,9 @@ class InvocationPayloadTest {
     public void shouldUseAnalyticalDataSetPrefixIfPresent() {
         Map<String, AttributeValue> from = new HashMap<>();
         from.put(ANALYTICAL_DATASET_PREFIX_KEY, attributeValue(ANALYTICAL_DATASET_PREFIX_VALUE));
-        from.put(S3_PREFIX_KEY, attributeValue(S3_PREFIX_VALUE));
         from.put(S3_SNAPSHOTS_PREFIX_KEY, attributeValue(S3_SNAPSHOTS_PREFIX_VALUE));
         InvocationPayload payload = InvocationPayload.from(from);
         assertEquals(ANALYTICAL_DATASET_PREFIX_VALUE, payload.getPrefix());
-    }
-
-    @Test
-    public void shouldUseS3PrefixIfNoAnalyticalDatasetPrefixPresent() {
-        Map<String, AttributeValue> from = new HashMap<>();
-        from.put(S3_PREFIX_KEY, attributeValue(S3_PREFIX_VALUE));
-        from.put(S3_SNAPSHOTS_PREFIX_KEY, attributeValue(S3_SNAPSHOTS_PREFIX_VALUE));
-        InvocationPayload payload = InvocationPayload.from(from);
-        assertEquals(S3_PREFIX_VALUE, payload.getPrefix());
     }
 
     @Test
@@ -81,14 +71,12 @@ class InvocationPayloadTest {
     }
 
     private final static String ANALYTICAL_DATASET_PREFIX_KEY = "S3_Prefix_Analytical_DataSet";
-    private final static String S3_PREFIX_KEY = "S3_Prefix";
     private final static String S3_SNAPSHOTS_PREFIX_KEY = "S3_Prefix_Snapshots";
     private final static String SNAPSHOT_TYPE_KEY = "Snapshot_Type";
 
     private final static String ANALYTICAL_DATASET_PREFIX_VALUE = "S3_PREFIX_ANALYTICAL_DATA_SET";
     private final static String CORRELATION_ID_VALUE = "CORRELATION_ID";
     private final static String DATE_VALUE = "DATE";
-    private final static String S3_PREFIX_VALUE = "S3_PREFIX";
     private final static String S3_SNAPSHOTS_PREFIX_VALUE = "S3_PREFIX_SNAPSHOTS";
     private final static String SNAPSHOT_TYPE_VALUE = "SNAPSHOT_TYPE";
     private final static String DEFAULT_VALUE = "NOT_SET";

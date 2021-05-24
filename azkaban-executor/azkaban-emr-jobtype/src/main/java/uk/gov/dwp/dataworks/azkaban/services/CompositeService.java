@@ -9,50 +9,63 @@ import uk.gov.dwp.dataworks.azkaban.utility.EmrUtility;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CompositeService extends EmrLaunchingDelegateService {
 
+
     public CompositeService(PipelineMetadataService pipelineMetadataService,
             EmrLauncherLambdaService emrLauncherLambdaService, EmrProgressService emrProgressService,
-            NotificationService notificationService, AmazonElasticMapReduce emr) {
+            NotificationService notificationService, StatusService statusService, AmazonElasticMapReduce emr) {
         this.pipelineMetadataService = pipelineMetadataService;
         this.emrLauncherLambdaService = emrLauncherLambdaService;
         this.emrProgressService = emrProgressService;
         this.notificationService = notificationService;
+        this.statusService = statusService;
         this.emr = emr;
     }
 
     public boolean launchClusterAndWaitForStepCompletion(String ... dependencies) {
         try {
             this.notificationService.notifyStarted();
-//            this.pipelineMetadataService.registerStarted(UUID.randomUUID().toString());
-//            this.pipelineMetadataService.registerInvoked(metadataTableName, exportDate, "NEW_CORRELATION_ID_" + UUID.randomUUID());
-//            return true;
             boolean succeeded = dependencyMetadata(dependencies)
+                    .map(this::registerDependenciesCompleted)
                     .filter(x -> proceed.get())
                     .flatMap(emrLauncherLambdaService::invokeEmrLauncher)
                     .filter(InvocationResult::wasSuccessful)
                     .map(InvocationResult::getClusterId)
                     .map(this::setGetClusterId)
+                    .map(this::registerClusterId)
                     .filter(x -> proceed.get())
-                    .map(emrProgressService::observeEmr).orElse(false);
+                    .map(emrProgressService::observeEmr)
+                    .orElse(false);
 
             if (succeeded) {
+                this.statusService.registerSuccess();
                 this.notificationService.notifySucceeded();
                 return true;
             } else {
+                this.statusService.registerFailure();
                 this.notificationService.notifyFailed();
                 return false;
             }
         } catch (Exception e) {
             error("Job failed", e);
+            this.statusService.registerFailure();
             this.notificationService.notifyFailed();
             return false;
         }
     }
 
+    private String registerClusterId(String x) {
+        this.statusService.registerClusterId(x);
+        return x;
+    }
+
+    private InvocationPayload registerDependenciesCompleted(InvocationPayload payload) {
+        this.statusService.registerDependenciesCompleted(payload);
+        return payload;
+    }
 
     @Override
     public void cancel() {
@@ -84,5 +97,6 @@ public class CompositeService extends EmrLaunchingDelegateService {
     private final EmrLauncherLambdaService emrLauncherLambdaService;
     private final EmrProgressService emrProgressService;
     private final NotificationService notificationService;
+    private final StatusService statusService;
     private final AmazonElasticMapReduce emr;
 }
