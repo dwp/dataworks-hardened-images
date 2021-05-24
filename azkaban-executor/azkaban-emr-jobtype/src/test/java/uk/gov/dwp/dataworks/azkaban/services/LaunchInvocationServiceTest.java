@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.CORRELATION_ID_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.DATE_FIELD;
 
-class EmrLauncherLambdaServiceTest {
+class LaunchInvocationServiceTest {
 
     @Test
     public void shouldReturnPresentIfRequestSuccessful() throws JsonProcessingException {
@@ -37,7 +37,7 @@ class EmrLauncherLambdaServiceTest {
         InvokeResult invokeResult = new InvokeResult();
         invokeResult.setPayload(ByteBuffer.wrap(new ObjectMapper().writeValueAsBytes(result)));
         when(lambda.invoke(any())).thenReturn(invokeResult);
-        EmrLauncherLambdaService service = new EmrLauncherLambdaService(lambda, LAMBDA_NAME);
+        LaunchInvocationService service = new LaunchInvocationService(lambda, LAMBDA_NAME);
         Optional<InvocationResult> optionalResult = service.invokeEmrLauncher(payload());
         assertTrue(optionalResult.isPresent());
         optionalResult.ifPresent(x -> assertEquals(result, x));
@@ -53,7 +53,7 @@ class EmrLauncherLambdaServiceTest {
         InvokeResult invokeResult = new InvokeResult();
         invokeResult.setPayload(ByteBuffer.wrap(new ObjectMapper().writeValueAsBytes(result)));
         when(lambda.invoke(any())).thenReturn(invokeResult);
-        EmrLauncherLambdaService service = new EmrLauncherLambdaService(lambda, LAMBDA_NAME);
+        LaunchInvocationService service = new LaunchInvocationService(lambda, LAMBDA_NAME);
         Optional<InvocationResult> optionalResult = service.invokeEmrLauncher(payload());
         assertTrue(optionalResult.isPresent());
         optionalResult.ifPresent(x -> assertEquals(result, x));
@@ -69,7 +69,7 @@ class EmrLauncherLambdaServiceTest {
         InvokeResult invokeResult = new InvokeResult();
         invokeResult.setPayload(ByteBuffer.wrap(new ObjectMapper().writeValueAsBytes(result)));
         when(lambda.invoke(any())).thenThrow(new RuntimeException("FAILED"));
-        EmrLauncherLambdaService service = new EmrLauncherLambdaService(lambda, LAMBDA_NAME);
+        LaunchInvocationService service = new LaunchInvocationService(lambda, LAMBDA_NAME);
         Optional<InvocationResult> optionalResult = service.invokeEmrLauncher(payload());
         assertFalse(optionalResult.isPresent());
     }
@@ -77,7 +77,7 @@ class EmrLauncherLambdaServiceTest {
     @Test
     public void shouldReturnEmptyIfCancelled() {
         AWSLambda lambda = mock(AWSLambda.class);
-        EmrLauncherLambdaService service = new EmrLauncherLambdaService(lambda, LAMBDA_NAME);
+        LaunchInvocationService service = new LaunchInvocationService(lambda, LAMBDA_NAME);
         service.cancel();
         Optional<InvocationResult> optionalResult = service.invokeEmrLauncher(payload());
         verifyNoInteractions(lambda);

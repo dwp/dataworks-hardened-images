@@ -27,11 +27,11 @@ class CompositeServiceTest {
     public void shouldCallEachServiceInTurnIfSuccessful() {
         DependencyService dependencyService = successfulPipelineMetadataService();
 
-        EmrLauncherLambdaService emrLauncherLambdaService = mock(EmrLauncherLambdaService.class);
+        LaunchInvocationService launchInvocationService = mock(LaunchInvocationService.class);
         InvocationResult invocationResult = mock(InvocationResult.class);
         when(invocationResult.wasSuccessful()).thenReturn(true);
         when(invocationResult.getClusterId()).thenReturn(CLUSTER_ID);
-        when(emrLauncherLambdaService.invokeEmrLauncher(any())).thenReturn(Optional.of(invocationResult));
+        when(launchInvocationService.invokeEmrLauncher(any())).thenReturn(Optional.of(invocationResult));
 
         EmrProgressService emrProgressService = mock(EmrProgressService.class);
         when(emrProgressService.observeEmr(any())).thenReturn(true);
@@ -40,7 +40,7 @@ class CompositeServiceTest {
         StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
-        CompositeService service = new CompositeService(dependencyService, emrLauncherLambdaService,
+        CompositeService service = new CompositeService(dependencyService, launchInvocationService,
                 emrProgressService, notificationService, statusService, emr);
 
         boolean successful = service
@@ -54,8 +54,8 @@ class CompositeServiceTest {
         verify(statusService, times(1)).registerSuccess();
         verifyNoMoreInteractions(statusService);
 
-        verify(emrLauncherLambdaService, times(1)).invokeEmrLauncher(any());
-        verifyNoMoreInteractions(emrLauncherLambdaService);
+        verify(launchInvocationService, times(1)).invokeEmrLauncher(any());
+        verifyNoMoreInteractions(launchInvocationService);
 
         verify(emrProgressService, times(1)).observeEmr(any());
         verifyNoMoreInteractions(emrProgressService);
@@ -73,13 +73,13 @@ class CompositeServiceTest {
         when(dependencyService.successfulDependencies(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY))
                 .thenReturn(Optional.empty());
 
-        EmrLauncherLambdaService emrLauncherLambdaService = mock(EmrLauncherLambdaService.class);
+        LaunchInvocationService launchInvocationService = mock(LaunchInvocationService.class);
 
         EmrProgressService emrProgressService = mock(EmrProgressService.class);
         NotificationService notificationService = mock(NotificationService.class);
         StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
-        CompositeService service = new CompositeService(dependencyService, emrLauncherLambdaService,
+        CompositeService service = new CompositeService(dependencyService, launchInvocationService,
                 emrProgressService, notificationService, statusService, emr);
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
@@ -90,7 +90,7 @@ class CompositeServiceTest {
         verify(statusService, times(1)).registerFailure();
         verifyNoMoreInteractions(statusService);
 
-        verifyNoInteractions(emrLauncherLambdaService);
+        verifyNoInteractions(launchInvocationService);
         verifyNoInteractions(emrProgressService);
 
         verify(notificationService, times(1)).notifyStarted();
@@ -106,13 +106,13 @@ class CompositeServiceTest {
         when(dependencyService.successfulDependencies(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY))
                 .thenReturn(Optional.of(new ArrayList<>()));
 
-        EmrLauncherLambdaService emrLauncherLambdaService = mock(EmrLauncherLambdaService.class);
+        LaunchInvocationService launchInvocationService = mock(LaunchInvocationService.class);
 
         EmrProgressService emrProgressService = mock(EmrProgressService.class);
         NotificationService notificationService = mock(NotificationService.class);
         StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
-        CompositeService service = new CompositeService(dependencyService, emrLauncherLambdaService,
+        CompositeService service = new CompositeService(dependencyService, launchInvocationService,
                 emrProgressService, notificationService, statusService, emr);
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
@@ -123,7 +123,7 @@ class CompositeServiceTest {
         verify(statusService, times(1)).registerFailure();
         verifyNoMoreInteractions(statusService);
 
-        verifyNoInteractions(emrLauncherLambdaService);
+        verifyNoInteractions(launchInvocationService);
         verifyNoInteractions(emrProgressService);
 
         verify(notificationService, times(1)).notifyStarted();
@@ -137,18 +137,18 @@ class CompositeServiceTest {
     public void shouldNotCallSubsequentServicesInLambdaInvocationFails() {
         DependencyService dependencyService = successfulPipelineMetadataService();
 
-        EmrLauncherLambdaService emrLauncherLambdaService = mock(EmrLauncherLambdaService.class);
+        LaunchInvocationService launchInvocationService = mock(LaunchInvocationService.class);
         InvocationResult invocationResult = mock(InvocationResult.class);
         when(invocationResult.wasSuccessful()).thenReturn(false);
         when(invocationResult.getClusterId()).thenReturn(CLUSTER_ID);
-        when(emrLauncherLambdaService.invokeEmrLauncher(any())).thenReturn(Optional.of(invocationResult));
+        when(launchInvocationService.invokeEmrLauncher(any())).thenReturn(Optional.of(invocationResult));
 
         EmrProgressService emrProgressService = mock(EmrProgressService.class);
         NotificationService notificationService = mock(NotificationService.class);
         StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
-        CompositeService service = new CompositeService(dependencyService, emrLauncherLambdaService,
+        CompositeService service = new CompositeService(dependencyService, launchInvocationService,
                 emrProgressService, notificationService, statusService, emr);
 
         boolean successful = service
@@ -161,8 +161,8 @@ class CompositeServiceTest {
         verify(statusService, times(1)).registerFailure();
         verifyNoMoreInteractions(statusService);
 
-        verify(emrLauncherLambdaService, times(1)).invokeEmrLauncher(any());
-        verifyNoMoreInteractions(emrLauncherLambdaService);
+        verify(launchInvocationService, times(1)).invokeEmrLauncher(any());
+        verifyNoMoreInteractions(launchInvocationService);
 
         verifyNoInteractions(emrProgressService);
 
@@ -177,15 +177,15 @@ class CompositeServiceTest {
     public void shouldNotCallSubsequentServicesInLambdaInvocationReturnsEmpty() {
         DependencyService dependencyService = successfulPipelineMetadataService();
 
-        EmrLauncherLambdaService emrLauncherLambdaService = mock(EmrLauncherLambdaService.class);
-        when(emrLauncherLambdaService.invokeEmrLauncher(any())).thenReturn(Optional.empty());
+        LaunchInvocationService launchInvocationService = mock(LaunchInvocationService.class);
+        when(launchInvocationService.invokeEmrLauncher(any())).thenReturn(Optional.empty());
 
         EmrProgressService emrProgressService = mock(EmrProgressService.class);
         NotificationService notificationService = mock(NotificationService.class);
         StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
-        CompositeService service = new CompositeService(dependencyService, emrLauncherLambdaService,
+        CompositeService service = new CompositeService(dependencyService, launchInvocationService,
                 emrProgressService, notificationService, statusService, emr);
 
         boolean successful = service
@@ -198,8 +198,8 @@ class CompositeServiceTest {
         verify(statusService, times(1)).registerFailure();
         verifyNoMoreInteractions(statusService);
 
-        verify(emrLauncherLambdaService, times(1)).invokeEmrLauncher(any());
-        verifyNoMoreInteractions(emrLauncherLambdaService);
+        verify(launchInvocationService, times(1)).invokeEmrLauncher(any());
+        verifyNoMoreInteractions(launchInvocationService);
 
         verifyNoInteractions(emrProgressService);
 
@@ -214,11 +214,11 @@ class CompositeServiceTest {
     public void shouldFailIfStepsFail() {
         DependencyService dependencyService = successfulPipelineMetadataService();
 
-        EmrLauncherLambdaService emrLauncherLambdaService = mock(EmrLauncherLambdaService.class);
+        LaunchInvocationService launchInvocationService = mock(LaunchInvocationService.class);
         InvocationResult invocationResult = mock(InvocationResult.class);
         when(invocationResult.wasSuccessful()).thenReturn(true);
         when(invocationResult.getClusterId()).thenReturn(CLUSTER_ID);
-        when(emrLauncherLambdaService.invokeEmrLauncher(any())).thenReturn(Optional.of(invocationResult));
+        when(launchInvocationService.invokeEmrLauncher(any())).thenReturn(Optional.of(invocationResult));
 
         EmrProgressService emrProgressService = mock(EmrProgressService.class);
         when(emrProgressService.observeEmr(any())).thenReturn(false);
@@ -227,7 +227,7 @@ class CompositeServiceTest {
         StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
-        CompositeService service = new CompositeService(dependencyService, emrLauncherLambdaService,
+        CompositeService service = new CompositeService(dependencyService, launchInvocationService,
                 emrProgressService, notificationService, statusService, emr);
 
         boolean successful = service
@@ -241,8 +241,8 @@ class CompositeServiceTest {
         verify(statusService, times(1)).registerFailure();
         verifyNoMoreInteractions(statusService);
 
-        verify(emrLauncherLambdaService, times(1)).invokeEmrLauncher(any());
-        verifyNoMoreInteractions(emrLauncherLambdaService);
+        verify(launchInvocationService, times(1)).invokeEmrLauncher(any());
+        verifyNoMoreInteractions(launchInvocationService);
 
         verify(emrProgressService, times(1)).observeEmr(any());
         verifyNoMoreInteractions(emrProgressService);
@@ -260,13 +260,13 @@ class CompositeServiceTest {
         when(dependencyService.successfulDependencies(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY))
                 .thenThrow(new RuntimeException("FAILURE"));
 
-        EmrLauncherLambdaService emrLauncherLambdaService = mock(EmrLauncherLambdaService.class);
+        LaunchInvocationService launchInvocationService = mock(LaunchInvocationService.class);
         EmrProgressService emrProgressService = mock(EmrProgressService.class);
         NotificationService notificationService = mock(NotificationService.class);
         StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
-        CompositeService service = new CompositeService(dependencyService, emrLauncherLambdaService,
+        CompositeService service = new CompositeService(dependencyService, launchInvocationService,
                 emrProgressService, notificationService, statusService, emr);
         boolean successful = service
                 .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);

@@ -15,10 +15,10 @@ public class CompositeService extends DelegateService {
 
 
     public CompositeService(DependencyService dependencyService,
-            EmrLauncherLambdaService emrLauncherLambdaService, EmrProgressService emrProgressService,
+            LaunchInvocationService launchInvocationService, EmrProgressService emrProgressService,
             NotificationService notificationService, StatusService statusService, AmazonElasticMapReduce emr) {
         this.dependencyService = dependencyService;
-        this.emrLauncherLambdaService = emrLauncherLambdaService;
+        this.launchInvocationService = launchInvocationService;
         this.emrProgressService = emrProgressService;
         this.notificationService = notificationService;
         this.statusService = statusService;
@@ -31,7 +31,7 @@ public class CompositeService extends DelegateService {
             boolean succeeded = dependencyMetadata(dependencies)
                     .map(this::registerDependenciesCompleted)
                     .filter(x -> proceed.get())
-                    .flatMap(emrLauncherLambdaService::invokeEmrLauncher)
+                    .flatMap(launchInvocationService::invokeEmrLauncher)
                     .filter(InvocationResult::wasSuccessful)
                     .map(InvocationResult::getClusterId)
                     .map(this::setGetClusterId)
@@ -71,7 +71,7 @@ public class CompositeService extends DelegateService {
     public void cancel() {
         super.cancel();
         dependencyService.cancel();
-        emrLauncherLambdaService.cancel();
+        launchInvocationService.cancel();
         emrProgressService.cancel();
         clusterId.get().ifPresent(id -> EmrUtility.cancelSteps(emr, id));
     }
@@ -94,7 +94,7 @@ public class CompositeService extends DelegateService {
 
     private final AtomicReference<Optional<String>> clusterId = new AtomicReference<>();
     private final DependencyService dependencyService;
-    private final EmrLauncherLambdaService emrLauncherLambdaService;
+    private final LaunchInvocationService launchInvocationService;
     private final EmrProgressService emrProgressService;
     private final NotificationService notificationService;
     private final StatusService statusService;
