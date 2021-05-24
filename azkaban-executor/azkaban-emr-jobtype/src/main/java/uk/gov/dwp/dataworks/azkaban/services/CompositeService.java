@@ -6,7 +6,6 @@ import uk.gov.dwp.dataworks.azkaban.model.InvocationPayload;
 import uk.gov.dwp.dataworks.azkaban.model.InvocationResult;
 import uk.gov.dwp.dataworks.azkaban.utility.EmrUtility;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -25,10 +24,10 @@ public class CompositeService extends DelegateService {
         this.emr = emr;
     }
 
-    public boolean launchClusterAndWaitForStepCompletion(String ... dependencies) {
+    public boolean launchClusterAndWaitForStepCompletion(String dependency) {
         try {
             this.notificationService.notifyStarted();
-            boolean succeeded = dependencyMetadata(dependencies)
+            boolean succeeded = dependencyMetadata(dependency)
                     .map(this::registerDependenciesCompleted)
                     .filter(x -> proceed.get())
                     .flatMap(launchInvocationService::invokeEmrLauncher)
@@ -76,15 +75,13 @@ public class CompositeService extends DelegateService {
         clusterId.get().ifPresent(id -> EmrUtility.cancelSteps(emr, id));
     }
 
-    private Optional<InvocationPayload> dependencyMetadata(String ... dependencies) {
-        return completedDependencies(dependencies)
-                .filter(xs -> xs.size() > 0)
-                .map(xs -> xs.get(0))
+    private Optional<InvocationPayload> dependencyMetadata(String dependencies) {
+        return completedDependency(dependencies)
                 .map(InvocationPayload::from);
     }
 
-    private Optional<List<Map<String, AttributeValue>>> completedDependencies(String ... dependencies) {
-        return dependencyService.successfulDependencies(dependencies);
+    private Optional<Map<String, AttributeValue>> completedDependency(String dependency) {
+        return dependencyService.successfulDependency(dependency);
     }
 
     private String setGetClusterId(String id) {

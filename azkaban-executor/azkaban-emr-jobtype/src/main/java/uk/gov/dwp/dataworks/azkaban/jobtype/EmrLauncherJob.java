@@ -26,7 +26,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
 
     @Override
     public void run() throws Exception {
-        boolean successful = service().launchClusterAndWaitForStepCompletion(dependencies());
+        boolean successful = service().launchClusterAndWaitForStepCompletion(dependency());
         if (!successful) {
             throw new Exception("Job failed");
         }
@@ -45,8 +45,8 @@ public class EmrLauncherJob extends AbstractProcessJob {
         return jobProps.getString(EXPORT_DATE_PARAMETER_NAME, new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
     }
 
-    private String[] dependencies() {
-        return jobProps.getString(JOB_DEPENDENCIES_PARAMETER_NAME).split(",");
+    private String dependency() {
+        return jobProps.getString(JOB_DEPENDENCIES_PARAMETER_NAME);
     }
 
     private synchronized CompositeService service() {

@@ -8,7 +8,6 @@ import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,24 +21,15 @@ import java.util.stream.Collectors;
 
 public class DependencyService extends DelegateService implements MetadataService {
 
-    public DependencyService(final AmazonDynamoDB dynamoDB, String metadataTableName,
-            String exportDate) {
+    public DependencyService(final AmazonDynamoDB dynamoDB, String metadataTableName, String exportDate) {
         this.dynamoDb = dynamoDB;
         this.metadataTableName = metadataTableName;
         this.exportDate = exportDate;
     }
 
-    public Optional<List<Map<String, AttributeValue>>> successfulDependencies(final String... products) {
-        return proceed.get() && dependenciesSucceeded(dependenciesMetadata(products)) ?
-                Optional.of(dependenciesMetadata(products)) :
-                Optional.empty();
-    }
-
-    private ScanRequest scanRequest(final String product, final Map<String, AttributeValue> lastKeyEvaluatedKey) {
-        return new ScanRequest().withTableName(metadataTableName)
-                                .withFilterExpression("#product = :product and #export_date = :export_date")
-                                .withExclusiveStartKey(lastKeyEvaluatedKey).withExpressionAttributeNames(nameMap())
-                                .withExpressionAttributeValues(valueMap(product, exportDate));
+    public Optional<Map<String, AttributeValue>> successfulDependency(final String product) {
+        return proceed.get() ? dependencyMetadata(product).filter(this::dependencySucceeded)
+                                                          .flatMap(x -> dependencyMetadata(product)) : Optional.empty();
     }
 
     @Override
@@ -54,17 +44,8 @@ public class DependencyService extends DelegateService implements MetadataServic
                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private List<Map<String, AttributeValue>> dependenciesMetadata(final String... products) {
-        return Arrays.stream(products).map(this::dependencyMetadata).reduce(new ArrayList<>(), (accumulation, next) -> {
-            accumulation.addAll(next);
-            return accumulation;
-        });
-    }
-
-    private Boolean dependenciesSucceeded(final List<Map<String, AttributeValue>> items) {
-        return items.stream().map(item -> completedSuccessfully(metadataTableName, item))
-                    .filter(x -> !x.isPresent() || !x.get()).map(Optional::get)
-                    .reduce(true, (acc, next) -> acc && next);
+    private Boolean dependencySucceeded(final Map<String, AttributeValue> item) {
+        return completedSuccessfully(metadataTableName, item).orElse(false);
     }
 
     private Optional<Boolean> completedSuccessfully(final String tableName, final Map<String, AttributeValue> item) {
@@ -105,7 +86,7 @@ public class DependencyService extends DelegateService implements MetadataServic
         }
     }
 
-    private List<Map<String, AttributeValue>> dependencyMetadata(final String product) {
+    private Optional<Map<String, AttributeValue>> dependencyMetadata(final String product) {
         final List<Map<String, AttributeValue>> results = new ArrayList<>();
         Map<String, AttributeValue> lastKeyEvaluatedKey = null;
         do {
@@ -116,7 +97,7 @@ public class DependencyService extends DelegateService implements MetadataServic
         }
         while (lastKeyEvaluatedKey != null);
 
-        return results;
+        return results.size() > 0 ? Optional.of(results.get(0)) : Optional.empty();
     }
 
     private static Map<String, AttributeValue> valueMap(final String product, final String exportDate) {
@@ -131,6 +112,13 @@ public class DependencyService extends DelegateService implements MetadataServic
         nameMap.put("#export_date", DATE_FIELD);
         nameMap.put("#product", DATA_PRODUCT_FIELD);
         return nameMap;
+    }
+
+    private ScanRequest scanRequest(final String product, final Map<String, AttributeValue> lastKeyEvaluatedKey) {
+        return new ScanRequest().withTableName(metadataTableName)
+                                .withFilterExpression("#product = :product and #export_date = :export_date")
+                                .withExclusiveStartKey(lastKeyEvaluatedKey).withExpressionAttributeNames(nameMap())
+                                .withExpressionAttributeValues(valueMap(product, exportDate));
     }
 
     private static boolean hasFinished(final String status) {

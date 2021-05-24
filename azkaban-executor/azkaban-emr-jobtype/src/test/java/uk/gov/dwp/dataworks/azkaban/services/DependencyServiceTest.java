@@ -62,11 +62,10 @@ class DependencyServiceTest {
         when(dynamoDB.getItem(request)).thenReturn(result);
 
         DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
-        Optional<List<Map<String, AttributeValue>>> successes = metadataService.successfulDependencies(PRODUCT_1);
+        Optional<Map<String, AttributeValue>> successes = metadataService.successfulDependency(PRODUCT_1);
         assertTrue(successes.isPresent());
-        List<Map<String, AttributeValue>> item = successes.get();
-        assertEquals(1, item.size());
-        assertEquals(successfulItem, item.get(0));
+        Map<String, AttributeValue> item = successes.get();
+        assertEquals(successfulItem, item);
     }
 
     @Test
@@ -95,11 +94,10 @@ class DependencyServiceTest {
         when(dynamoDB.getItem(request)).thenReturn(result);
 
         DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
-        Optional<List<Map<String, AttributeValue>>> successes = metadataService.successfulDependencies(PRODUCT_1);
+        Optional<Map<String, AttributeValue>> successes = metadataService.successfulDependency(PRODUCT_1);
         assertTrue(successes.isPresent());
-        List<Map<String, AttributeValue>> item = successes.get();
-        assertEquals(1, item.size());
-        assertEquals(successfulItem, item.get(0));
+        Map<String, AttributeValue> item = successes.get();
+        assertEquals(successfulItem, item);
         verify(dynamoDB, times(4)).getItem(request);
         verify(dynamoDB, times(2)).scan(any());
         verifyNoMoreInteractions(dynamoDB);
@@ -125,7 +123,7 @@ class DependencyServiceTest {
         when(dynamoDB.getItem(request)).thenReturn(result);
 
         DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
-        Optional<List<Map<String, AttributeValue>>> successes = metadataService.successfulDependencies(PRODUCT_1);
+        Optional<Map<String, AttributeValue>> successes = metadataService.successfulDependency(PRODUCT_1);
         assertFalse(successes.isPresent());
     }
 
@@ -149,7 +147,7 @@ class DependencyServiceTest {
         when(dynamoDB.getItem(request)).thenReturn(result);
 
         DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
-        Optional<List<Map<String, AttributeValue>>> successes = metadataService.successfulDependencies(PRODUCT_1);
+        Optional<Map<String, AttributeValue>> successes = metadataService.successfulDependency(PRODUCT_1);
         assertFalse(successes.isPresent());
     }
 
@@ -176,8 +174,8 @@ class DependencyServiceTest {
         DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
         executorService.schedule(metadataService::cancel, 15, TimeUnit.MILLISECONDS);
-        Future<Optional<List<Map<String, AttributeValue>>>> future = executorService
-                .submit(() -> metadataService.successfulDependencies(PRODUCT_1));
+        Future<Optional<Map<String, AttributeValue>>> future = executorService
+                .submit(() -> metadataService.successfulDependency(PRODUCT_1));
 
         assertFalse(future.get().isPresent());
     }
@@ -208,13 +206,11 @@ class DependencyServiceTest {
         when(dynamoDB.getItem(any(GetItemRequest.class))).thenReturn(result1, result2);
 
         DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
-        Optional<List<Map<String, AttributeValue>>> successes = metadataService
-                .successfulDependencies(PRODUCT_1);
+        Optional<Map<String, AttributeValue>> successes = metadataService
+                .successfulDependency(PRODUCT_1);
         assertTrue(successes.isPresent());
-        List<Map<String, AttributeValue>> items = successes.get();
-        assertEquals(2, items.size());
-        assertEquals(successfulItem1, items.get(0));
-        assertEquals(successfulItem2, items.get(1));
+        Map<String, AttributeValue> item = successes.get();
+        assertEquals(successfulItem1, item);
     }
 
     private Map<String, AttributeValue> itemKey() {
