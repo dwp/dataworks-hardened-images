@@ -95,38 +95,6 @@ class CompositeServiceTest {
         assertFalse(successful);
     }
 
-    //    @Test
-    //    public void shouldNotCallSubsequentServicesIfDependencyCheckReturnsEmptyList() {
-    //        DependencyService dependencyService = mock(DependencyService.class);
-    //        when(dependencyService.successfulDependency(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY))
-    //                .thenReturn(new ArrayList<>()));
-    //
-    //        LaunchInvocationService launchInvocationService = mock(LaunchInvocationService.class);
-    //
-    //        EmrProgressService emrProgressService = mock(EmrProgressService.class);
-    //        NotificationService notificationService = mock(NotificationService.class);
-    //        StatusService statusService = mock(StatusService.class);
-    //        AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
-    //        CompositeService service = new CompositeService(dependencyService, launchInvocationService,
-    //                emrProgressService, notificationService, statusService, emr);
-    //        boolean successful = service
-    //                .launchClusterAndWaitForStepCompletion(METADATA_TABLE_NAME, EXPORT_DATE, DEPENDENCY);
-    //
-    //        verify(dependencyService, times(1)).successfulDependencies(any());
-    //        verifyNoMoreInteractions(dependencyService);
-    //
-    //        verify(statusService, times(1)).registerFailure();
-    //        verifyNoMoreInteractions(statusService);
-    //
-    //        verifyNoInteractions(launchInvocationService);
-    //        verifyNoInteractions(emrProgressService);
-    //
-    //        verify(notificationService, times(1)).notifyStarted();
-    //        verify(notificationService, times(1)).notifyFailed();
-    //        verifyNoMoreInteractions(notificationService);
-    //
-    //        assertFalse(successful);
-    //    }
 
     @Test
     public void shouldNotCallSubsequentServicesInLambdaInvocationFails() {
