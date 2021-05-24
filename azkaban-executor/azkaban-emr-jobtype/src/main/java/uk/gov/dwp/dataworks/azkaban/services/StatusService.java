@@ -20,29 +20,33 @@ public class StatusService implements MetadataService {
     }
 
     public void registerDependenciesCompleted(InvocationPayload payload) {
-        this.correlationId = payload.getCorrelationId();
-        Map<String, AttributeValue> item = new HashMap<>();
-        item.put(CORRELATION_ID_FIELD, new AttributeValue().withS(payload.getCorrelationId()));
-        item.put(DATA_PRODUCT_FIELD, new AttributeValue().withS(dataProduct()));
-        item.put(DATE_FIELD, new AttributeValue().withS(payload.getExportDate()));
+        try {
+            this.correlationId = payload.getCorrelationId();
+            Map<String, AttributeValue> item = new HashMap<>();
+            item.put(CORRELATION_ID_FIELD, new AttributeValue().withS(payload.getCorrelationId()));
+            item.put(DATA_PRODUCT_FIELD, new AttributeValue().withS(dataProduct()));
+            item.put(DATE_FIELD, new AttributeValue().withS(payload.getExportDate()));
 
-        Optional.ofNullable(payload.getSnapshotType())
-                .ifPresent(x -> item.put(SNAPSHOT_TYPE_FIELD, new AttributeValue().withS(payload.getSnapshotType())));
+            Optional.ofNullable(payload.getSnapshotType()).ifPresent(
+                    x -> item.put(SNAPSHOT_TYPE_FIELD, new AttributeValue().withS(payload.getSnapshotType())));
 
-        Optional.ofNullable(payload.getAnalyticalDatasetPrefix()).ifPresent(x -> item
-                .put(ANALYTICAL_DATASET_PREFIX_FIELD,
-                        new AttributeValue().withS(payload.getAnalyticalDatasetPrefix())));
+            Optional.ofNullable(payload.getAnalyticalDatasetPrefix()).ifPresent(x -> item
+                    .put(ANALYTICAL_DATASET_PREFIX_FIELD,
+                            new AttributeValue().withS(payload.getAnalyticalDatasetPrefix())));
 
-        Optional.ofNullable(payload.getSnapshotPrefix()).ifPresent(
-                x -> item.put(SNAPSHOT_PREFIX_FIELD, new AttributeValue().withS(payload.getSnapshotPrefix())));
+            Optional.ofNullable(payload.getSnapshotPrefix()).ifPresent(
+                    x -> item.put(SNAPSHOT_PREFIX_FIELD, new AttributeValue().withS(payload.getSnapshotPrefix())));
 
-        item.put(STATUS_FIELD, new AttributeValue().withS("STARTED"));
-        Calendar c = Calendar.getInstance();
-        c.add(Calendar.WEEK_OF_YEAR, 1);
-        item.put(TIME_TO_EXIST_FIELD, new AttributeValue().withN(String.format("%d", c.getTime().getTime())));
-        final PutItemRequest request = new PutItemRequest().withTableName(metadataTableName).withItem(item);
+            item.put(STATUS_FIELD, new AttributeValue().withS("STARTED"));
+            Calendar c = Calendar.getInstance();
+            c.add(Calendar.WEEK_OF_YEAR, 1);
+            item.put(TIME_TO_EXIST_FIELD, new AttributeValue().withN(String.format("%d", c.getTime().getTime())));
+            final PutItemRequest request = new PutItemRequest().withTableName(metadataTableName).withItem(item);
 
-        this.dynamoDb.putItem(request);
+            this.dynamoDb.putItem(request);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void registerClusterId(String clusterId) {
@@ -87,6 +91,6 @@ public class StatusService implements MetadataService {
     private final String dataProduct;
     private final String metadataTableName;
     private String correlationId;
-
     private final AmazonDynamoDB dynamoDb;
+
 }
