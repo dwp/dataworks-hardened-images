@@ -44,7 +44,6 @@ public class EmrLauncherJob extends AbstractProcessJob {
     @Override
     public void run() throws Exception {
         List<String> collections = Arrays.stream(collectionDependencies()).filter(s -> s.length() > 0).collect(Collectors.toList());
-        System.out.println("==============> " + collections);
         boolean successful = collections.size() > 0 ?
                     service().launchClusterAndWaitForStepCompletion(dependency(), collections.toArray(new String[0]))
                     : service().launchClusterAndWaitForStepCompletion(dependency());
