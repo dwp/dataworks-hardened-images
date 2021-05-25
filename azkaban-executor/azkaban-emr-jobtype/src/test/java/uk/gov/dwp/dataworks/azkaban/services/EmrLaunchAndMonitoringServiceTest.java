@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class CompositeServiceTest {
+class EmrLaunchAndMonitoringServiceTest {
 
     @Test
     public void shouldCallEachServiceInTurnIfSuccessful() {
@@ -38,7 +38,7 @@ class CompositeServiceTest {
         StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
-        CompositeService service = new CompositeService(dependencyService, launchInvocationService, emrProgressService,
+        EmrLaunchAndMonitoringService service = new EmrLaunchAndMonitoringService(dependencyService, launchInvocationService, emrProgressService,
                 notificationService, statusService, emr);
 
         boolean successful = service.launchClusterAndWaitForStepCompletion(DEPENDENCY);
@@ -75,7 +75,7 @@ class CompositeServiceTest {
         NotificationService notificationService = mock(NotificationService.class);
         StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
-        CompositeService service = new CompositeService(dependencyService, launchInvocationService, emrProgressService,
+        EmrLaunchAndMonitoringService service = new EmrLaunchAndMonitoringService(dependencyService, launchInvocationService, emrProgressService,
                 notificationService, statusService, emr);
         boolean successful = service.launchClusterAndWaitForStepCompletion(DEPENDENCY);
 
@@ -111,7 +111,7 @@ class CompositeServiceTest {
         StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
-        CompositeService service = new CompositeService(dependencyService, launchInvocationService, emrProgressService,
+        EmrLaunchAndMonitoringService service = new EmrLaunchAndMonitoringService(dependencyService, launchInvocationService, emrProgressService,
                 notificationService, statusService, emr);
 
         boolean successful = service.launchClusterAndWaitForStepCompletion(DEPENDENCY);
@@ -147,7 +147,7 @@ class CompositeServiceTest {
         StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
-        CompositeService service = new CompositeService(dependencyService, launchInvocationService, emrProgressService,
+        EmrLaunchAndMonitoringService service = new EmrLaunchAndMonitoringService(dependencyService, launchInvocationService, emrProgressService,
                 notificationService, statusService, emr);
 
         boolean successful = service.launchClusterAndWaitForStepCompletion(DEPENDENCY);
@@ -188,7 +188,7 @@ class CompositeServiceTest {
         StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
-        CompositeService service = new CompositeService(dependencyService, launchInvocationService, emrProgressService,
+        EmrLaunchAndMonitoringService service = new EmrLaunchAndMonitoringService(dependencyService, launchInvocationService, emrProgressService,
                 notificationService, statusService, emr);
 
         boolean successful = service.launchClusterAndWaitForStepCompletion(DEPENDENCY);
@@ -225,7 +225,7 @@ class CompositeServiceTest {
         StatusService statusService = mock(StatusService.class);
         AmazonElasticMapReduce emr = mock(AmazonElasticMapReduce.class);
 
-        CompositeService service = new CompositeService(dependencyService, launchInvocationService, emrProgressService,
+        EmrLaunchAndMonitoringService service = new EmrLaunchAndMonitoringService(dependencyService, launchInvocationService, emrProgressService,
                 notificationService, statusService, emr);
         boolean successful = service.launchClusterAndWaitForStepCompletion(DEPENDENCY);
 

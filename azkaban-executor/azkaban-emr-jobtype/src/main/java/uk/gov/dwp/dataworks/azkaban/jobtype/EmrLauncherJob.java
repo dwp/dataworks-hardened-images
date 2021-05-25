@@ -6,7 +6,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
 import com.amazonaws.services.logs.AWSLogs;
 import org.apache.log4j.Logger;
-import uk.gov.dwp.dataworks.azkaban.services.CompositeService;
+import uk.gov.dwp.dataworks.azkaban.services.EmrLaunchAndMonitoringService;
 import uk.gov.dwp.dataworks.azkaban.services.LaunchInvocationService;
 import uk.gov.dwp.dataworks.azkaban.services.EmrProgressService;
 import uk.gov.dwp.dataworks.azkaban.services.LogService;
@@ -49,7 +49,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
         return jobProps.getString(JOB_DEPENDENCIES_PARAMETER_NAME);
     }
 
-    private synchronized CompositeService service() {
+    private synchronized EmrLaunchAndMonitoringService service() {
         if (_service == null) {
             AmazonDynamoDB dynamoDB = ClientUtility.amazonDynamoDb(awsRegion());
             String dataProduct = jobProps.getString(DATA_PRODUCT_NAME, jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
@@ -71,7 +71,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
                     this.getJobProps().getString(TOPIC_PARAMETER_NAME, "Monitoring"),
                     jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
 
-            this._service = new CompositeService(dependencyService, launchInvocationService, emrProgressService,
+            this._service = new EmrLaunchAndMonitoringService(dependencyService, launchInvocationService, emrProgressService,
                     notificationService, statusService, emr);
             this._service.setParent(this);
 
@@ -91,5 +91,5 @@ public class EmrLauncherJob extends AbstractProcessJob {
     public static final String AWS_LOG_GROUP_PARAMETER_NAME = "aws.log.group.name";
     public static final String CLUSTER_PARAMETER_NAME = "cluster.name";
     public static final String TOPIC_PARAMETER_NAME = "notification.topic.name";
-    private CompositeService _service;
+    private EmrLaunchAndMonitoringService _service;
 }

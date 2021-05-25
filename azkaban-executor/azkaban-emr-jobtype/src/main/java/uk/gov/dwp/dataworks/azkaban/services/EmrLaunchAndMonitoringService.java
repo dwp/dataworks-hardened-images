@@ -10,10 +10,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class CompositeService extends CancellableLoggingService {
+public class EmrLaunchAndMonitoringService extends CancellableLoggingService {
 
 
-    public CompositeService(DependencyService dependencyService,
+    public EmrLaunchAndMonitoringService(DependencyService dependencyService,
             LaunchInvocationService launchInvocationService, EmrProgressService emrProgressService,
             NotificationService notificationService, StatusService statusService, AmazonElasticMapReduce emr) {
         this.dependencyService = dependencyService;
