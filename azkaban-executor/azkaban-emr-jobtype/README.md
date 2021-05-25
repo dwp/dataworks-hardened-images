@@ -50,7 +50,6 @@ The table below gives the details.
 | `export.date`             | The date the dependency occured on - used to find the relevant row in the pipeline metadata table, defaults to today's date in the format `YYYY-MM-DD`. |
 | `job.dependencies`        | A comma separated list of jobs to check for on the metadata table, must have at least one value. |
 | `notification.topic.name` | Which SNS topic to send notifications to, defaults to `Monitoring` |
-| `pipeline.metadata.table` | Which DynamoDb table to search for dependency status, default is `data_pipeline_metadata` |
 
 ### Local running.
 
