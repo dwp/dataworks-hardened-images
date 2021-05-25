@@ -6,6 +6,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CancellableLoggingService {
 
+    final AtomicBoolean proceed = new AtomicBoolean(true);
+    private EmrLauncherJob parent;
+
     public void info(String message) {
         if (this.parent != null) {
             this.parent.info(message);
@@ -38,7 +41,4 @@ public class CancellableLoggingService {
     public void setParent(EmrLauncherJob parent) {
         this.parent = parent;
     }
-
-    final AtomicBoolean proceed = new AtomicBoolean(true);
-    private EmrLauncherJob parent;
 }

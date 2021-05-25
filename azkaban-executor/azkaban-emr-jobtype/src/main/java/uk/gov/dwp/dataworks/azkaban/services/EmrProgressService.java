@@ -20,6 +20,11 @@ import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.incompleteSteps;
 
 public class EmrProgressService extends CancellableLoggingService {
 
+    private final CountDownLatch clusterStartupLatch;
+    private final CountDownLatch stepsMonitorLatch;
+    private final AmazonElasticMapReduce emr;
+    private final LogService logService;
+
     public EmrProgressService(AmazonElasticMapReduce emr, LogService logService) {
         this.emr = emr;
         this.clusterStartupLatch = new CountDownLatch(1);
@@ -119,9 +124,4 @@ public class EmrProgressService extends CancellableLoggingService {
         this.clusterStartupLatch.countDown();
         this.stepsMonitorLatch.countDown();
     }
-
-    private final CountDownLatch clusterStartupLatch;
-    private final CountDownLatch stepsMonitorLatch;
-    private final AmazonElasticMapReduce emr;
-    private final LogService logService;
 }

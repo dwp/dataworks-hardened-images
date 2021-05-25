@@ -20,6 +20,11 @@ import static uk.gov.dwp.dataworks.azkaban.utility.LogUtility.clusterStepLogStre
 
 public class LogService extends CancellableLoggingService {
 
+    private final String logGroup;
+    private final AmazonElasticMapReduce emr;
+    private final AWSLogs awsLogs;
+    private CountDownLatch logMonitorLatch;
+
     public LogService(AmazonElasticMapReduce emr, AWSLogs awsLogs, String logGroup) {
         this.emr = emr;
         this.logMonitorLatch = new CountDownLatch(1);
@@ -78,7 +83,8 @@ public class LogService extends CancellableLoggingService {
         if (proceed.get()) {
             boolean logsDrained = false;
             do {
-                info("Fetching logs for '" + step.getName() + "/" + step.getId() + "/" + step.getStatus().getState() + "'.");
+                info("Fetching logs for '" + step.getName() + "/" + step.getId() + "/" + step.getStatus().getState()
+                        + "'.");
                 final GetLogEventsResult result = awsLogs.getLogEvents(logEventsRequest.withLogStreamName(logStream));
                 final String nextToken = result.getNextForwardToken();
                 if (nextToken != null && !nextToken.equals(logStreamToken.get())) {
@@ -101,9 +107,4 @@ public class LogService extends CancellableLoggingService {
         super.cancel();
         this.logMonitorLatch.countDown();
     }
-
-    private final String logGroup;
-    private final AmazonElasticMapReduce emr;
-    private final AWSLogs awsLogs;
-    private CountDownLatch logMonitorLatch;
 }

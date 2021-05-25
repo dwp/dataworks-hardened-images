@@ -12,6 +12,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class EmrLaunchAndMonitoringService extends CancellableLoggingService {
 
+    private final AtomicReference<Optional<String>> clusterId = new AtomicReference<>();
+    private final DependencyService dependencyService;
+    private final LaunchInvocationService launchInvocationService;
+    private final EmrProgressService emrProgressService;
+    private final NotificationService notificationService;
+    private final StatusService statusService;
+    private final AmazonElasticMapReduce emr;
 
     public EmrLaunchAndMonitoringService(DependencyService dependencyService,
             LaunchInvocationService launchInvocationService, EmrProgressService emrProgressService,
@@ -27,17 +34,14 @@ public class EmrLaunchAndMonitoringService extends CancellableLoggingService {
     public boolean launchClusterAndWaitForStepCompletion(String dependency) {
         try {
             this.notificationService.notifyStarted();
-            boolean succeeded = dependencyMetadata(dependency)
-                    .map(this::registerDependenciesCompleted)
-                    .filter(x -> proceed.get())
-                    .flatMap(launchInvocationService::invokeEmrLauncher)
-                    .filter(InvocationResult::wasSuccessful)
-                    .map(InvocationResult::getClusterId)
-                    .map(this::setClusterId)
-                    .map(this::registerClusterId)
-                    .filter(x -> proceed.get())
-                    .map(emrProgressService::waitForCluster)
-                    .orElse(false);
+            boolean succeeded = dependencyMetadata(dependency).map(this::registerDependenciesCompleted)
+                                                              .filter(x -> proceed.get())
+                                                              .flatMap(launchInvocationService::invokeEmrLauncher)
+                                                              .filter(InvocationResult::wasSuccessful)
+                                                              .map(InvocationResult::getClusterId)
+                                                              .map(this::setClusterId).map(this::registerClusterId)
+                                                              .filter(x -> proceed.get())
+                                                              .map(emrProgressService::waitForCluster).orElse(false);
 
             if (succeeded) {
                 this.statusService.registerSuccess();
@@ -76,8 +80,7 @@ public class EmrLaunchAndMonitoringService extends CancellableLoggingService {
     }
 
     private Optional<InvocationPayload> dependencyMetadata(String dependencies) {
-        return completedDependency(dependencies)
-                .map(InvocationPayload::from);
+        return completedDependency(dependencies).map(InvocationPayload::from);
     }
 
     private Optional<Map<String, AttributeValue>> completedDependency(String dependency) {
@@ -88,12 +91,4 @@ public class EmrLaunchAndMonitoringService extends CancellableLoggingService {
         clusterId.set(Optional.of(id));
         return id;
     }
-
-    private final AtomicReference<Optional<String>> clusterId = new AtomicReference<>();
-    private final DependencyService dependencyService;
-    private final LaunchInvocationService launchInvocationService;
-    private final EmrProgressService emrProgressService;
-    private final NotificationService notificationService;
-    private final StatusService statusService;
-    private final AmazonElasticMapReduce emr;
 }

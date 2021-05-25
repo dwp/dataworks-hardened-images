@@ -6,6 +6,10 @@ import uk.gov.dwp.dataworks.azkaban.utility.SnsUtility;
 
 public class NotificationService {
 
+    private final AmazonSNS sns;
+    private final String clusterName;
+    private final Topic topic;
+
     public NotificationService(AmazonSNS sns, String topicName, String clusterName) {
         this.sns = sns;
         this.topic = SnsUtility.topicWithName(sns, topicName).orElseThrow(
@@ -37,8 +41,4 @@ public class NotificationService {
                 + "\"slack_username\": \"EMR Launch Notification\"," + "\"title_text\": \"" + clusterName + ": "
                 + status + ".\"" + "}";
     }
-
-    private final AmazonSNS sns;
-    private final String clusterName;
-    private final Topic topic;
 }
