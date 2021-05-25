@@ -19,7 +19,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class DependencyService extends DelegateService implements MetadataService {
+public class DependencyService extends CancellableLoggingService implements MetadataService {
+
+    private final static String SUCCESSFUL_COMPLETION_STATUS = "Completed";
+    private final static String FAILED_COMPLETION_STATUS = "Failed";
+    private final String metadataTableName;
+    private final String exportDate;
+    private final AmazonDynamoDB dynamoDb;
+    private final AtomicBoolean proceed = new AtomicBoolean(true);
+    private CountDownLatch latch = new CountDownLatch(1);
 
     public DependencyService(final AmazonDynamoDB dynamoDB, final String metadataTableName, final String exportStatusTableName, final String exportDate) {
         this.dynamoDb = dynamoDB;
@@ -35,6 +43,35 @@ public class DependencyService extends DelegateService implements MetadataServic
 
     private Boolean collectionsReady(String correlationId, final String ... collections) {
         return true;
+    }
+
+    private static boolean hasFinished(final String status) {
+        return hasSucceeded(status) || hasFailed(status);
+    }
+
+    private static boolean hasFailed(final String status) {
+        return hasStatus(FAILED_COMPLETION_STATUS, status);
+    }
+
+    private static boolean hasSucceeded(final String status) {
+        return hasStatus(SUCCESSFUL_COMPLETION_STATUS, status);
+    }
+
+    private static boolean hasStatus(final String required, final String status) {
+        return required.equalsIgnoreCase(status);
+    }
+
+    private static String itemString(final Map<String, AttributeValue> item) {
+        return item.get(CORRELATION_ID_FIELD).getS() + "/" + item.get(DATA_PRODUCT_FIELD).getS() + "/" + item
+                .get(DATE_FIELD).getS();
+    }
+
+    private static int pollIntervalMilliseconds() {
+        return Integer.parseInt(System.getProperty("poll.interval.milliseconds", "10000"));
+    }
+
+    private static int pollTimeoutMilliseconds() {
+        return Integer.parseInt(System.getProperty("poll.timeout.milliseconds", "3600000"));
     }
 
     @Override
@@ -57,11 +94,10 @@ public class DependencyService extends DelegateService implements MetadataServic
             final AtomicBoolean succeeded = new AtomicBoolean(false);
             final ScheduledExecutorService dependencyCheckExecutor = Executors.newSingleThreadScheduledExecutor();
             this.latch = new CountDownLatch(1);
-            dependencyCheckExecutor
-                    .scheduleWithFixedDelay(() -> checkDependency(tableName, item, succeeded), 0, pollIntervalSeconds(),
-                            TimeUnit.MILLISECONDS);
+            dependencyCheckExecutor.scheduleWithFixedDelay(() -> checkDependency(tableName, item, succeeded), 0,
+                    pollIntervalMilliseconds(), TimeUnit.MILLISECONDS);
             final ScheduledExecutorService timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
-            timeoutExecutor.schedule(latch::countDown, pollTimeoutSeconds(), TimeUnit.MILLISECONDS);
+            timeoutExecutor.schedule(latch::countDown, pollTimeoutMilliseconds(), TimeUnit.MILLISECONDS);
             latch.await();
             timeoutExecutor.shutdownNow();
             dependencyCheckExecutor.shutdownNow();
@@ -124,42 +160,4 @@ public class DependencyService extends DelegateService implements MetadataServic
                                 .withExclusiveStartKey(lastKeyEvaluatedKey).withExpressionAttributeNames(nameMap())
                                 .withExpressionAttributeValues(valueMap(product, exportDate));
     }
-
-    private static boolean hasFinished(final String status) {
-        return hasSucceeded(status) || hasFailed(status);
-    }
-
-    private static boolean hasFailed(final String status) {
-        return hasStatus(FAILED_COMPLETION_STATUS, status);
-    }
-
-    private static boolean hasSucceeded(final String status) {
-        return hasStatus(SUCCESSFUL_COMPLETION_STATUS, status);
-    }
-
-    private static boolean hasStatus(final String required, final String status) {
-        return required.equalsIgnoreCase(status);
-    }
-
-    private static String itemString(final Map<String, AttributeValue> item) {
-        return item.get(CORRELATION_ID_FIELD).getS() + "/" + item.get(DATA_PRODUCT_FIELD).getS() + "/" + item
-                .get(DATE_FIELD).getS();
-    }
-
-    private static int pollIntervalSeconds() {
-        return Integer.parseInt(System.getProperty("poll.interval.milliseconds", "10000"));
-    }
-
-    private static int pollTimeoutSeconds() {
-        return Integer.parseInt(System.getProperty("poll.timeout.milliseconds", "3600000"));
-    }
-
-    private final static String SUCCESSFUL_COMPLETION_STATUS = "Completed";
-    private final static String FAILED_COMPLETION_STATUS = "Failed";
-    private final String metadataTableName;
-    private final String exportDate;
-
-    private final AmazonDynamoDB dynamoDb;
-    private final AtomicBoolean proceed = new AtomicBoolean(true);
-    private CountDownLatch latch = new CountDownLatch(1);
 }

@@ -90,8 +90,7 @@ public class ClientUtility {
     }
 
     private static <B extends AwsSyncClientBuilder<B, C>, C> C clientBuilder(B builder, String region) {
-        return builder.withRegion(region)
-                      .withClientConfiguration(new ClientConfiguration().withSocketTimeout(120_000))
+        return builder.withRegion(region).withClientConfiguration(new ClientConfiguration().withSocketTimeout(120_000))
                       .build();
     }
 

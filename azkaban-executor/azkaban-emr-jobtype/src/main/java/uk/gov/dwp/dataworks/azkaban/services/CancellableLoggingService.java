@@ -4,7 +4,10 @@ import uk.gov.dwp.dataworks.azkaban.jobtype.EmrLauncherJob;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class DelegateService {
+public class CancellableLoggingService {
+
+    final AtomicBoolean proceed = new AtomicBoolean(true);
+    private EmrLauncherJob parent;
 
     public void info(String message) {
         if (this.parent != null) {
@@ -38,7 +41,4 @@ public class DelegateService {
     public void setParent(EmrLauncherJob parent) {
         this.parent = parent;
     }
-
-    final AtomicBoolean proceed = new AtomicBoolean(true);
-    private EmrLauncherJob parent;
 }

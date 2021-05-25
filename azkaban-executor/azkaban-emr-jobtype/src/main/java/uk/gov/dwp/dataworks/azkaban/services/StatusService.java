@@ -13,6 +13,11 @@ import java.util.Optional;
 
 public class StatusService implements MetadataService {
 
+    private final String dataProduct;
+    private final String metadataTableName;
+    private final AmazonDynamoDB dynamoDb;
+    private String correlationId;
+
     public StatusService(AmazonDynamoDB dynamoDB, String dataProduct, String metadataTableName) {
         this.dynamoDb = dynamoDB;
         this.dataProduct = dataProduct;
@@ -91,10 +96,5 @@ public class StatusService implements MetadataService {
     private String dataProduct() {
         return "AZKABAN_" + dataProduct.trim().toUpperCase();
     }
-
-    private final String dataProduct;
-    private final String metadataTableName;
-    private String correlationId;
-    private final AmazonDynamoDB dynamoDb;
 
 }

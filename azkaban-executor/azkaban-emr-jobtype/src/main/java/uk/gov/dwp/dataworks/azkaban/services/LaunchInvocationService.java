@@ -11,7 +11,10 @@ import uk.gov.dwp.dataworks.azkaban.model.InvocationResult;
 
 import java.util.Optional;
 
-public class LaunchInvocationService extends DelegateService {
+public class LaunchInvocationService extends CancellableLoggingService {
+
+    private final AWSLambda awsLambda;
+    private final String functionName;
 
     public LaunchInvocationService(final AWSLambda awsLambda, final String functionName) {
         this.awsLambda = awsLambda;
@@ -43,7 +46,4 @@ public class LaunchInvocationService extends DelegateService {
                                   .withPayload(new ObjectMapper().writeValueAsString(payload))
                                   .withInvocationType(InvocationType.RequestResponse);
     }
-
-    private final AWSLambda awsLambda;
-    private final String functionName;
 }

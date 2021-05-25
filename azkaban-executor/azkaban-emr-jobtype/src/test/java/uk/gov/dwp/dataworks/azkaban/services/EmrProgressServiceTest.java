@@ -40,7 +40,7 @@ class EmrProgressServiceTest {
         when(emr.describeCluster(any())).thenReturn(result);
         when(emr.listSteps(any())).thenReturn(stepsResult);
         EmrProgressService service = new EmrProgressService(emr, logService);
-        boolean succeeded = service.observeEmr(CLUSTER_ID);
+        boolean succeeded = service.waitForCluster(CLUSTER_ID);
         verify(logService, times(1)).monitorStepLogs(CLUSTER_ID, STEP_ID);
         assertTrue(succeeded);
     }
@@ -58,7 +58,7 @@ class EmrProgressServiceTest {
         when(result.getCluster()).thenReturn(cluster);
         when(emr.describeCluster(any())).thenReturn(result);
         EmrProgressService service = new EmrProgressService(emr, logService);
-        boolean succeeded = service.observeEmr(CLUSTER_ID);
+        boolean succeeded = service.waitForCluster(CLUSTER_ID);
         verifyNoInteractions(logService);
         assertFalse(succeeded);
     }
@@ -87,7 +87,7 @@ class EmrProgressServiceTest {
         when(emr.describeCluster(any())).thenReturn(result);
         when(emr.listSteps(any())).thenReturn(stepsResult);
         EmrProgressService service = new EmrProgressService(emr, logService);
-        boolean succeeded = service.observeEmr(CLUSTER_ID);
+        boolean succeeded = service.waitForCluster(CLUSTER_ID);
         verifyNoInteractions(logService);
         assertFalse(succeeded);
     }
@@ -98,7 +98,7 @@ class EmrProgressServiceTest {
         LogService logService = mock(LogService.class);
         EmrProgressService service = new EmrProgressService(emr, logService);
         service.cancel();
-        boolean succeeded = service.observeEmr(CLUSTER_ID);
+        boolean succeeded = service.waitForCluster(CLUSTER_ID);
         verifyNoInteractions(emr);
         verify(logService, times(1)).cancel();
         verifyNoMoreInteractions(logService);

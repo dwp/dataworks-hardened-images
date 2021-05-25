@@ -10,10 +10,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class CompositeService extends DelegateService {
+public class EmrLaunchAndMonitoringService extends CancellableLoggingService {
 
+    private final AtomicReference<Optional<String>> clusterId = new AtomicReference<>();
+    private final DependencyService dependencyService;
+    private final LaunchInvocationService launchInvocationService;
+    private final EmrProgressService emrProgressService;
+    private final NotificationService notificationService;
+    private final StatusService statusService;
+    private final AmazonElasticMapReduce emr;
 
-    public CompositeService(DependencyService dependencyService,
+    public EmrLaunchAndMonitoringService(DependencyService dependencyService,
             LaunchInvocationService launchInvocationService, EmrProgressService emrProgressService,
             NotificationService notificationService, StatusService statusService, AmazonElasticMapReduce emr) {
         this.dependencyService = dependencyService;
@@ -33,10 +40,10 @@ public class CompositeService extends DelegateService {
                     .flatMap(launchInvocationService::invokeEmrLauncher)
                     .filter(InvocationResult::wasSuccessful)
                     .map(InvocationResult::getClusterId)
-                    .map(this::setGetClusterId)
+                    .map(this::setClusterId)
                     .map(this::registerClusterId)
                     .filter(x -> proceed.get())
-                    .map(emrProgressService::observeEmr)
+                    .map(emrProgressService::waitForCluster)
                     .orElse(false);
 
             if (succeeded) {
@@ -56,9 +63,9 @@ public class CompositeService extends DelegateService {
         }
     }
 
-    private String registerClusterId(String x) {
-        this.statusService.registerClusterId(x);
-        return x;
+    private String registerClusterId(String clusterId) {
+        this.statusService.registerClusterId(clusterId);
+        return clusterId;
     }
 
     private InvocationPayload registerDependenciesCompleted(InvocationPayload payload) {
@@ -83,16 +90,8 @@ public class CompositeService extends DelegateService {
         return dependencyService.successfulDependency(dependency, collections);
     }
 
-    private String setGetClusterId(String id) {
+    private String setClusterId(String id) {
         clusterId.set(Optional.of(id));
         return id;
     }
-
-    private final AtomicReference<Optional<String>> clusterId = new AtomicReference<>();
-    private final DependencyService dependencyService;
-    private final LaunchInvocationService launchInvocationService;
-    private final EmrProgressService emrProgressService;
-    private final NotificationService notificationService;
-    private final StatusService statusService;
-    private final AmazonElasticMapReduce emr;
 }

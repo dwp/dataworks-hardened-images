@@ -18,7 +18,12 @@ import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.clusterSteps;
 import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.completedSteps;
 import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.incompleteSteps;
 
-public class EmrProgressService extends DelegateService {
+public class EmrProgressService extends CancellableLoggingService {
+
+    private final CountDownLatch clusterStartupLatch;
+    private final CountDownLatch stepsMonitorLatch;
+    private final AmazonElasticMapReduce emr;
+    private final LogService logService;
 
     public EmrProgressService(AmazonElasticMapReduce emr, LogService logService) {
         this.emr = emr;
@@ -27,7 +32,7 @@ public class EmrProgressService extends DelegateService {
         this.logService = logService;
     }
 
-    public boolean observeEmr(String clusterId) {
+    public boolean waitForCluster(String clusterId) {
         if (proceed.get()) {
             try {
                 return monitorClusterStartUp(clusterId).filter(x -> x == EmrClusterStatus.RUNNING)
@@ -119,9 +124,4 @@ public class EmrProgressService extends DelegateService {
         this.clusterStartupLatch.countDown();
         this.stepsMonitorLatch.countDown();
     }
-
-    private final CountDownLatch clusterStartupLatch;
-    private final CountDownLatch stepsMonitorLatch;
-    private final AmazonElasticMapReduce emr;
-    private final LogService logService;
 }

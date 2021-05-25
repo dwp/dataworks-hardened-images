@@ -19,10 +19,10 @@ public class SnsUtility {
             ListTopicsResult result = sns.listTopics(request);
             topics.addAll(result.getTopics());
             nextToken = result.getNextToken();
-        } while (nextToken != null);
+        }
+        while (nextToken != null);
 
-        return topics.stream()
-                     .filter(topic -> topic.getTopicArn().matches("^.+:" + topicName + "$")).findFirst();
+        return topics.stream().filter(topic -> topic.getTopicArn().matches("^.+:" + topicName + "$")).findFirst();
     }
 
 }

@@ -12,6 +12,13 @@ import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.DATE_FIELD
 
 public class InvocationPayload {
 
+    private final static String DEFAULT_VALUE = "NOT_SET";
+    private final String correlationId;
+    private final String analyticalDatasetPrefix;
+    private final String snapshotPrefix;
+    private final String snapshotType;
+    private final String exportDate;
+
     private InvocationPayload(String correlationId, String analyticalDatasetPrefix, String snapshotPrefix,
             String snapshotType, String exportDate) {
         this.correlationId = correlationId;
@@ -23,10 +30,8 @@ public class InvocationPayload {
 
     public static InvocationPayload from(Map<String, AttributeValue> entry) {
         return new InvocationPayload(attributeValue(entry, CORRELATION_ID_FIELD),
-                attributeValue(entry,"S3_Prefix_Analytical_DataSet"),
-                attributeValue(entry,"S3_Prefix_Snapshots"),
-                attributeValue(entry,"Snapshot_Type"),
-                attributeValue(entry, DATE_FIELD));
+                attributeValue(entry, "S3_Prefix_Analytical_DataSet"), attributeValue(entry, "S3_Prefix_Snapshots"),
+                attributeValue(entry, "Snapshot_Type"), attributeValue(entry, DATE_FIELD));
     }
 
     private static String attributeValue(Map<String, AttributeValue> map, String... keys) {
@@ -66,7 +71,9 @@ public class InvocationPayload {
 
     @JsonProperty("s3_prefix")
     public String getPrefix() {
-        return analyticalDatasetPrefix != null && !"NOT_SET".equals(analyticalDatasetPrefix) ? analyticalDatasetPrefix : snapshotPrefix;
+        return analyticalDatasetPrefix != null && !"NOT_SET".equals(analyticalDatasetPrefix) ?
+                analyticalDatasetPrefix :
+                snapshotPrefix;
     }
 
     public String getAnalyticalDatasetPrefix() {
@@ -86,12 +93,5 @@ public class InvocationPayload {
     public String getExportDate() {
         return exportDate;
     }
-
-    private final static String DEFAULT_VALUE = "NOT_SET";
-    private final String correlationId;
-    private final String analyticalDatasetPrefix;
-    private final String snapshotPrefix;
-    private final String snapshotType;
-    private final String exportDate;
 
 }
