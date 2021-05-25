@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class DependencyService extends DelegateService implements MetadataService {
+public class DependencyService extends CancellableLoggingService implements MetadataService {
 
     public DependencyService(final AmazonDynamoDB dynamoDB, String metadataTableName, String exportDate) {
         this.dynamoDb = dynamoDB;
@@ -54,10 +54,10 @@ public class DependencyService extends DelegateService implements MetadataServic
             final ScheduledExecutorService dependencyCheckExecutor = Executors.newSingleThreadScheduledExecutor();
             this.latch = new CountDownLatch(1);
             dependencyCheckExecutor
-                    .scheduleWithFixedDelay(() -> checkDependency(tableName, item, succeeded), 0, pollIntervalSeconds(),
+                    .scheduleWithFixedDelay(() -> checkDependency(tableName, item, succeeded), 0, pollIntervalMilliseconds(),
                             TimeUnit.MILLISECONDS);
             final ScheduledExecutorService timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
-            timeoutExecutor.schedule(latch::countDown, pollTimeoutSeconds(), TimeUnit.MILLISECONDS);
+            timeoutExecutor.schedule(latch::countDown, pollTimeoutMilliseconds(), TimeUnit.MILLISECONDS);
             latch.await();
             timeoutExecutor.shutdownNow();
             dependencyCheckExecutor.shutdownNow();
@@ -142,11 +142,11 @@ public class DependencyService extends DelegateService implements MetadataServic
                 .get(DATE_FIELD).getS();
     }
 
-    private static int pollIntervalSeconds() {
+    private static int pollIntervalMilliseconds() {
         return Integer.parseInt(System.getProperty("poll.interval.milliseconds", "10000"));
     }
 
-    private static int pollTimeoutSeconds() {
+    private static int pollTimeoutMilliseconds() {
         return Integer.parseInt(System.getProperty("poll.timeout.milliseconds", "3600000"));
     }
 

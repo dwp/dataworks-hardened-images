@@ -11,7 +11,7 @@ import uk.gov.dwp.dataworks.azkaban.model.InvocationResult;
 
 import java.util.Optional;
 
-public class LaunchInvocationService extends DelegateService {
+public class LaunchInvocationService extends CancellableLoggingService {
 
     public LaunchInvocationService(final AWSLambda awsLambda, final String functionName) {
         this.awsLambda = awsLambda;

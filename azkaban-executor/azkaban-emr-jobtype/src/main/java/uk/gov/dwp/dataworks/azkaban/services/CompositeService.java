@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class CompositeService extends DelegateService {
+public class CompositeService extends CancellableLoggingService {
 
 
     public CompositeService(DependencyService dependencyService,
@@ -33,10 +33,10 @@ public class CompositeService extends DelegateService {
                     .flatMap(launchInvocationService::invokeEmrLauncher)
                     .filter(InvocationResult::wasSuccessful)
                     .map(InvocationResult::getClusterId)
-                    .map(this::setGetClusterId)
+                    .map(this::setClusterId)
                     .map(this::registerClusterId)
                     .filter(x -> proceed.get())
-                    .map(emrProgressService::observeEmr)
+                    .map(emrProgressService::waitForCluster)
                     .orElse(false);
 
             if (succeeded) {
@@ -56,9 +56,9 @@ public class CompositeService extends DelegateService {
         }
     }
 
-    private String registerClusterId(String x) {
-        this.statusService.registerClusterId(x);
-        return x;
+    private String registerClusterId(String clusterId) {
+        this.statusService.registerClusterId(clusterId);
+        return clusterId;
     }
 
     private InvocationPayload registerDependenciesCompleted(InvocationPayload payload) {
@@ -84,7 +84,7 @@ public class CompositeService extends DelegateService {
         return dependencyService.successfulDependency(dependency);
     }
 
-    private String setGetClusterId(String id) {
+    private String setClusterId(String id) {
         clusterId.set(Optional.of(id));
         return id;
     }
