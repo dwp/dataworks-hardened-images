@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-class EMRUtilityTest {
+class EmrUtilityTest {
 
     @Test
     void activeClusterIdReturnsOptionalOfIdWhenFound() {
@@ -32,7 +32,7 @@ class EMRUtilityTest {
     @Test
     void activeClusterSummariesReturnsAllPaginatedResults() {
         AmazonElasticMapReduce emr = emrClient();
-        List<ClusterSummary> summaries = EMRUtility.activeClusterSummaries(emr);
+        List<ClusterSummary> summaries = EmrUtility.activeClusterSummaries(emr);
         ArgumentCaptor<ListClustersRequest> requestCaptor = ArgumentCaptor.forClass(ListClustersRequest.class);
         assertEquals(25, summaries.size());
         IntStream.range(0, 25).forEach(x -> assertEquals(clusterId(x), summaries.get(x).getId()));
@@ -72,7 +72,7 @@ class EMRUtilityTest {
 
     private void verifyClusterId(String clusterName, String expected, String optionalElse) {
         AmazonElasticMapReduce emr = emrClient();
-        Optional<String> clusterId = EMRUtility.activeClusterId(emr, clusterName);
+        Optional<String> clusterId = EmrUtility.activeClusterId(emr, clusterName);
         String id = clusterId.orElse(optionalElse);
         assertEquals(expected, id);
     }

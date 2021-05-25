@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'com.github.ben-manes.versions' version '0.36.0'
 }
 
 compileJava {
@@ -23,6 +24,13 @@ dependencies {
     implementation "com.amazonaws:aws-java-sdk-emr:${awsVersion}"
     implementation "com.amazonaws:aws-java-sdk-lambda:${awsVersion}"
     implementation "com.amazonaws:aws-java-sdk-logs:${awsVersion}"
+    implementation "com.amazonaws:aws-java-sdk-sns:${awsVersion}"
+    implementation "com.amazonaws:aws-java-sdk-sts:${awsVersion}"
+    implementation("com.amazonaws:aws-java-sdk-dynamodb:${awsVersion}")
+
+    runtimeOnly("org.apache.httpcomponents:httpclient:4.5.9")
+    runtimeOnly("org.apache.httpcomponents:httpcore:4.4.14")
+
     testImplementation 'org.junit.jupiter:junit-jupiter:5.4.2'
     testImplementation "org.mockito:mockito-core:3.+"
     testImplementation "net.javacrumbs.json-unit:json-unit-assertj:2.25.0"
@@ -33,6 +41,9 @@ dependencies {
     extraLibs "com.amazonaws:aws-java-sdk-emr:${awsVersion}"
     extraLibs "com.amazonaws:aws-java-sdk-lambda:${awsVersion}"
     extraLibs "com.amazonaws:aws-java-sdk-logs:${awsVersion}"
+    extraLibs "com.amazonaws:aws-java-sdk-sns:${awsVersion}"
+    extraLibs "com.amazonaws:aws-java-sdk-sts:${awsVersion}"
+    extraLibs "com.amazonaws:aws-java-sdk-dynamodb:${awsVersion}"
 }
 
 test {
