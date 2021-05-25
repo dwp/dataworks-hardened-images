@@ -28,7 +28,10 @@ public class EmrLauncherJob extends AbstractProcessJob {
     public static final String AWS_LOG_GROUP_PARAMETER_NAME = "aws.log.group.name";
     public static final String CLUSTER_PARAMETER_NAME = "cluster.name";
     public static final String TOPIC_PARAMETER_NAME = "notification.topic.name";
+    public final static String EXPORT_STATUS_TABLE_NAME = "UCExportToCrownStatus";
+
     private EmrLaunchAndMonitoringService _service;
+
     public EmrLauncherJob(final String jobId, final Props sysProps, final Props jobProps, final Logger log) {
         super(jobId, sysProps, jobProps, log);
     }
@@ -83,8 +86,8 @@ public class EmrLauncherJob extends AbstractProcessJob {
             this._service = new EmrLaunchAndMonitoringService(dependencyService, launchInvocationService,
                     emrProgressService, notificationService, statusService, emr);
             this._service.setParent(this);
-
         }
+
         return _service;
     }
 

@@ -230,6 +230,7 @@ class DependencyServiceTest {
     }
 
     private final static String METADATA_TABLE = "METADATA_TABLE";
+    private final static String EXPORT_STATUS_TABLE = "METADATA_TABLE";
     private final static String CORRELATION_ID_1 = "CORRELATION_ID_1";
     private final static String CORRELATION_ID_2 = "CORRELATION_ID_2";
     private final static String PRODUCT_1 = "PRODUCT_1";

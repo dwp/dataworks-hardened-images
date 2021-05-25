@@ -55,6 +55,16 @@ public class DependencyService extends CancellableLoggingService implements Meta
         return nameMap;
     }
 
+    public Optional<Map<String, AttributeValue>> successfulDependency(final String product, final String ... collections) {
+        return proceed.get() ? dependencyMetadata(product)
+                .filter(collections.length > 0 ? item -> collectionsReady(item.get(CORRELATION_ID_FIELD).getS(), collections) : this::dependencySucceeded)
+                .flatMap(x -> dependencyMetadata(product)) : Optional.empty();
+    }
+
+    private Boolean collectionsReady(String correlationId, final String ... collections) {
+        return true;
+    }
+
     private static boolean hasFinished(final String status) {
         return hasSucceeded(status) || hasFailed(status);
     }
@@ -84,18 +94,12 @@ public class DependencyService extends CancellableLoggingService implements Meta
         return Integer.parseInt(System.getProperty("poll.timeout.milliseconds", "3600000"));
     }
 
-    public Optional<Map<String, AttributeValue>> successfulDependency(final String product) {
-        return proceed.get() ?
-                dependencyMetadata(product).filter(this::dependencySucceeded)
-                                           .flatMap(x -> dependencyMetadata(product)) :
-                Optional.empty();
-    }
-
     @Override
     public void cancel() {
         super.cancel();
         this.latch.countDown();
     }
+
 
     private Boolean dependencySucceeded(final Map<String, AttributeValue> item) {
         return completedSuccessfully(metadataTableName, item).orElse(false);
@@ -124,9 +128,9 @@ public class DependencyService extends CancellableLoggingService implements Meta
             final AtomicBoolean succeeded) {
         try {
             info("Checking '" + itemString(item) + "'");
-            GetItemRequest request = new GetItemRequest().withTableName(tableName).withKey(primaryKey(item));
-            GetItemResult result = dynamoDb.getItem(request);
-            String status = result.getItem().get(STATUS_FIELD).getS();
+            final GetItemRequest request = new GetItemRequest().withTableName(tableName).withKey(primaryKey(item));
+            final GetItemResult result = dynamoDb.getItem(request);
+            final String status = result.getItem().get(STATUS_FIELD).getS();
             info("Checked '" + itemString(item) + "', status is '" + status + "'.");
             if (hasFinished(status)) {
                 info("Dependency '" + itemString(item) + "' has completed, status is '" + status + "'.");
@@ -142,8 +146,8 @@ public class DependencyService extends CancellableLoggingService implements Meta
         final List<Map<String, AttributeValue>> results = new ArrayList<>();
         Map<String, AttributeValue> lastKeyEvaluatedKey = null;
         do {
-            ScanRequest request = scanRequest(product, lastKeyEvaluatedKey);
-            ScanResult result = dynamoDb.scan(request);
+            final ScanRequest request = scanRequest(product, lastKeyEvaluatedKey);
+            final ScanResult result = dynamoDb.scan(request);
             results.addAll(result.getItems());
             lastKeyEvaluatedKey = result.getLastEvaluatedKey();
         }
@@ -151,6 +155,7 @@ public class DependencyService extends CancellableLoggingService implements Meta
 
         return results.size() > 0 ? Optional.of(results.get(0)) : Optional.empty();
     }
+
 
     private ScanRequest scanRequest(final String product, final Map<String, AttributeValue> lastKeyEvaluatedKey) {
         return new ScanRequest().withTableName(metadataTableName)

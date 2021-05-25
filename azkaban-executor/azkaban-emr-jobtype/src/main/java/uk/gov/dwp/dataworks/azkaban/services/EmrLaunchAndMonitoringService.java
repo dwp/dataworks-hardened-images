@@ -31,17 +31,20 @@ public class EmrLaunchAndMonitoringService extends CancellableLoggingService {
         this.emr = emr;
     }
 
-    public boolean launchClusterAndWaitForStepCompletion(String dependency) {
+    public boolean launchClusterAndWaitForStepCompletion(String dependency, String ... collections) {
         try {
             this.notificationService.notifyStarted();
-            boolean succeeded = dependencyMetadata(dependency).map(this::registerDependenciesCompleted)
-                                                              .filter(x -> proceed.get())
-                                                              .flatMap(launchInvocationService::invokeEmrLauncher)
-                                                              .filter(InvocationResult::wasSuccessful)
-                                                              .map(InvocationResult::getClusterId)
-                                                              .map(this::setClusterId).map(this::registerClusterId)
-                                                              .filter(x -> proceed.get())
-                                                              .map(emrProgressService::waitForCluster).orElse(false);
+            boolean succeeded = dependencyMetadata(dependency, collections)
+                    .map(this::registerDependenciesCompleted)
+                    .filter(x -> proceed.get())
+                    .flatMap(launchInvocationService::invokeEmrLauncher)
+                    .filter(InvocationResult::wasSuccessful)
+                    .map(InvocationResult::getClusterId)
+                    .map(this::setClusterId)
+                    .map(this::registerClusterId)
+                    .filter(x -> proceed.get())
+                    .map(emrProgressService::waitForCluster)
+                    .orElse(false);
 
             if (succeeded) {
                 this.statusService.registerSuccess();
@@ -79,12 +82,12 @@ public class EmrLaunchAndMonitoringService extends CancellableLoggingService {
         clusterId.get().ifPresent(id -> EmrUtility.cancelSteps(emr, id));
     }
 
-    private Optional<InvocationPayload> dependencyMetadata(String dependencies) {
-        return completedDependency(dependencies).map(InvocationPayload::from);
+    private Optional<InvocationPayload> dependencyMetadata(String dependencies, String ... collections) {
+        return completedDependency(dependencies, collections).map(InvocationPayload::from);
     }
 
-    private Optional<Map<String, AttributeValue>> completedDependency(String dependency) {
-        return dependencyService.successfulDependency(dependency);
+    private Optional<Map<String, AttributeValue>> completedDependency(String dependency, String ... collections) {
+        return dependencyService.successfulDependency(dependency, collections);
     }
 
     private String setClusterId(String id) {
