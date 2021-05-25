@@ -18,11 +18,15 @@ import uk.gov.dwp.dataworks.azkaban.services.StatusService;
 import uk.gov.dwp.dataworks.azkaban.utility.ClientUtility;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class EmrLauncherJob extends AbstractProcessJob {
 
     public final static String JOB_DEPENDENCIES_PARAMETER_NAME = "job.dependencies";
+    public final static String COLLECTION_DEPENDENCIES_PARAMETER_NAME = "collection.dependencies";
     public final static String EXPORT_DATE_PARAMETER_NAME = "export.date";
     public final static String METADATA_TABLE_PARAMETER_NAME = "pipeline.metadata.table";
     public final static String EMR_LAUNCHER_LAMBDA_PARAMETER_NAME = "emr.launcher.lambda";
@@ -39,7 +43,12 @@ public class EmrLauncherJob extends AbstractProcessJob {
 
     @Override
     public void run() throws Exception {
-        boolean successful = service().launchClusterAndWaitForStepCompletion(dependency());
+        List<String> collections = Arrays.stream(collectionDependencies()).filter(s -> s.length() > 0).collect(Collectors.toList());
+        System.out.println("==============> " + collections);
+        boolean successful = collections.size() > 0 ?
+                    service().launchClusterAndWaitForStepCompletion(dependency(), collections.toArray(new String[0]))
+                    : service().launchClusterAndWaitForStepCompletion(dependency());
+
         if (!successful) {
             throw new Exception("Job failed");
         }
@@ -60,6 +69,10 @@ public class EmrLauncherJob extends AbstractProcessJob {
 
     private String dependency() {
         return jobProps.getString(JOB_DEPENDENCIES_PARAMETER_NAME);
+    }
+
+    private String[] collectionDependencies() {
+        return jobProps.getString(COLLECTION_DEPENDENCIES_PARAMETER_NAME, "").split(",");
     }
 
     private synchronized EmrLaunchAndMonitoringService service() {

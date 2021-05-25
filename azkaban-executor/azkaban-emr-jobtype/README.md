@@ -44,6 +44,7 @@ The table below gives the details.
 |---------------------------|---------------|
 | `aws.log.group.name`      | Log group that the step log streams are a part of. If not supplied no logs will be fetched |
 | `cluster.name`            | The name of the cluster, to be used in the notifications, if not supplied the name of the launching lambda is used |
+| `collection.dependencies` | A comma separated list of collection names that the process should look up on the UCExportToCrownStatus` table to determine when it's safe to start the cluster. |
 | `data.product`            | The data product name, e.g. `clive` |
 | `emr.launcher.lambda`     | The name of the launching-lambda, this property is mandatory, there is no default. |
 | `export.date`             | The date the dependency occured on - used to find the relevant row in the pipeline metadata table, defaults to today's date in the format `YYYY-MM-DD`. |
