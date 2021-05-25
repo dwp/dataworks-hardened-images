@@ -61,7 +61,7 @@ class DependencyServiceTest {
         when(result.getItem()).thenReturn(successfulItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
 
-        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
+        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_STATUS_TABLE, EXPORT_DATE);
         Optional<Map<String, AttributeValue>> successes = metadataService.successfulDependency(PRODUCT_1);
         assertTrue(successes.isPresent());
         Map<String, AttributeValue> item = successes.get();
@@ -93,7 +93,7 @@ class DependencyServiceTest {
 
         when(dynamoDB.getItem(request)).thenReturn(result);
 
-        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
+        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_STATUS_TABLE, EXPORT_DATE);
         Optional<Map<String, AttributeValue>> successes = metadataService.successfulDependency(PRODUCT_1);
         assertTrue(successes.isPresent());
         Map<String, AttributeValue> item = successes.get();
@@ -122,7 +122,7 @@ class DependencyServiceTest {
         when(result.getItem()).thenReturn(failedItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
 
-        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
+        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_STATUS_TABLE, EXPORT_DATE);
         Optional<Map<String, AttributeValue>> successes = metadataService.successfulDependency(PRODUCT_1);
         assertFalse(successes.isPresent());
     }
@@ -146,7 +146,7 @@ class DependencyServiceTest {
         when(result.getItem()).thenReturn(pendingItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
 
-        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
+        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_STATUS_TABLE, EXPORT_DATE);
         Optional<Map<String, AttributeValue>> successes = metadataService.successfulDependency(PRODUCT_1);
         assertFalse(successes.isPresent());
     }
@@ -171,7 +171,7 @@ class DependencyServiceTest {
         when(result.getItem()).thenReturn(pendingItem).thenReturn(pendingItem).thenReturn(pendingItem)
                               .thenReturn(successfulItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
-        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
+        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_STATUS_TABLE, EXPORT_DATE);
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
         executorService.schedule(metadataService::cancel, 15, TimeUnit.MILLISECONDS);
         Future<Optional<Map<String, AttributeValue>>> future = executorService
@@ -205,7 +205,7 @@ class DependencyServiceTest {
         when(result2.getItem()).thenReturn(successfulItem2);
         when(dynamoDB.getItem(any(GetItemRequest.class))).thenReturn(result1, result2);
 
-        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
+        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_STATUS_TABLE, EXPORT_DATE);
         Optional<Map<String, AttributeValue>> successes = metadataService
                 .successfulDependency(PRODUCT_1);
         assertTrue(successes.isPresent());
@@ -230,6 +230,7 @@ class DependencyServiceTest {
     }
 
     private final static String METADATA_TABLE = "METADATA_TABLE";
+    private final static String EXPORT_STATUS_TABLE = "METADATA_TABLE";
     private final static String CORRELATION_ID_1 = "CORRELATION_ID_1";
     private final static String CORRELATION_ID_2 = "CORRELATION_ID_2";
     private final static String PRODUCT_1 = "PRODUCT_1";

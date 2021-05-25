@@ -53,7 +53,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
         if (_service == null) {
             AmazonDynamoDB dynamoDB = ClientUtility.amazonDynamoDb(awsRegion());
             String dataProduct = jobProps.getString(DATA_PRODUCT_NAME, jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
-            DependencyService dependencyService = new DependencyService(dynamoDB, metadataTableName(), exportDate());
+            DependencyService dependencyService = new DependencyService(dynamoDB, metadataTableName(), EXPORT_STATUS_TABLE_NAME, exportDate());
             dependencyService.setParent(this);
             StatusService statusService = new StatusService(dynamoDB, dataProduct, metadataTableName());
             LaunchInvocationService launchInvocationService = new LaunchInvocationService(
@@ -74,8 +74,8 @@ public class EmrLauncherJob extends AbstractProcessJob {
             this._service = new CompositeService(dependencyService, launchInvocationService, emrProgressService,
                     notificationService, statusService, emr);
             this._service.setParent(this);
-
         }
+
         return _service;
     }
 
@@ -91,5 +91,6 @@ public class EmrLauncherJob extends AbstractProcessJob {
     public static final String AWS_LOG_GROUP_PARAMETER_NAME = "aws.log.group.name";
     public static final String CLUSTER_PARAMETER_NAME = "cluster.name";
     public static final String TOPIC_PARAMETER_NAME = "notification.topic.name";
+    public final static String EXPORT_STATUS_TABLE_NAME = "UCExportToCrownStatus";
     private CompositeService _service;
 }

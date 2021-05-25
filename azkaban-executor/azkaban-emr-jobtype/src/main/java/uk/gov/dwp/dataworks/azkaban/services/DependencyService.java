@@ -21,15 +21,20 @@ import java.util.stream.Collectors;
 
 public class DependencyService extends DelegateService implements MetadataService {
 
-    public DependencyService(final AmazonDynamoDB dynamoDB, String metadataTableName, String exportDate) {
+    public DependencyService(final AmazonDynamoDB dynamoDB, final String metadataTableName, final String exportStatusTableName, final String exportDate) {
         this.dynamoDb = dynamoDB;
         this.metadataTableName = metadataTableName;
         this.exportDate = exportDate;
     }
 
-    public Optional<Map<String, AttributeValue>> successfulDependency(final String product) {
-        return proceed.get() ? dependencyMetadata(product).filter(this::dependencySucceeded)
-                                                          .flatMap(x -> dependencyMetadata(product)) : Optional.empty();
+    public Optional<Map<String, AttributeValue>> successfulDependency(final String product, final String ... collections) {
+        return proceed.get() ? dependencyMetadata(product)
+                .filter(collections.length > 0 ? item -> collectionsReady(item.get(CORRELATION_ID_FIELD).getS(), collections) : this::dependencySucceeded)
+                .flatMap(x -> dependencyMetadata(product)) : Optional.empty();
+    }
+
+    private Boolean collectionsReady(String correlationId, final String ... collections) {
+        return true;
     }
 
     @Override
@@ -39,8 +44,7 @@ public class DependencyService extends DelegateService implements MetadataServic
     }
 
     private static Map<String, AttributeValue> primaryKey(final Map<String, AttributeValue> item) {
-        return item.entrySet().stream().filter(entry -> entry.getKey().equals(CORRELATION_ID_FIELD) || entry.getKey()
-                                                                                                            .equals(DATA_PRODUCT_FIELD))
+        return item.entrySet().stream().filter(entry -> entry.getKey().equals(CORRELATION_ID_FIELD) || entry.getKey().equals(DATA_PRODUCT_FIELD))
                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
@@ -72,9 +76,9 @@ public class DependencyService extends DelegateService implements MetadataServic
             final AtomicBoolean succeeded) {
         try {
             info("Checking '" + itemString(item) + "'");
-            GetItemRequest request = new GetItemRequest().withTableName(tableName).withKey(primaryKey(item));
-            GetItemResult result = dynamoDb.getItem(request);
-            String status = result.getItem().get(STATUS_FIELD).getS();
+            final GetItemRequest request = new GetItemRequest().withTableName(tableName).withKey(primaryKey(item));
+            final GetItemResult result = dynamoDb.getItem(request);
+            final String status = result.getItem().get(STATUS_FIELD).getS();
             info("Checked '" + itemString(item) + "', status is '" + status + "'.");
             if (hasFinished(status)) {
                 info("Dependency '" + itemString(item) + "' has completed, status is '" + status + "'.");
@@ -90,8 +94,8 @@ public class DependencyService extends DelegateService implements MetadataServic
         final List<Map<String, AttributeValue>> results = new ArrayList<>();
         Map<String, AttributeValue> lastKeyEvaluatedKey = null;
         do {
-            ScanRequest request = scanRequest(product, lastKeyEvaluatedKey);
-            ScanResult result = dynamoDb.scan(request);
+            final ScanRequest request = scanRequest(product, lastKeyEvaluatedKey);
+            final ScanResult result = dynamoDb.scan(request);
             results.addAll(result.getItems());
             lastKeyEvaluatedKey = result.getLastEvaluatedKey();
         }
@@ -101,14 +105,14 @@ public class DependencyService extends DelegateService implements MetadataServic
     }
 
     private static Map<String, AttributeValue> valueMap(final String product, final String exportDate) {
-        Map<String, AttributeValue> valueMap = new HashMap<>();
+        final Map<String, AttributeValue> valueMap = new HashMap<>();
         valueMap.put(":export_date", new AttributeValue().withS(exportDate));
         valueMap.put(":product", new AttributeValue().withS(product));
         return valueMap;
     }
 
     private static Map<String, String> nameMap() {
-        Map<String, String> nameMap = new HashMap<>();
+        final Map<String, String> nameMap = new HashMap<>();
         nameMap.put("#export_date", DATE_FIELD);
         nameMap.put("#product", DATA_PRODUCT_FIELD);
         return nameMap;
