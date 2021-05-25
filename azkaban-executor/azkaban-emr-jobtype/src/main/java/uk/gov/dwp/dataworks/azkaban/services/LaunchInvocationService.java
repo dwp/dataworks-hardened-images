@@ -11,6 +11,9 @@ import uk.gov.dwp.dataworks.azkaban.model.InvocationResult;
 
 import java.util.Optional;
 
+/**
+ * Invokes an EMR launching lambda and returns the result.
+ */
 public class LaunchInvocationService extends CancellableLoggingService {
 
     private final AWSLambda awsLambda;

@@ -10,6 +10,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Orchestrates the whole launch and subsequent monitoring.
+ * First it waits until the dependencies have been met (i.e. that the build of the upstream
+ * products has completed) this job is delegated to the {@link DependencyService}
+ * Next it calls the emr launching lambda (delegated to the {@link LaunchInvocationService}
+ * Finally it monitors the EMR (delegated to the {@link EmrProgressService}) until it
+ * completes its steps.
+ * Whilst doing this SNS messages are issued (delegated to the {@link NotificationService}
+ * and DynamoDb entries are updated (delegated to the {@link StatusService}) to indicate how the
+ * process is going (has it started, succeeded, failed, etc.)
+ */
 public class EmrLaunchAndMonitoringService extends CancellableLoggingService {
 
     private final AtomicReference<Optional<String>> clusterId = new AtomicReference<>();
@@ -28,6 +39,7 @@ public class EmrLaunchAndMonitoringService extends CancellableLoggingService {
         this.emrProgressService = emrProgressService;
         this.notificationService = notificationService;
         this.statusService = statusService;
+
         this.emr = emr;
     }
 

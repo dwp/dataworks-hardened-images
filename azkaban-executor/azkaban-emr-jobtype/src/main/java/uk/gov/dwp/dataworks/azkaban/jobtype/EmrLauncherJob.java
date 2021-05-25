@@ -6,6 +6,8 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
 import com.amazonaws.services.logs.AWSLogs;
 import org.apache.log4j.Logger;
+import uk.gov.dwp.dataworks.azkaban.services.CollectionStatusService;
+import uk.gov.dwp.dataworks.azkaban.services.DataProductStatusService;
 import uk.gov.dwp.dataworks.azkaban.services.DependencyService;
 import uk.gov.dwp.dataworks.azkaban.services.EmrLaunchAndMonitoringService;
 import uk.gov.dwp.dataworks.azkaban.services.EmrProgressService;
@@ -28,7 +30,6 @@ public class EmrLauncherJob extends AbstractProcessJob {
     public static final String AWS_LOG_GROUP_PARAMETER_NAME = "aws.log.group.name";
     public static final String CLUSTER_PARAMETER_NAME = "cluster.name";
     public static final String TOPIC_PARAMETER_NAME = "notification.topic.name";
-    public final static String EXPORT_STATUS_TABLE_NAME = "UCExportToCrownStatus";
 
     private EmrLaunchAndMonitoringService _service;
 
@@ -66,8 +67,15 @@ public class EmrLauncherJob extends AbstractProcessJob {
             AmazonDynamoDB dynamoDB = ClientUtility.amazonDynamoDb(awsRegion());
             String dataProduct = jobProps
                     .getString(DATA_PRODUCT_NAME, jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
-            DependencyService dependencyService = new DependencyService(dynamoDB, metadataTableName(), exportDate());
+
+            DataProductStatusService dataProductStatusService = new DataProductStatusService(dynamoDB, metadataTableName());
+            dataProductStatusService.setParent(this);
+
+            CollectionStatusService collectionStatusService = new CollectionStatusService(dynamoDB);
+            collectionStatusService.setParent(this);
+            DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, metadataTableName(), exportDate());
             dependencyService.setParent(this);
+
             StatusService statusService = new StatusService(dynamoDB, dataProduct, metadataTableName());
             LaunchInvocationService launchInvocationService = new LaunchInvocationService(
                     ClientUtility.amazonLambda(awsRegion()), jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));

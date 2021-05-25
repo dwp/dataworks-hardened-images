@@ -18,6 +18,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.clusterStep;
 import static uk.gov.dwp.dataworks.azkaban.utility.LogUtility.clusterStepLogStreams;
 
+/**
+ * Used by the {@link EmrProgressService} to fetch step logs for a running EMR steps
+ * from cloudwatch and print them on the console.
+ */
 public class LogService extends CancellableLoggingService {
 
     private final String logGroup;

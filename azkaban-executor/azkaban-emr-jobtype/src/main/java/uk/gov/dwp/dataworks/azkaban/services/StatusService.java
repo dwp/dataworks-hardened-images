@@ -11,6 +11,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Used by the {@link EmrLaunchAndMonitoringService} to update dynamodb with entries
+ * related to the current launch which indicate its status (started, succeeded, failed ...)
+ */
 public class StatusService implements MetadataService {
 
     private final String dataProduct;

@@ -27,6 +27,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.CORRELATION_ID_FIELD;
@@ -43,112 +44,93 @@ class DependencyServiceTest {
     }
 
     @Test
-    public void shouldReturnSuccessfulItem() {
+    public void shouldReturnSuccessfulDataProductItem() {
         AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
         ScanResult scanResult = mock(ScanResult.class);
         List<Map<String, AttributeValue>> items = new ArrayList<>();
         Map<String, AttributeValue> successfulItem = tableItem(CORRELATION_ID_1, STATUS_COMPLETED);
         items.add(successfulItem);
-        Map<String, AttributeValue> successfulKey = itemKey();
-
         when(scanResult.getItems()).thenReturn(items);
         when(dynamoDB.scan(any())).thenReturn(scanResult);
         when(scanResult.getLastEvaluatedKey()).thenReturn(null);
-
-        GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(successfulKey);
-
-        GetItemResult result = mock(GetItemResult.class);
-        when(result.getItem()).thenReturn(successfulItem);
-        when(dynamoDB.getItem(request)).thenReturn(result);
-
-        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
-        Optional<Map<String, AttributeValue>> successes = metadataService.successfulDependency(PRODUCT_1);
+        DataProductStatusService dataProductStatusService = mock(DataProductStatusService.class);
+        when(dataProductStatusService.dependencySucceeded(successfulItem)).thenReturn(true);
+        CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
+        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, METADATA_TABLE, EXPORT_DATE);
+        Optional<Map<String, AttributeValue>> successes = dependencyService.successfulDependency(PRODUCT_1);
         assertTrue(successes.isPresent());
         Map<String, AttributeValue> item = successes.get();
         assertEquals(successfulItem, item);
+        verify(dataProductStatusService, times(1)).dependencySucceeded(item);
+        verifyNoMoreInteractions(dataProductStatusService);
+        verifyNoInteractions(collectionStatusService);
     }
 
     @Test
-    public void shouldReturnEventuallySuccessfulItem() {
+    public void shouldReturnSuccessfulCollectionItem() {
         AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
         ScanResult scanResult = mock(ScanResult.class);
         List<Map<String, AttributeValue>> items = new ArrayList<>();
-        Map<String, AttributeValue> inProgressItem = tableItem(CORRELATION_ID_1, STATUS_PENDING);
-        items.add(inProgressItem);
         Map<String, AttributeValue> successfulItem = tableItem(CORRELATION_ID_1, STATUS_COMPLETED);
-        List<Map<String, AttributeValue>> successfulItems = new ArrayList<>();
-        successfulItems.add(successfulItem);
-        Map<String, AttributeValue> itemKey = itemKey();
-
-        when(scanResult.getItems()).thenReturn(items).thenReturn(successfulItems);
+        items.add(successfulItem);
+        when(scanResult.getItems()).thenReturn(items);
         when(dynamoDB.scan(any())).thenReturn(scanResult);
         when(scanResult.getLastEvaluatedKey()).thenReturn(null);
-
-        GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(itemKey);
-
-        GetItemResult result = mock(GetItemResult.class);
-
-        when(result.getItem()).thenReturn(inProgressItem).thenReturn(inProgressItem).thenReturn(inProgressItem)
-                              .thenReturn(successfulItem);
-
-        when(dynamoDB.getItem(request)).thenReturn(result);
-
-        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
-        Optional<Map<String, AttributeValue>> successes = metadataService.successfulDependency(PRODUCT_1);
+        DataProductStatusService dataProductStatusService = mock(DataProductStatusService.class);
+        CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
+        when(collectionStatusService.collectionsSucceeded(CORRELATION_ID_1, COLLECTION_1, COLLECTION_2)).thenReturn(true);
+        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, METADATA_TABLE, EXPORT_DATE);
+        Optional<Map<String, AttributeValue>> successes = dependencyService.successfulDependency(PRODUCT_1, COLLECTION_1, COLLECTION_2);
         assertTrue(successes.isPresent());
         Map<String, AttributeValue> item = successes.get();
         assertEquals(successfulItem, item);
-        verify(dynamoDB, times(4)).getItem(request);
-        verify(dynamoDB, times(2)).scan(any());
-        verifyNoMoreInteractions(dynamoDB);
+        verify(collectionStatusService, times(1)).collectionsSucceeded(CORRELATION_ID_1, COLLECTION_1, COLLECTION_2);
+        verifyNoMoreInteractions(collectionStatusService);
+        verifyNoInteractions(dataProductStatusService);
     }
 
+
     @Test
-    public void shouldNotReturnFailedItem() {
+    public void shouldNotReturnFailedDataProductItem() {
         AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
         ScanResult scanResult = mock(ScanResult.class);
         List<Map<String, AttributeValue>> items = new ArrayList<>();
         Map<String, AttributeValue> failedItem = tableItem(CORRELATION_ID_1, STATUS_FAILED);
         items.add(failedItem);
-        Map<String, AttributeValue> successfulKey = itemKey();
 
         when(scanResult.getItems()).thenReturn(items);
         when(dynamoDB.scan(any())).thenReturn(scanResult);
         when(scanResult.getLastEvaluatedKey()).thenReturn(null);
 
-        GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(successfulKey);
-
-        GetItemResult result = mock(GetItemResult.class);
-        when(result.getItem()).thenReturn(failedItem);
-        when(dynamoDB.getItem(request)).thenReturn(result);
-
-        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
-        Optional<Map<String, AttributeValue>> successes = metadataService.successfulDependency(PRODUCT_1);
+        DataProductStatusService dataProductStatusService = mock(DataProductStatusService.class);
+        when(dataProductStatusService.dependencySucceeded(failedItem)).thenReturn(false);
+        CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
+        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, METADATA_TABLE, EXPORT_DATE);
+        Optional<Map<String, AttributeValue>> successes = dependencyService.successfulDependency(PRODUCT_1);
         assertFalse(successes.isPresent());
+        verify(dataProductStatusService, times(1)).dependencySucceeded(failedItem);
+        verifyNoInteractions(collectionStatusService);
     }
 
     @Test
-    public void shouldNotReturnTimedOutItem() {
+    public void shouldNotReturnFailedCollectionItem() {
         AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
         ScanResult scanResult = mock(ScanResult.class);
         List<Map<String, AttributeValue>> items = new ArrayList<>();
-        Map<String, AttributeValue> pendingItem = tableItem(CORRELATION_ID_1, STATUS_PENDING);
-        items.add(pendingItem);
-        Map<String, AttributeValue> key = itemKey();
-
+        Map<String, AttributeValue> successfulItem = tableItem(CORRELATION_ID_1, STATUS_COMPLETED);
+        items.add(successfulItem);
         when(scanResult.getItems()).thenReturn(items);
         when(dynamoDB.scan(any())).thenReturn(scanResult);
         when(scanResult.getLastEvaluatedKey()).thenReturn(null);
-
-        GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(key);
-
-        GetItemResult result = mock(GetItemResult.class);
-        when(result.getItem()).thenReturn(pendingItem);
-        when(dynamoDB.getItem(request)).thenReturn(result);
-
-        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
-        Optional<Map<String, AttributeValue>> successes = metadataService.successfulDependency(PRODUCT_1);
+        DataProductStatusService dataProductStatusService = mock(DataProductStatusService.class);
+        CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
+        when(collectionStatusService.collectionsSucceeded(CORRELATION_ID_1, COLLECTION_1, COLLECTION_2)).thenReturn(false);
+        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, METADATA_TABLE, EXPORT_DATE);
+        Optional<Map<String, AttributeValue>> successes = dependencyService.successfulDependency(PRODUCT_1, COLLECTION_1, COLLECTION_2);
         assertFalse(successes.isPresent());
+        verify(collectionStatusService, times(1)).collectionsSucceeded(CORRELATION_ID_1, COLLECTION_1, COLLECTION_2);
+        verifyNoMoreInteractions(collectionStatusService);
+        verifyNoInteractions(dataProductStatusService);
     }
 
     @Test
@@ -171,11 +153,13 @@ class DependencyServiceTest {
         when(result.getItem()).thenReturn(pendingItem).thenReturn(pendingItem).thenReturn(pendingItem)
                               .thenReturn(successfulItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
-        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
+        DataProductStatusService dataProductStatusService = mock(DataProductStatusService.class);
+        CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
+        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, METADATA_TABLE, EXPORT_DATE);
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
-        executorService.schedule(metadataService::cancel, 15, TimeUnit.MILLISECONDS);
+        executorService.schedule(dependencyService::cancel, 15, TimeUnit.MILLISECONDS);
         Future<Optional<Map<String, AttributeValue>>> future = executorService
-                .submit(() -> metadataService.successfulDependency(PRODUCT_1));
+                .submit(() -> dependencyService.successfulDependency(PRODUCT_1));
 
         assertFalse(future.get().isPresent());
     }
@@ -196,21 +180,14 @@ class DependencyServiceTest {
         ScanResult scanResult2 = mock(ScanResult.class);
         when(scanResult2.getItems()).thenReturn(page2Items);
         when(scanResult2.getLastEvaluatedKey()).thenReturn(null);
-
         when(dynamoDB.scan(any(ScanRequest.class))).thenReturn(scanResult1, scanResult2, scanResult1, scanResult2);
 
-        GetItemResult result1 = mock(GetItemResult.class);
-        when(result1.getItem()).thenReturn(successfulItem1);
-        GetItemResult result2 = mock(GetItemResult.class);
-        when(result2.getItem()).thenReturn(successfulItem2);
-        when(dynamoDB.getItem(any(GetItemRequest.class))).thenReturn(result1, result2);
-
-        DependencyService metadataService = new DependencyService(dynamoDB, METADATA_TABLE, EXPORT_DATE);
-        Optional<Map<String, AttributeValue>> successes = metadataService
-                .successfulDependency(PRODUCT_1);
-        assertTrue(successes.isPresent());
-        Map<String, AttributeValue> item = successes.get();
-        assertEquals(successfulItem1, item);
+        DataProductStatusService dataProductStatusService = mock(DataProductStatusService.class);
+        when(dataProductStatusService.dependencySucceeded(successfulItem1)).thenReturn(true);
+        CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
+        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, METADATA_TABLE, EXPORT_DATE);
+        Optional<Map<String, AttributeValue>> successes = dependencyService.successfulDependency(PRODUCT_1);
+        verify(dynamoDB, times(4)).scan(any());
     }
 
     private Map<String, AttributeValue> itemKey() {
@@ -230,8 +207,9 @@ class DependencyServiceTest {
     }
 
     private final static String METADATA_TABLE = "METADATA_TABLE";
-    private final static String EXPORT_STATUS_TABLE = "METADATA_TABLE";
     private final static String CORRELATION_ID_1 = "CORRELATION_ID_1";
+    private final static String COLLECTION_1 = "COLLECTION_1";
+    private final static String COLLECTION_2 = "COLLECTION_2";
     private final static String CORRELATION_ID_2 = "CORRELATION_ID_2";
     private final static String PRODUCT_1 = "PRODUCT_1";
     private final static String EXPORT_DATE = "2021-05-15";
