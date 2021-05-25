@@ -4,6 +4,10 @@ import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.Topic;
 import uk.gov.dwp.dataworks.azkaban.utility.SnsUtility;
 
+/**
+ * Used by the {@link EmrLaunchAndMonitoringService} to post SNS messages
+ * that indicate the status of the process (started, failed, succeeded etc.)
+ */
 public class NotificationService {
 
     private final AmazonSNS sns;

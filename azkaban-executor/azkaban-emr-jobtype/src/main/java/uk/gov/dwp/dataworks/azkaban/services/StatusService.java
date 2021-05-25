@@ -11,17 +11,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Used by the {@link EmrLaunchAndMonitoringService} to update dynamodb with entries
+ * related to the current launch which indicate its status (started, succeeded, failed ...)
+ */
 public class StatusService implements MetadataService {
 
     private final String dataProduct;
-    private final String metadataTableName;
     private final AmazonDynamoDB dynamoDb;
     private String correlationId;
 
-    public StatusService(AmazonDynamoDB dynamoDB, String dataProduct, String metadataTableName) {
+    public StatusService(AmazonDynamoDB dynamoDB, String dataProduct) {
         this.dynamoDb = dynamoDB;
         this.dataProduct = dataProduct;
-        this.metadataTableName = metadataTableName;
     }
 
     public void registerDependenciesCompleted(InvocationPayload payload) {
@@ -46,7 +48,7 @@ public class StatusService implements MetadataService {
             Calendar c = Calendar.getInstance();
             c.add(Calendar.WEEK_OF_YEAR, 1);
             item.put(TIME_TO_EXIST_FIELD, new AttributeValue().withN(String.format("%d", c.getTime().getTime())));
-            final PutItemRequest request = new PutItemRequest().withTableName(metadataTableName).withItem(item);
+            final PutItemRequest request = new PutItemRequest().withTableName(PIPELINE_METADATA_TABLE).withItem(item);
 
             this.dynamoDb.putItem(request);
         } catch (Exception e) {
@@ -57,7 +59,7 @@ public class StatusService implements MetadataService {
     public void registerClusterId(String clusterId) {
         Map<String, AttributeValue> values = new HashMap<>();
         values.put(":cluster_id", new AttributeValue().withS(clusterId));
-        UpdateItemRequest request = new UpdateItemRequest().withTableName(metadataTableName).withKey(recordIdentifier())
+        UpdateItemRequest request = new UpdateItemRequest().withTableName(PIPELINE_METADATA_TABLE).withKey(recordIdentifier())
                                                            .withUpdateExpression(
                                                                    "set " + CLUSTER_ID_FIELD + " = :cluster_id")
                                                            .withExpressionAttributeValues(values);
@@ -79,7 +81,7 @@ public class StatusService implements MetadataService {
         names.put("#status_field", STATUS_FIELD);
         Map<String, AttributeValue> values = new HashMap<>();
         values.put(":status", new AttributeValue().withS(status));
-        UpdateItemRequest request = new UpdateItemRequest().withTableName(metadataTableName).withKey(key)
+        UpdateItemRequest request = new UpdateItemRequest().withTableName(PIPELINE_METADATA_TABLE).withKey(key)
                                                            .withUpdateExpression("set #status_field = :status")
                                                            .withExpressionAttributeNames(names)
                                                            .withExpressionAttributeValues(values);

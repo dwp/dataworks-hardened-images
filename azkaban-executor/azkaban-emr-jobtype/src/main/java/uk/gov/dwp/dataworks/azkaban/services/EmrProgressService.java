@@ -18,6 +18,12 @@ import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.clusterSteps;
 import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.completedSteps;
 import static uk.gov.dwp.dataworks.azkaban.utility.EmrUtility.incompleteSteps;
 
+/**
+ * Monitors an EMR until it fails or all of its steps complete successfully.
+ * It first polls the emr status until it is 'RUNNING', and then polls the step statuses
+ * until they have all finished. While polling the steps it relays the step logs from
+ * cloudwatch back onto the console (task delegated to the {@link LogService}).
+ */
 public class EmrProgressService extends CancellableLoggingService {
 
     private final CountDownLatch clusterStartupLatch;

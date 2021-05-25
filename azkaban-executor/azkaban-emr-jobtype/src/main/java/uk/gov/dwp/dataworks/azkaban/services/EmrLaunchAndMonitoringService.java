@@ -10,6 +10,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Orchestrates the whole launch and subsequent monitoring.
+ * First it waits until the dependencies have been met (i.e. that the build of the upstream
+ * products has completed) this job is delegated to the {@link DependencyService}
+ * Next it calls the emr launching lambda (delegated to the {@link LaunchInvocationService}
+ * Finally it monitors the EMR (delegated to the {@link EmrProgressService}) until it
+ * completes its steps.
+ * Whilst doing this SNS messages are issued (delegated to the {@link NotificationService}
+ * and DynamoDb entries are updated (delegated to the {@link StatusService}) to indicate how the
+ * process is going (has it started, succeeded, failed, etc.)
+ */
 public class EmrLaunchAndMonitoringService extends CancellableLoggingService {
 
     private final AtomicReference<Optional<String>> clusterId = new AtomicReference<>();
@@ -28,20 +39,24 @@ public class EmrLaunchAndMonitoringService extends CancellableLoggingService {
         this.emrProgressService = emrProgressService;
         this.notificationService = notificationService;
         this.statusService = statusService;
+
         this.emr = emr;
     }
 
-    public boolean launchClusterAndWaitForStepCompletion(String dependency) {
+    public boolean launchClusterAndWaitForStepCompletion(String dependency, String ... collections) {
         try {
             this.notificationService.notifyStarted();
-            boolean succeeded = dependencyMetadata(dependency).map(this::registerDependenciesCompleted)
-                                                              .filter(x -> proceed.get())
-                                                              .flatMap(launchInvocationService::invokeEmrLauncher)
-                                                              .filter(InvocationResult::wasSuccessful)
-                                                              .map(InvocationResult::getClusterId)
-                                                              .map(this::setClusterId).map(this::registerClusterId)
-                                                              .filter(x -> proceed.get())
-                                                              .map(emrProgressService::waitForCluster).orElse(false);
+            boolean succeeded = dependencyMetadata(dependency, collections)
+                    .map(this::registerDependenciesCompleted)
+                    .filter(x -> proceed.get())
+                    .flatMap(launchInvocationService::invokeEmrLauncher)
+                    .filter(InvocationResult::wasSuccessful)
+                    .map(InvocationResult::getClusterId)
+                    .map(this::setClusterId)
+                    .map(this::registerClusterId)
+                    .filter(x -> proceed.get())
+                    .map(emrProgressService::waitForCluster)
+                    .orElse(false);
 
             if (succeeded) {
                 this.statusService.registerSuccess();
@@ -79,12 +94,12 @@ public class EmrLaunchAndMonitoringService extends CancellableLoggingService {
         clusterId.get().ifPresent(id -> EmrUtility.cancelSteps(emr, id));
     }
 
-    private Optional<InvocationPayload> dependencyMetadata(String dependencies) {
-        return completedDependency(dependencies).map(InvocationPayload::from);
+    private Optional<InvocationPayload> dependencyMetadata(String dependencies, String ... collections) {
+        return completedDependency(dependencies, collections).map(InvocationPayload::from);
     }
 
-    private Optional<Map<String, AttributeValue>> completedDependency(String dependency) {
-        return dependencyService.successfulDependency(dependency);
+    private Optional<Map<String, AttributeValue>> completedDependency(String dependency, String ... collections) {
+        return dependencyService.successfulDependency(dependency, collections);
     }
 
     private String setClusterId(String id) {

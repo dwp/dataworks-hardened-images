@@ -1,6 +1,10 @@
 package uk.gov.dwp.dataworks.azkaban.services;
 
+/**
+ * Sub-classes query the dynamodb pipeline metadata table.
+ */
 public interface MetadataService {
+    String PIPELINE_METADATA_TABLE = "data_pipeline_metadata";
     String ANALYTICAL_DATASET_PREFIX_FIELD = "S3_Prefix_Analytical_DataSet";
     String CLUSTER_ID_FIELD = "Cluster_Id";
     String CORRELATION_ID_FIELD = "Correlation_Id";
