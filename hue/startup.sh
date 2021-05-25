@@ -10,7 +10,7 @@ update_session_backup_file() {
   then
     DELTA=$(diff $TMP_BACKUP_FILE $BACKUP_DIR/$BACKUP_FILE | wc -l)
     # unchanged backups currently diff 8 lines
-    if [ $DELTA -lt 9 ]
+    if [ $DELTA -lt 20 ]
     then
        return
     fi
