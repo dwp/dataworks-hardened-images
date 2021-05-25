@@ -28,7 +28,6 @@ public class EmrLauncherJob extends AbstractProcessJob {
     public final static String JOB_DEPENDENCIES_PARAMETER_NAME = "job.dependencies";
     public final static String COLLECTION_DEPENDENCIES_PARAMETER_NAME = "collection.dependencies";
     public final static String EXPORT_DATE_PARAMETER_NAME = "export.date";
-    public final static String METADATA_TABLE_PARAMETER_NAME = "pipeline.metadata.table";
     public final static String EMR_LAUNCHER_LAMBDA_PARAMETER_NAME = "emr.launcher.lambda";
     public final static String DATA_PRODUCT_NAME = "data.product";
     public static final String AWS_LOG_GROUP_PARAMETER_NAME = "aws.log.group.name";
@@ -54,12 +53,8 @@ public class EmrLauncherJob extends AbstractProcessJob {
     }
 
     @Override
-    public void cancel() throws Exception {
+    public void cancel() {
         service().cancel();
-    }
-
-    private String metadataTableName() {
-        return this.getJobProps().getString(METADATA_TABLE_PARAMETER_NAME, "data_pipeline_metadata");
     }
 
     private String exportDate() {
@@ -80,15 +75,15 @@ public class EmrLauncherJob extends AbstractProcessJob {
             String dataProduct = jobProps
                     .getString(DATA_PRODUCT_NAME, jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
 
-            DataProductStatusService dataProductStatusService = new DataProductStatusService(dynamoDB, metadataTableName());
+            DataProductStatusService dataProductStatusService = new DataProductStatusService(dynamoDB);
             dataProductStatusService.setParent(this);
 
             CollectionStatusService collectionStatusService = new CollectionStatusService(dynamoDB);
             collectionStatusService.setParent(this);
-            DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, metadataTableName(), exportDate());
+            DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, exportDate());
             dependencyService.setParent(this);
 
-            StatusService statusService = new StatusService(dynamoDB, dataProduct, metadataTableName());
+            StatusService statusService = new StatusService(dynamoDB, dataProduct);
             LaunchInvocationService launchInvocationService = new LaunchInvocationService(
                     ClientUtility.amazonLambda(awsRegion()), jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
             launchInvocationService.setParent(this);

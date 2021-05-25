@@ -26,6 +26,7 @@ import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.CORRELATIO
 import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.DATA_PRODUCT_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.DATE_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.STATUS_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.MetadataService.PIPELINE_METADATA_TABLE;
 
 class DataProductStatusServiceTest {
 
@@ -40,11 +41,11 @@ class DataProductStatusServiceTest {
         AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
         Map<String, AttributeValue> successfulItem = tableItem(STATUS_COMPLETED);
         Map<String, AttributeValue> successfulKey = itemKey();
-        GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(successfulKey);
+        GetItemRequest request = new GetItemRequest().withTableName(PIPELINE_METADATA_TABLE).withKey(successfulKey);
         GetItemResult result = mock(GetItemResult.class);
         when(result.getItem()).thenReturn(successfulItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
-        DataProductStatusService service = new DataProductStatusService(dynamoDB, METADATA_TABLE);
+        DataProductStatusService service = new DataProductStatusService(dynamoDB);
         Boolean succeeded = service.dependencySucceeded(successfulItem);
         assertTrue(succeeded);
     }
@@ -55,12 +56,12 @@ class DataProductStatusServiceTest {
         Map<String, AttributeValue> inProgressItem = tableItem(STATUS_PENDING);
         Map<String, AttributeValue> successfulItem = tableItem(STATUS_COMPLETED);
         Map<String, AttributeValue> itemKey = itemKey();
-        GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(itemKey);
+        GetItemRequest request = new GetItemRequest().withTableName(PIPELINE_METADATA_TABLE).withKey(itemKey);
         GetItemResult result = mock(GetItemResult.class);
         when(result.getItem()).thenReturn(inProgressItem).thenReturn(inProgressItem).thenReturn(inProgressItem)
                               .thenReturn(successfulItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
-        DataProductStatusService service = new DataProductStatusService(dynamoDB, METADATA_TABLE);
+        DataProductStatusService service = new DataProductStatusService(dynamoDB);
         Boolean succeeded = service.dependencySucceeded(successfulItem);
         assertTrue(succeeded);
         verify(dynamoDB, times(4)).getItem(request);
@@ -72,11 +73,11 @@ class DataProductStatusServiceTest {
         AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
         Map<String, AttributeValue> failedItem = tableItem(STATUS_FAILED);
         Map<String, AttributeValue> successfulKey = itemKey();
-        GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(successfulKey);
+        GetItemRequest request = new GetItemRequest().withTableName(PIPELINE_METADATA_TABLE).withKey(successfulKey);
         GetItemResult result = mock(GetItemResult.class);
         when(result.getItem()).thenReturn(failedItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
-        DataProductStatusService service = new DataProductStatusService(dynamoDB, METADATA_TABLE);
+        DataProductStatusService service = new DataProductStatusService(dynamoDB);
         Boolean succeeded = service.dependencySucceeded(failedItem);
         assertFalse(succeeded);
     }
@@ -86,11 +87,11 @@ class DataProductStatusServiceTest {
         AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
         Map<String, AttributeValue> pendingItem = tableItem(STATUS_PENDING);
         Map<String, AttributeValue> key = itemKey();
-        GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(key);
+        GetItemRequest request = new GetItemRequest().withTableName(PIPELINE_METADATA_TABLE).withKey(key);
         GetItemResult result = mock(GetItemResult.class);
         when(result.getItem()).thenReturn(pendingItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
-        DataProductStatusService service = new DataProductStatusService(dynamoDB, METADATA_TABLE);
+        DataProductStatusService service = new DataProductStatusService(dynamoDB);
         Boolean succeeded = service.dependencySucceeded(pendingItem);
         assertFalse(succeeded);
     }
@@ -102,13 +103,13 @@ class DataProductStatusServiceTest {
         Map<String, AttributeValue> successfulItem = tableItem(STATUS_COMPLETED);
         Map<String, AttributeValue> key = itemKey();
 
-        GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(key);
+        GetItemRequest request = new GetItemRequest().withTableName(PIPELINE_METADATA_TABLE).withKey(key);
 
         GetItemResult result = mock(GetItemResult.class);
         when(result.getItem()).thenReturn(pendingItem).thenReturn(pendingItem).thenReturn(pendingItem)
                               .thenReturn(successfulItem);
         when(dynamoDB.getItem(request)).thenReturn(result);
-        DataProductStatusService service = new DataProductStatusService(dynamoDB, METADATA_TABLE);
+        DataProductStatusService service = new DataProductStatusService(dynamoDB);
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
         executorService.schedule(service::cancel, 15, TimeUnit.MILLISECONDS);
         Future<Boolean> future = executorService.submit(() -> service.dependencySucceeded(pendingItem));
@@ -132,7 +133,6 @@ class DataProductStatusServiceTest {
         return successfulItem;
     }
 
-    private final static String METADATA_TABLE = "METADATA_TABLE";
     private final static String CORRELATION_ID_1 = "CORRELATION_ID_1";
     private final static String PRODUCT_1 = "PRODUCT_1";
     private final static String EXPORT_DATE = "2021-05-15";

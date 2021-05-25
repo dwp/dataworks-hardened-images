@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class DependencyService extends CancellableLoggingService implements MetadataService {
 
-    private final String metadataTableName;
     private final String exportDate;
     private final AmazonDynamoDB dynamoDb;
     private final AtomicBoolean proceed = new AtomicBoolean(true);
@@ -32,12 +31,10 @@ public class DependencyService extends CancellableLoggingService implements Meta
     public DependencyService(final AmazonDynamoDB dynamoDB,
             final DataProductStatusService dataProductStatusService,
             final CollectionStatusService collectionStatusService,
-            final String metadataTableName,
             final String exportDate) {
         this.dynamoDb = dynamoDB;
         this.collectionStatusService = collectionStatusService;
         this.dataProductStatusService = dataProductStatusService;
-        this.metadataTableName = metadataTableName;
         this.exportDate = exportDate;
     }
 
@@ -66,7 +63,7 @@ public class DependencyService extends CancellableLoggingService implements Meta
     }
 
     private ScanRequest scanRequest(final String product, final Map<String, AttributeValue> lastKeyEvaluatedKey) {
-        return new ScanRequest().withTableName(metadataTableName)
+        return new ScanRequest().withTableName(PIPELINE_METADATA_TABLE)
                                 .withFilterExpression("#product = :product and #export_date = :export_date")
                                 .withExclusiveStartKey(lastKeyEvaluatedKey).withExpressionAttributeNames(nameMap())
                                 .withExpressionAttributeValues(valueMap(product, exportDate));

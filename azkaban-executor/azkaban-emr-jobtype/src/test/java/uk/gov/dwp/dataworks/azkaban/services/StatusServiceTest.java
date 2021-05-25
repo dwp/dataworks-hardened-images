@@ -20,6 +20,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static uk.gov.dwp.dataworks.azkaban.services.MetadataService.CORRELATION_ID_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.MetadataService.DATA_PRODUCT_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.MetadataService.PIPELINE_METADATA_TABLE;
 import static uk.gov.dwp.dataworks.azkaban.services.MetadataService.STATUS_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.MetadataService.TIME_TO_EXIST_FIELD;
 
@@ -28,7 +29,7 @@ class StatusServiceTest {
     @Test
     public void shouldSetCorrectColumnValues() {
         AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
-        StatusService statusService = new StatusService(dynamoDB, DATA_PRODUCT, METADATA_TABLE_NAME);
+        StatusService statusService = new StatusService(dynamoDB, DATA_PRODUCT);
         Map<String, AttributeValue> dependenciesResult = new HashMap<>();
         dependenciesResult.put(CORRELATION_ID_FIELD, new AttributeValue().withS(CORRELATION_ID));
         InvocationPayload payload = InvocationPayload.from(dependenciesResult);
@@ -37,7 +38,7 @@ class StatusServiceTest {
         verify(dynamoDB, times(1)).putItem(requestCaptor.capture());
         verifyNoMoreInteractions(dynamoDB);
         PutItemRequest actualPutRequest = requestCaptor.getValue();
-        assertEquals(METADATA_TABLE_NAME, actualPutRequest.getTableName());
+        assertEquals(PIPELINE_METADATA_TABLE, actualPutRequest.getTableName());
         Map<String, AttributeValue> item = actualPutRequest.getItem();
         assertEquals(CORRELATION_ID, item.get(CORRELATION_ID_FIELD).getS());
         assertEquals("AZKABAN_" + DATA_PRODUCT, item.get(DATA_PRODUCT_FIELD).getS());
@@ -51,7 +52,7 @@ class StatusServiceTest {
         verify(dynamoDB, times(1)).updateItem(updateCaptor.capture());
         verifyNoMoreInteractions(dynamoDB);
         UpdateItemRequest actualUpdateRequest = updateCaptor.getValue();
-        assertEquals(METADATA_TABLE_NAME, actualUpdateRequest.getTableName());
+        assertEquals(PIPELINE_METADATA_TABLE, actualUpdateRequest.getTableName());
         Map<String, AttributeValue> requiredKey = new HashMap<>();
         requiredKey.put(CORRELATION_ID_FIELD, new AttributeValue().withS(CORRELATION_ID));
         requiredKey.put(DATA_PRODUCT_FIELD, new AttributeValue().withS("AZKABAN_" + DATA_PRODUCT));
@@ -67,7 +68,7 @@ class StatusServiceTest {
         verify(dynamoDB, times(1)).updateItem(statusCaptor.capture());
         verifyNoMoreInteractions(dynamoDB);
         UpdateItemRequest successRequest = statusCaptor.getValue();
-        assertEquals(METADATA_TABLE_NAME, successRequest.getTableName());
+        assertEquals(PIPELINE_METADATA_TABLE, successRequest.getTableName());
         assertEquals(requiredKey, successRequest.getKey());
         Map<String, AttributeValue> successValue = new HashMap<>();
         successValue.put(":status", new AttributeValue().withS(SUCCEEDED_STATUS));
@@ -80,7 +81,7 @@ class StatusServiceTest {
         verify(dynamoDB, times(1)).updateItem(failedStatusCaptor.capture());
         verifyNoMoreInteractions(dynamoDB);
         UpdateItemRequest failureRequest = failedStatusCaptor.getValue();
-        assertEquals(METADATA_TABLE_NAME, failureRequest.getTableName());
+        assertEquals(PIPELINE_METADATA_TABLE, failureRequest.getTableName());
         assertEquals(requiredKey, failureRequest.getKey());
         Map<String, AttributeValue> failureValue = new HashMap<>();
         failureValue.put(":status", new AttributeValue().withS(FAILED_STATUS));
@@ -92,5 +93,4 @@ class StatusServiceTest {
     private final static String SUCCEEDED_STATUS = "SUCCEEDED";
     private final static String FAILED_STATUS = "FAILED";
     private final static String CORRELATION_ID = "CORRELATION_ID";
-    private final static String METADATA_TABLE_NAME = "METADATA_TABLE_NAME";
 }

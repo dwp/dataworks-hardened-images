@@ -34,6 +34,7 @@ import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.CORRELATIO
 import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.DATA_PRODUCT_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.DATE_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.STATUS_FIELD;
+import static uk.gov.dwp.dataworks.azkaban.services.MetadataService.PIPELINE_METADATA_TABLE;
 
 class DependencyServiceTest {
 
@@ -56,7 +57,7 @@ class DependencyServiceTest {
         DataProductStatusService dataProductStatusService = mock(DataProductStatusService.class);
         when(dataProductStatusService.dependencySucceeded(successfulItem)).thenReturn(true);
         CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
-        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, METADATA_TABLE, EXPORT_DATE);
+        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, EXPORT_DATE);
         Optional<Map<String, AttributeValue>> successes = dependencyService.successfulDependency(PRODUCT_1);
         assertTrue(successes.isPresent());
         Map<String, AttributeValue> item = successes.get();
@@ -79,7 +80,7 @@ class DependencyServiceTest {
         DataProductStatusService dataProductStatusService = mock(DataProductStatusService.class);
         CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
         when(collectionStatusService.collectionsSucceeded(CORRELATION_ID_1, COLLECTION_1, COLLECTION_2)).thenReturn(true);
-        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, METADATA_TABLE, EXPORT_DATE);
+        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, EXPORT_DATE);
         Optional<Map<String, AttributeValue>> successes = dependencyService.successfulDependency(PRODUCT_1, COLLECTION_1, COLLECTION_2);
         assertTrue(successes.isPresent());
         Map<String, AttributeValue> item = successes.get();
@@ -105,7 +106,7 @@ class DependencyServiceTest {
         DataProductStatusService dataProductStatusService = mock(DataProductStatusService.class);
         when(dataProductStatusService.dependencySucceeded(failedItem)).thenReturn(false);
         CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
-        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, METADATA_TABLE, EXPORT_DATE);
+        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, EXPORT_DATE);
         Optional<Map<String, AttributeValue>> successes = dependencyService.successfulDependency(PRODUCT_1);
         assertFalse(successes.isPresent());
         verify(dataProductStatusService, times(1)).dependencySucceeded(failedItem);
@@ -125,7 +126,7 @@ class DependencyServiceTest {
         DataProductStatusService dataProductStatusService = mock(DataProductStatusService.class);
         CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
         when(collectionStatusService.collectionsSucceeded(CORRELATION_ID_1, COLLECTION_1, COLLECTION_2)).thenReturn(false);
-        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, METADATA_TABLE, EXPORT_DATE);
+        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, EXPORT_DATE);
         Optional<Map<String, AttributeValue>> successes = dependencyService.successfulDependency(PRODUCT_1, COLLECTION_1, COLLECTION_2);
         assertFalse(successes.isPresent());
         verify(collectionStatusService, times(1)).collectionsSucceeded(CORRELATION_ID_1, COLLECTION_1, COLLECTION_2);
@@ -147,7 +148,7 @@ class DependencyServiceTest {
         when(dynamoDB.scan(any())).thenReturn(scanResult);
         when(scanResult.getLastEvaluatedKey()).thenReturn(null);
 
-        GetItemRequest request = new GetItemRequest().withTableName(METADATA_TABLE).withKey(key);
+        GetItemRequest request = new GetItemRequest().withTableName(PIPELINE_METADATA_TABLE).withKey(key);
 
         GetItemResult result = mock(GetItemResult.class);
         when(result.getItem()).thenReturn(pendingItem).thenReturn(pendingItem).thenReturn(pendingItem)
@@ -155,7 +156,7 @@ class DependencyServiceTest {
         when(dynamoDB.getItem(request)).thenReturn(result);
         DataProductStatusService dataProductStatusService = mock(DataProductStatusService.class);
         CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
-        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, METADATA_TABLE, EXPORT_DATE);
+        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, EXPORT_DATE);
         ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
         executorService.schedule(dependencyService::cancel, 15, TimeUnit.MILLISECONDS);
         Future<Optional<Map<String, AttributeValue>>> future = executorService
@@ -185,8 +186,8 @@ class DependencyServiceTest {
         DataProductStatusService dataProductStatusService = mock(DataProductStatusService.class);
         when(dataProductStatusService.dependencySucceeded(successfulItem1)).thenReturn(true);
         CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
-        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, METADATA_TABLE, EXPORT_DATE);
-        Optional<Map<String, AttributeValue>> successes = dependencyService.successfulDependency(PRODUCT_1);
+        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, EXPORT_DATE);
+        dependencyService.successfulDependency(PRODUCT_1);
         verify(dynamoDB, times(4)).scan(any());
     }
 
@@ -206,7 +207,6 @@ class DependencyServiceTest {
         return successfulItem;
     }
 
-    private final static String METADATA_TABLE = "METADATA_TABLE";
     private final static String CORRELATION_ID_1 = "CORRELATION_ID_1";
     private final static String COLLECTION_1 = "COLLECTION_1";
     private final static String COLLECTION_2 = "COLLECTION_2";

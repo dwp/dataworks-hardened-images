@@ -23,16 +23,14 @@ public class DataProductStatusService extends CancellableLoggingService implemen
     private final static String SUCCESSFUL_COMPLETION_STATUS = "Completed";
     private final static String FAILED_COMPLETION_STATUS = "Failed";
     private final AmazonDynamoDB dynamoDb;
-    private final String metadataTableName;
     private final CountDownLatch dependentProductLatch = new CountDownLatch(1);
 
-    public DataProductStatusService(AmazonDynamoDB dynamoDB, final String metadataTableName) {
+    public DataProductStatusService(AmazonDynamoDB dynamoDB) {
         this.dynamoDb = dynamoDB;
-        this.metadataTableName = metadataTableName;
     }
 
     public Boolean dependencySucceeded(final Map<String, AttributeValue> item) {
-        return completedSuccessfully(metadataTableName, item).orElse(false);
+        return completedSuccessfully(item).orElse(false);
     }
 
     @Override
@@ -41,19 +39,19 @@ public class DataProductStatusService extends CancellableLoggingService implemen
         this.dependentProductLatch.countDown();
     }
 
-    private Optional<Boolean> completedSuccessfully(final String tableName, final Map<String, AttributeValue> item) {
+    private Optional<Boolean> completedSuccessfully(final Map<String, AttributeValue> item) {
         final ScheduledExecutorService timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
         final ScheduledExecutorService dependencyCheckExecutor = Executors.newSingleThreadScheduledExecutor();
         try {
             final AtomicBoolean succeeded = new AtomicBoolean(false);
-            dependencyCheckExecutor.scheduleWithFixedDelay(() -> checkDependency(tableName, item, succeeded), 0,
+            dependencyCheckExecutor.scheduleWithFixedDelay(() -> checkDependency(item, succeeded), 0,
                     pollIntervalMilliseconds(), TimeUnit.MILLISECONDS);
             timeoutExecutor
                     .schedule(dependentProductLatch::countDown, pollTimeoutMilliseconds(), TimeUnit.MILLISECONDS);
             dependentProductLatch.await();
             return Optional.of(succeeded.get());
         } catch (InterruptedException e) {
-            error("Failed to check dependency '" + tableName + "', item: '" + item + "'", e);
+            error("Failed to check dependency '" + PIPELINE_METADATA_TABLE + "', item: '" + item + "'", e);
             return Optional.empty();
         } finally {
             timeoutExecutor.shutdownNow();
@@ -62,11 +60,11 @@ public class DataProductStatusService extends CancellableLoggingService implemen
 
     }
 
-    private void checkDependency(final String tableName, final Map<String, AttributeValue> item,
+    private void checkDependency(final Map<String, AttributeValue> item,
             final AtomicBoolean succeeded) {
         try {
             info("Checking '" + itemString(item) + "'");
-            final GetItemRequest request = new GetItemRequest().withTableName(tableName).withKey(primaryKey(item));
+            final GetItemRequest request = new GetItemRequest().withTableName(PIPELINE_METADATA_TABLE).withKey(primaryKey(item));
             final GetItemResult result = dynamoDb.getItem(request);
             final String status = result.getItem().get(STATUS_FIELD).getS();
             info("Checked '" + itemString(item) + "', status is '" + status + "'.");
