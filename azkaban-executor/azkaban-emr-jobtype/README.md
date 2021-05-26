@@ -11,10 +11,18 @@ logs from the steps back to the console.
 ### High level operation
 
 The job must be provided with the dependencies that need to have completed before the
-cluster can be launched. The job first polls the pipeline metadata table until the 
-dependencies have finished or until a timeout occurs. Only if the dependencies finish
-successfully within the timeout period does the job invoke the lambda which 
-launches the cluster.
+cluster can be launched. 
+
+The dependencies are either the name of a product that must have completed in its entirety
+before the EMR can be launched or the name of a product and a list of collections. When a 
+list of collection is supplied the job only has to wait for the subset of data described by the 
+collections to be ready before launching the EMR.
+
+The job first polls the pipeline metadata table (in the case of a product being supplied 
+as the dependency) or the `UCExportToCrownStatus` table (in the case of a product and a 
+list of collections being supplied) until the dependencies have finished or until a timeout 
+occurs. Only if the dependencies finish successfully within the timeout period does the job 
+invoke the lambda which launches the cluster.
 
 Assuming the dependencies do complete successfully, the cluster-launching-lambda 
 is invoked, the lambda is supplied with the data from the pipeline metadata 
@@ -61,3 +69,18 @@ application's run configuration in your IDE:
 |--------------------------------|----------------------------------------|
 | `AWS_USE_DEVELOPMENT_REMOTELY` | Set to `true` to enable local running. |
 | `AWS_ASSUMED_ROLE`             | Set to the arn of the role that the app should assume - i.e. the development administrator role, e.g. `arn:aws:iam:000000000000:role/administrator` |
+
+### A note on step logs
+
+In order to display the logs for a step on the azkaban console the plugin must be able to determine which log 
+streams in which log group to fetch log events from.
+
+The log group must be supplied in the job config. The plugin will then get a list of all log streams in that group. The 
+plugin reduces this list of log streams to those whose names contain an instance id of any instance in the currently 
+running cluster (thus removing dead log streams from instances in terminated clusters).
+
+It then further reduces the list of log streams to those that contain the name of the currently running step, this 
+should yield a single log stream and it is that log stream whose events are returned.
+
+This strategy may not work for every single job that is to be run by the plugin in which case additional strategies will 
+have to be added and used where appropriate. 
