@@ -104,46 +104,52 @@ while IFS='=' read -r prop val; do
   printf '%s\n' "$prop=$val"
 done < /azkaban-exec-server/conf/azkaban.properties > file.tmp && mv file.tmp /azkaban-exec-server/conf/azkaban.properties
 
+construct_users() {
+
+    CREDS=$(aws sts assume-role --endpoint-url "https://sts.eu-west-2.amazonaws.com" --role-arn "$COGNITO_ROLE_ARN" --role-session-name EMR_Get_Users | jq .Credentials)
+    export AWS_ACCESS_KEY_ID=$(echo "$CREDS" | jq -r .AccessKeyId)
+    export AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | jq -r .SecretAccessKey)
+    export AWS_SESSION_TOKEN=$(echo "$CREDS" | jq -r .SessionToken)
+
+    echo "INFO: Fetching groups from cognito"
+
+    COGNITO_GROUPS=$(aws cognito-idp list-groups --user-pool-id $USER_POOL_ID | jq -r .Groups[].GroupName)
+
+    echo "INFO: Adding users onto container"
+
+    for GROUP in $COGNITO_GROUPS;
+    do
+      echo "Creating group $GROUP"
+      addgroup "$GROUP"
+
+      echo "Adding users for group $GROUP"
+      USERS=$(aws cognito-idp list-users-in-group --user-pool-id "$USER_POOL_ID" --group-name "$GROUP" | jq '.Users[]' | jq -r '(.Attributes[] | if .Name =="preferred_username" then .Value else empty end) // .Username')
+      USERDIR=$(aws cognito-idp list-users --user-pool-id "$USER_POOL_ID")
+
+      for USER in $USERS;
+      do
+        USERNAME=$(echo "$USERDIR" \
+                | jq ".Users[] as \$u | if ( (\$u.Attributes[] | if .Name ==\"preferred_username\" then .Value else empty end) // \$u.Username) == \"$USER\" then \$u else empty end " \
+                | jq -r ".Attributes[] | if .Name == \"sub\" then \"$USER\" + (.Value | match(\"...\").string) else empty end")
+
+        echo "Creating user $USERNAME"
+        if id "$USERNAME" &>/dev/null; then
+            echo "User already exists, skipping."
+        else
+            adduser "$USERNAME" -DH
+        fi
+
+        echo "Adding user $USERNAME to group $GROUP"
+        addgroup "$USERNAME" "$GROUP"
+
+      done
+    done
+
+}
+
 echo "INFO: Assuming role to read from cognito"
 
-CREDS=$(aws sts assume-role --endpoint-url "https://sts.eu-west-2.amazonaws.com" --role-arn "$COGNITO_ROLE_ARN" --role-session-name EMR_Get_Users | jq .Credentials)
-export AWS_ACCESS_KEY_ID=$(echo "$CREDS" | jq -r .AccessKeyId)
-export AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | jq -r .SecretAccessKey)
-export AWS_SESSION_TOKEN=$(echo "$CREDS" | jq -r .SessionToken)
-
-echo "INFO: Fetching groups from cognito"
-
-COGNITO_GROUPS=$(aws cognito-idp list-groups --user-pool-id $USER_POOL_ID | jq -r .Groups[].GroupName)
-
-echo "INFO: Adding users onto container"
-
-for GROUP in $COGNITO_GROUPS; 
-do
-  echo "Creating group $GROUP"
-  addgroup $GROUP
-
-  echo "Adding users for group $GROUP"
-  USERS=$(aws cognito-idp list-users-in-group --user-pool-id "$USER_POOL_ID" --group-name "$GROUP" | jq '.Users[]' | jq -r '(.Attributes[] | if .Name =="preferred_username" then .Value else empty end) // .Username')
-  USERDIR=$(aws cognito-idp list-users --user-pool-id "$USER_POOL_ID")
-
-  for USER in $USERS;
-  do
-    USERNAME=$(echo $USERDIR \
-            | jq ".Users[] as \$u | if ( (\$u.Attributes[] | if .Name ==\"preferred_username\" then .Value else empty end) // \$u.Username) == \"$USER\" then \$u else empty end " \
-            | jq -r ".Attributes[] | if .Name == \"sub\" then \"$USER\" + (.Value | match(\"...\").string) else empty end")
-
-    echo "Creating user $USERNAME"
-    if id "$USERNAME" &>/dev/null; then
-        echo "User already exists, skipping."
-    else
-        adduser $USERNAME -DH
-    fi
-
-    echo "Adding user $USERNAME to group $GROUP"
-    addgroup $USERNAME $GROUP
-
-  done
-done
+construct_users || true
 
 unset AWS_ACCESS_KEY_ID
 unset AWS_SECRET_ACCESS_KEY
