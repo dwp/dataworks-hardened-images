@@ -33,6 +33,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
     public static final String AWS_LOG_GROUP_PARAMETER_NAME = "aws.log.group.name";
     public static final String CLUSTER_PARAMETER_NAME = "cluster.name";
     public static final String TOPIC_PARAMETER_NAME = "notification.topic.name";
+    public static final String SKIP_NOTIFICATIONS_PARAMETER_NAME = "skip.notifications";
 
     private EmrLaunchAndMonitoringService _service;
 
@@ -69,6 +70,10 @@ public class EmrLauncherJob extends AbstractProcessJob {
         return jobProps.getString(COLLECTION_DEPENDENCIES_PARAMETER_NAME, "").split(",");
     }
 
+    private boolean skipNotifications() {
+        return jobProps.getString(SKIP_NOTIFICATIONS_PARAMETER_NAME, "false").lowercase() == "true";
+    }
+
     private synchronized EmrLaunchAndMonitoringService service() {
         if (_service == null) {
             AmazonDynamoDB dynamoDB = ClientUtility.amazonDynamoDb(awsRegion());
@@ -96,7 +101,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
             emrProgressService.setParent(this);
             NotificationService notificationService = new NotificationService(ClientUtility.amazonSNS(awsRegion()),
                     this.getJobProps().getString(TOPIC_PARAMETER_NAME, "Monitoring"),
-                    jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME));
+                    jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME), skipNotifications());
 
             this._service = new EmrLaunchAndMonitoringService(dependencyService, launchInvocationService,
                     emrProgressService, notificationService, statusService, emr);

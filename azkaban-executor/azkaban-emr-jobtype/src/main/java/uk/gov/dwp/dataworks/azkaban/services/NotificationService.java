@@ -13,20 +13,26 @@ public class NotificationService {
     private final AmazonSNS sns;
     private final String clusterName;
     private final Topic topic;
+    private final boolean skipNotifications;
 
-    public NotificationService(AmazonSNS sns, String topicName, String clusterName) {
+    public NotificationService(AmazonSNS sns, String topicName, String clusterName, boolean skipNotifications) {
         this.sns = sns;
         this.topic = SnsUtility.topicWithName(sns, topicName).orElseThrow(
                 () -> new RuntimeException("Could not find configured SNS topic: '" + topicName + "'"));
         this.clusterName = clusterName;
+        this.skipNotifications = skipNotifications;
     }
 
     public void notifyStarted() {
-        sendNotification(payload("Medium", "Information", "started"));
+        if (!skipNotifications) {
+            sendNotification(payload("Medium", "Information", "started"));
+        }
     }
 
     public void notifySucceeded() {
-        sendNotification(payload("Medium", "Information", "succeeded"));
+        if (!skipNotifications) {
+            sendNotification(payload("Medium", "Information", "succeeded"));
+        }
     }
 
     public void notifyFailed() {
