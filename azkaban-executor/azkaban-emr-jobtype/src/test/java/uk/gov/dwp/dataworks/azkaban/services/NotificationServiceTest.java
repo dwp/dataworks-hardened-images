@@ -45,7 +45,7 @@ class NotificationServiceTest {
         AmazonSNS sns = sns(true);
         NotificationService service = new NotificationService(sns, MATCHING_TOPIC_NAME, CLUSTER_NAME, true);
         service.notifyStarted();
-        verifyZeroInteractions(sns);
+        verify(sns, times(0)).publish(any(), any());
     }
 
     @Test
@@ -53,7 +53,7 @@ class NotificationServiceTest {
         AmazonSNS sns = sns(true);
         NotificationService service = new NotificationService(sns, MATCHING_TOPIC_NAME, CLUSTER_NAME, true);
         service.notifySucceeded();
-        verifyZeroInteractions(sns);
+        verify(sns, times(0)).publish(any(), any());
     }
 
     @Test
