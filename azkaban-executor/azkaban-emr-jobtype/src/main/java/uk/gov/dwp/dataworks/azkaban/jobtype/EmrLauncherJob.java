@@ -71,7 +71,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
     }
 
     private boolean skipNotifications() {
-        return jobProps.getString(SKIP_NOTIFICATIONS_PARAMETER_NAME, "false").lowercase() == "true";
+        return jobProps.getString(SKIP_NOTIFICATIONS_PARAMETER_NAME, "false").toLowerCase() == "true";
     }
 
     private synchronized EmrLaunchAndMonitoringService service() {
