@@ -26,7 +26,7 @@ class NotificationServiceTest {
     @Test
     public void shouldFindTopicAndNotifyStarted() {
         AmazonSNS sns = sns(true);
-        NotificationService service = new NotificationService(sns, MATCHING_TOPIC_NAME, CLUSTER_NAME);
+        NotificationService service = new NotificationService(sns, MATCHING_TOPIC_NAME, CLUSTER_NAME, false);
         service.notifyStarted();
         verifySnsInteractions(sns, "started");
     }
@@ -34,16 +34,32 @@ class NotificationServiceTest {
     @Test
     public void shouldFindTopicAndNotifySuccess() {
         AmazonSNS sns = sns(true);
-        NotificationService service = new NotificationService(sns, MATCHING_TOPIC_NAME, CLUSTER_NAME);
+        NotificationService service = new NotificationService(sns, MATCHING_TOPIC_NAME, CLUSTER_NAME, false);
         service.notifySucceeded();
         verifySnsInteractions(sns, "succeeded");
     }
 
     @Test
-    public void shouldFindTopicAndNotifyFailure() {
+    public void shouldFindTopicAndNotNotifyStartedIfSkippingNotifications() {
+        AmazonSNS sns = sns(true);
+        NotificationService service = new NotificationService(sns, MATCHING_TOPIC_NAME, CLUSTER_NAME, true);
+        service.notifyStarted();
+        verify(sns, times(0)).publish(any(), any());
+    }
+
+    @Test
+    public void shouldFindTopicAndNotNotifySuccessIfSkippingNotifications() {
+        AmazonSNS sns = sns(true);
+        NotificationService service = new NotificationService(sns, MATCHING_TOPIC_NAME, CLUSTER_NAME, true);
+        service.notifySucceeded();
+        verify(sns, times(0)).publish(any(), any());
+    }
+
+    @Test
+    public void shouldFindTopicAndNotifyFailureIfSkippingNotifications() {
         AmazonSNS sns = sns(true);
         AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
-        NotificationService service = new NotificationService(sns, MATCHING_TOPIC_NAME, CLUSTER_NAME);
+        NotificationService service = new NotificationService(sns, MATCHING_TOPIC_NAME, CLUSTER_NAME, true);
         service.notifyFailed();
         verifySnsInteractions(sns, "failed");
     }
@@ -52,7 +68,7 @@ class NotificationServiceTest {
     public void shouldThrowExceptionIfNoMatchingTopicFound() {
         AmazonSNS sns = sns(false);
         RuntimeException e = assertThrows(RuntimeException.class,
-                () -> new NotificationService(sns, NON_MATCHING_TOPIC_NAME, CLUSTER_NAME));
+                () -> new NotificationService(sns, NON_MATCHING_TOPIC_NAME, CLUSTER_NAME, false));
         assertEquals("Could not find configured SNS topic: '" + NON_MATCHING_TOPIC_NAME + "'", e.getMessage());
     }
 
