@@ -40,8 +40,8 @@ class DependencyServiceTest {
 
     @BeforeAll
     static void beforeAll() {
-        System.setProperty("poll.timeout.milliseconds", "1000");
-        System.setProperty("poll.interval.milliseconds", "10");
+        System.setProperty("dependency.status.poll.timeout.milliseconds", "1000");
+        System.setProperty("dependency.status.poll.interval.milliseconds", "10");
     }
 
     @Test
@@ -90,6 +90,33 @@ class DependencyServiceTest {
         verifyNoInteractions(dataProductStatusService);
     }
 
+
+    @Test
+    public void shouldAwaitAppearanceOfItem() {
+        AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
+        ScanResult emptyScanResult = mock(ScanResult.class);
+        ScanResult scanResult = mock(ScanResult.class);
+        List<Map<String, AttributeValue>> emptyItems = new ArrayList<>();
+        List<Map<String, AttributeValue>> items = new ArrayList<>();
+        Map<String, AttributeValue> successfulItem = tableItem(CORRELATION_ID_1, STATUS_COMPLETED);
+        items.add(successfulItem);
+        when(scanResult.getItems()).thenReturn(items);
+        when(emptyScanResult.getItems()).thenReturn(emptyItems);
+        when(dynamoDB.scan(any())).thenReturn(emptyScanResult, scanResult, scanResult);
+        when(emptyScanResult.getLastEvaluatedKey()).thenReturn(null);
+        when(scanResult.getLastEvaluatedKey()).thenReturn(null);
+        DataProductStatusService dataProductStatusService = mock(DataProductStatusService.class);
+        CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
+        when(collectionStatusService.collectionsSucceeded(CORRELATION_ID_1, COLLECTION_1, COLLECTION_2)).thenReturn(true);
+        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, EXPORT_DATE);
+        Optional<Map<String, AttributeValue>> successes = dependencyService.successfulDependency(PRODUCT_1, COLLECTION_1, COLLECTION_2);
+        assertTrue(successes.isPresent());
+        Map<String, AttributeValue> item = successes.get();
+        assertEquals(successfulItem, item);
+        verify(collectionStatusService, times(1)).collectionsSucceeded(CORRELATION_ID_1, COLLECTION_1, COLLECTION_2);
+        verifyNoMoreInteractions(collectionStatusService);
+        verifyNoInteractions(dataProductStatusService);
+    }
 
     @Test
     public void shouldNotReturnFailedDataProductItem() {
@@ -188,7 +215,7 @@ class DependencyServiceTest {
         CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
         DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, EXPORT_DATE);
         dependencyService.successfulDependency(PRODUCT_1);
-        verify(dynamoDB, times(4)).scan(any());
+        verify(dynamoDB, times(6)).scan(any());
     }
 
     private Map<String, AttributeValue> itemKey() {

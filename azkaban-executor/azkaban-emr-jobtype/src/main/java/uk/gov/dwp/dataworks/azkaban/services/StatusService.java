@@ -75,17 +75,23 @@ public class StatusService implements MetadataService {
     }
 
     private void registerStatus(String status) {
-        Map<String, AttributeValue> key = recordIdentifier();
+        try {
+            if (correlationId != null) {
+                Map<String, AttributeValue> key = recordIdentifier();
 
-        Map<String, String> names = new HashMap<>();
-        names.put("#status_field", STATUS_FIELD);
-        Map<String, AttributeValue> values = new HashMap<>();
-        values.put(":status", new AttributeValue().withS(status));
-        UpdateItemRequest request = new UpdateItemRequest().withTableName(PIPELINE_METADATA_TABLE).withKey(key)
-                                                           .withUpdateExpression("set #status_field = :status")
-                                                           .withExpressionAttributeNames(names)
-                                                           .withExpressionAttributeValues(values);
-        dynamoDb.updateItem(request);
+                Map<String, String> names = new HashMap<>();
+                names.put("#status_field", STATUS_FIELD);
+                Map<String, AttributeValue> values = new HashMap<>();
+                values.put(":status", new AttributeValue().withS(status));
+                UpdateItemRequest request = new UpdateItemRequest().withTableName(PIPELINE_METADATA_TABLE).withKey(key)
+                                                                   .withUpdateExpression("set #status_field = :status")
+                                                                   .withExpressionAttributeNames(names)
+                                                                   .withExpressionAttributeValues(values);
+                dynamoDb.updateItem(request);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private Map<String, AttributeValue> recordIdentifier() {
