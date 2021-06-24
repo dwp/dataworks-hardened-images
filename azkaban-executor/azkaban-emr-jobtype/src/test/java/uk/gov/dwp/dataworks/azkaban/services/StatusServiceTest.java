@@ -18,6 +18,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static uk.gov.dwp.dataworks.azkaban.services.MetadataService.CORRELATION_ID_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.MetadataService.DATA_PRODUCT_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.MetadataService.PIPELINE_METADATA_TABLE;
@@ -86,6 +87,14 @@ class StatusServiceTest {
         Map<String, AttributeValue> failureValue = new HashMap<>();
         failureValue.put(":status", new AttributeValue().withS(FAILED_STATUS));
         assertEquals(failureValue, failureRequest.getExpressionAttributeValues());
+    }
+
+    @Test
+    public void shouldNotUpdateIfNoCorrelationId() {
+        AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
+        StatusService statusService = new StatusService(dynamoDB, DATA_PRODUCT);
+        statusService.registerFailure();
+        verifyNoMoreInteractions(dynamoDB);
     }
 
     private final static String DATA_PRODUCT = "DATA_PRODUCT";
