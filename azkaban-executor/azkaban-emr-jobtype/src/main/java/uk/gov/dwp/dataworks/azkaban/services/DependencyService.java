@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -49,6 +52,25 @@ public class DependencyService extends CancellableLoggingService implements Meta
     }
 
     private Optional<Map<String, AttributeValue>> dependencyMetadata(final String product) {
+        final ScheduledExecutorService dependencyCheckExecutor = Executors.newSingleThreadScheduledExecutor();
+        try {
+            CountDownLatch latch = new CountDownLatch(1);
+            dependencyCheckExecutor.scheduleWithFixedDelay(() -> metadataPoll(product, latch), 0, pollIntervalMilliseconds(), TimeUnit.MILLISECONDS);
+            latch.await();
+            return metadataEntry(product);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return Optional.empty();
+        } finally {
+            dependencyCheckExecutor.shutdownNow();
+        }
+    }
+
+    private void metadataPoll(final String product, CountDownLatch latch) {
+        metadataEntry(product).ifPresent(x -> latch.countDown());
+    }
+
+    private Optional<Map<String, AttributeValue>> metadataEntry(final String product) {
         final List<Map<String, AttributeValue>> results = new ArrayList<>();
         Map<String, AttributeValue> lastKeyEvaluatedKey = null;
         do {
@@ -59,6 +81,7 @@ public class DependencyService extends CancellableLoggingService implements Meta
         }
         while (lastKeyEvaluatedKey != null);
 
+        info("Scan for '" + product + "' returned '" + results.size() + "' results");
         return results.size() > 0 ? Optional.of(results.get(0)) : Optional.empty();
     }
 
@@ -81,6 +104,10 @@ public class DependencyService extends CancellableLoggingService implements Meta
         nameMap.put("#export_date", DATE_FIELD);
         nameMap.put("#product", DATA_PRODUCT_FIELD);
         return nameMap;
+    }
+
+    private static int pollIntervalMilliseconds() {
+        return Integer.parseInt(System.getProperty("dependency.status.poll.interval.milliseconds", "10000"));
     }
 
     @Override
