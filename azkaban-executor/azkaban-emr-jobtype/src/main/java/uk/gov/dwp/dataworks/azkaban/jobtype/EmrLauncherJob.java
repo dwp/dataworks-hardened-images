@@ -16,37 +16,35 @@ import uk.gov.dwp.dataworks.azkaban.services.LogService;
 import uk.gov.dwp.dataworks.azkaban.services.NotificationService;
 import uk.gov.dwp.dataworks.azkaban.services.StatusService;
 import uk.gov.dwp.dataworks.azkaban.utility.ClientUtility;
+import uk.gov.dwp.dataworks.azkaban.utility.PropertyUtility;
 
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class EmrLauncherJob extends AbstractProcessJob {
 
     public final static String JOB_DEPENDENCIES_PARAMETER_NAME = "job.dependencies";
-    public final static String COLLECTION_DEPENDENCIES_PARAMETER_NAME = "collection.dependencies";
-    public final static String EXPORT_DATE_PARAMETER_NAME = "export.date";
     public final static String EMR_LAUNCHER_LAMBDA_PARAMETER_NAME = "emr.launcher.lambda";
     public final static String DATA_PRODUCT_NAME = "data.product";
     public static final String AWS_LOG_GROUP_PARAMETER_NAME = "aws.log.group.name";
     public static final String CLUSTER_PARAMETER_NAME = "cluster.name";
     public static final String TOPIC_PARAMETER_NAME = "notification.topic.name";
-    public static final String SKIP_NOTIFICATIONS_PARAMETER_NAME = "skip.notifications";
+    private final PropertyUtility propertyUtility;
 
     private EmrLaunchAndMonitoringService _service;
 
     public EmrLauncherJob(final String jobId, final Props sysProps, final Props jobProps, final Logger log) {
         super(jobId, sysProps, jobProps, log);
+        this.propertyUtility = new PropertyUtility(jobProps);
     }
 
     @Override
     public void run() throws Exception {
-        List<String> collections = Arrays.stream(collectionDependencies()).filter(s -> s.length() > 0).collect(Collectors.toList());
+        List<String> collections = propertyUtility.collectionDependencies();
         boolean successful = collections.size() > 0 ?
-                    service().launchClusterAndWaitForStepCompletion(dependency(), collections.toArray(new String[0]))
-                    : service().launchClusterAndWaitForStepCompletion(dependency());
+                service().launchClusterAndWaitForStepCompletion(dependency(), collections.toArray(new String[0])) :
+                service().launchClusterAndWaitForStepCompletion(dependency());
 
         if (!successful) {
             throw new Exception("Job failed");
@@ -58,20 +56,8 @@ public class EmrLauncherJob extends AbstractProcessJob {
         service().cancel();
     }
 
-    private String exportDate() {
-        return jobProps.getString(EXPORT_DATE_PARAMETER_NAME, new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
-    }
-
     private String dependency() {
         return jobProps.getString(JOB_DEPENDENCIES_PARAMETER_NAME);
-    }
-
-    private String[] collectionDependencies() {
-        return jobProps.getString(COLLECTION_DEPENDENCIES_PARAMETER_NAME, "").split(",");
-    }
-
-    private boolean skipNotifications() {
-        return jobProps.getString(SKIP_NOTIFICATIONS_PARAMETER_NAME, "false").toLowerCase() == "true";
     }
 
     private synchronized EmrLaunchAndMonitoringService service() {
@@ -85,7 +71,8 @@ public class EmrLauncherJob extends AbstractProcessJob {
 
             CollectionStatusService collectionStatusService = new CollectionStatusService(dynamoDB);
             collectionStatusService.setParent(this);
-            DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, exportDate());
+            DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService,
+                    collectionStatusService, propertyUtility.exportDate());
             dependencyService.setParent(this);
 
             StatusService statusService = new StatusService(dynamoDB, dataProduct);
@@ -101,7 +88,7 @@ public class EmrLauncherJob extends AbstractProcessJob {
             emrProgressService.setParent(this);
             NotificationService notificationService = new NotificationService(ClientUtility.amazonSNS(awsRegion()),
                     this.getJobProps().getString(TOPIC_PARAMETER_NAME, "Monitoring"),
-                    jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME), skipNotifications());
+                    jobProps.getString(EMR_LAUNCHER_LAMBDA_PARAMETER_NAME), propertyUtility.skipNotifications());
 
             this._service = new EmrLaunchAndMonitoringService(dependencyService, launchInvocationService,
                     emrProgressService, notificationService, statusService, emr);
