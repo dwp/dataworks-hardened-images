@@ -6,3 +6,4 @@ build/
 .gradle/
 local/
 .dcignore
+.jqwik-database
