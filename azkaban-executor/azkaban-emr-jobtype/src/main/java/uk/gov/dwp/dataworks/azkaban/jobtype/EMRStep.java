@@ -12,19 +12,7 @@ import azkaban.utils.Utils;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClientBuilder;
-import com.amazonaws.services.elasticmapreduce.model.AddJobFlowStepsRequest;
-import com.amazonaws.services.elasticmapreduce.model.AddJobFlowStepsResult;
-import com.amazonaws.services.elasticmapreduce.model.CancelStepsRequest;
-import com.amazonaws.services.elasticmapreduce.model.CancelStepsResult;
-import com.amazonaws.services.elasticmapreduce.model.ClusterSummary;
-import com.amazonaws.services.elasticmapreduce.model.DescribeClusterRequest;
-import com.amazonaws.services.elasticmapreduce.model.DescribeClusterResult;
-import com.amazonaws.services.elasticmapreduce.model.ListStepsRequest;
-import com.amazonaws.services.elasticmapreduce.model.ListStepsResult;
-import com.amazonaws.services.elasticmapreduce.model.ModifyClusterRequest;
-import com.amazonaws.services.elasticmapreduce.model.ModifyClusterResult;
-import com.amazonaws.services.elasticmapreduce.model.StepConfig;
-import com.amazonaws.services.elasticmapreduce.model.StepSummary;
+import com.amazonaws.services.elasticmapreduce.model.*;
 import com.amazonaws.services.elasticmapreduce.util.StepFactory;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
@@ -46,13 +34,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_GROUP_NAME;
@@ -70,6 +52,7 @@ public class EMRStep extends AbstractProcessJob {
     public static final String AWS_EMR_CLUSTER_CONFIG = "aws.emr.cluster.config";
     public static final String AWS_EMR_STEP_SCRIPT = "aws.emr.step.script";
     public static final String AWS_EMR_STEP_NAME = "aws.emr.step.name";
+    public static final String AWS_EMR_COPY_SECCONFIG = "aws.emr.copy.secconfig";
     public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
     public static final String AWS_LOG_GROUP_NAME = "aws.log.group.name";
     public static final String AWS_REGION = "aws.region";
@@ -310,6 +293,9 @@ public class EMRStep extends AbstractProcessJob {
         int maxAttempts = this.getSysProps().getInt(BOOT_POLL_ATTEMPTS_MAX, BOOT_POLL_ATTEMPTS_MAX_DEFAULT);
         String clusterName = this.getJobProps()
                                  .getString(AWS_EMR_CLUSTER_NAME, this.getSysProps().getString(AWS_EMR_CLUSTER_NAME));
+        boolean copyConfig = this.getJobProps().getBoolean(AWS_EMR_COPY_SECCONFIG,
+                this.getSysProps().getBoolean(AWS_EMR_COPY_SECCONFIG, false));
+
         String clusterConfig = this.getJobProps().getString(AWS_EMR_CLUSTER_CONFIG, null);
         info("Looking for cluster named '" + clusterName + "'.");
         while (!killed && clusterId == null && maxAttempts > 0) {
@@ -326,6 +312,7 @@ public class EMRStep extends AbstractProcessJob {
             if (clusterId == null && !invokedLambda) {
                 info("No active cluster named: '" + clusterName + "', starting one up.");
                 EMRConfiguration batchConfig = EMRConfiguration.builder().withName(clusterName)
+                                                               .withCopySecurityConfiguration(copyConfig)
                                                                .withS3Overrides(clusterConfig).build();
 
                 String payload = "{}";

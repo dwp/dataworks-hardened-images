@@ -44,4 +44,24 @@ class EMRConfigurationTest {
         JsonAssertions.assertThatJson(event)
                 .isEqualTo("{\"overrides\":{\"Name\":\"test_name\"}}");
     }
+
+    @Test
+    public void hasCorrectJsonStructureForCopyingSecurityConfiguration() throws IOException {
+        EMRConfiguration test = EMRConfiguration.builder().withName("test_name").
+                withCopySecurityConfiguration(true).build();
+        ObjectMapper mapper = new ObjectMapper();
+        String event = mapper.writeValueAsString(test);
+
+        assertEquals("{'overrides':{'Name':'test_name'},'copy_secconfig':true}".replaceAll("'", "\""), event);
+    }
+
+    @Test
+    public void hasCorrectJsonStructureForNotCopyingSecurityConfiguration() throws IOException {
+        EMRConfiguration test = EMRConfiguration.builder().withName("test_name").
+                withCopySecurityConfiguration(false).build();
+        ObjectMapper mapper = new ObjectMapper();
+        String event = mapper.writeValueAsString(test);
+
+        assertEquals("{'overrides':{'Name':'test_name'}}".replaceAll("'", "\""), event);
+    }
 }
