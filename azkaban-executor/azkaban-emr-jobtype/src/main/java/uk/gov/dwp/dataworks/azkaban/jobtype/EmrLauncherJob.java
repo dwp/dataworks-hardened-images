@@ -18,9 +18,7 @@ import uk.gov.dwp.dataworks.azkaban.services.StatusService;
 import uk.gov.dwp.dataworks.azkaban.utility.ClientUtility;
 import uk.gov.dwp.dataworks.azkaban.utility.PropertyUtility;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class EmrLauncherJob extends AbstractProcessJob {
 
@@ -40,14 +38,12 @@ public class EmrLauncherJob extends AbstractProcessJob {
     }
 
     @Override
-    public void run() throws Exception {
+    public void run() {
         List<String> collections = propertyUtility.collectionDependencies();
-        boolean successful = collections.size() > 0 ?
-                service().launchClusterAndWaitForStepCompletion(dependency(), collections.toArray(new String[0])) :
-                service().launchClusterAndWaitForStepCompletion(dependency());
-
-        if (!successful) {
-            throw new Exception("Job failed");
+        if (collections.size() > 0) {
+            service().launchClusterAndWaitForStepCompletion(dependency(), collections.toArray(new String[0]));
+        } else {
+            service().launchClusterAndWaitForStepCompletion(dependency());
         }
     }
 
