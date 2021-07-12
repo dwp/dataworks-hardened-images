@@ -27,7 +27,7 @@ public class DependencyService extends CancellableLoggingService implements Meta
     private final String exportDate;
     private final AmazonDynamoDB dynamoDb;
     private final AtomicBoolean proceed = new AtomicBoolean(true);
-    private final CountDownLatch dependentProductLatch = new CountDownLatch(1);
+    private CountDownLatch metadataLatch = new CountDownLatch(1);
     private final CollectionStatusService collectionStatusService;
     private final DataProductStatusService dataProductStatusService;
 
@@ -54,9 +54,9 @@ public class DependencyService extends CancellableLoggingService implements Meta
     private Optional<Map<String, AttributeValue>> dependencyMetadata(final String product) {
         final ScheduledExecutorService dependencyCheckExecutor = Executors.newSingleThreadScheduledExecutor();
         try {
-            CountDownLatch latch = new CountDownLatch(1);
-            dependencyCheckExecutor.scheduleWithFixedDelay(() -> metadataPoll(product, latch), 0, pollIntervalMilliseconds(), TimeUnit.MILLISECONDS);
-            latch.await();
+            metadataLatch = new CountDownLatch(1);
+            dependencyCheckExecutor.scheduleWithFixedDelay(() -> metadataPoll(product, metadataLatch), 0, pollIntervalMilliseconds(), TimeUnit.MILLISECONDS);
+            metadataLatch.await();
             return metadataEntry(product);
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -113,6 +113,8 @@ public class DependencyService extends CancellableLoggingService implements Meta
     @Override
     public void cancel() {
         super.cancel();
-        this.dependentProductLatch.countDown();
+        this.dataProductStatusService.cancel();
+        this.collectionStatusService.cancel();
+        this.metadataLatch.countDown();
     }
 }

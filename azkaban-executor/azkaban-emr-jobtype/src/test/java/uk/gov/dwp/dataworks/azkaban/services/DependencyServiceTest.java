@@ -218,6 +218,17 @@ class DependencyServiceTest {
         verify(dynamoDB, times(6)).scan(any());
     }
 
+    @Test
+    public void shouldCancelDelegates() {
+        AmazonDynamoDB dynamoDB = mock(AmazonDynamoDB.class);
+        DataProductStatusService dataProductStatusService = mock(DataProductStatusService.class);
+        CollectionStatusService collectionStatusService = mock(CollectionStatusService.class);
+        DependencyService dependencyService = new DependencyService(dynamoDB, dataProductStatusService, collectionStatusService, EXPORT_DATE);
+        dependencyService.cancel();
+        verify(dataProductStatusService, times(1)).cancel();
+        verify(collectionStatusService, times(1)).cancel();
+    }
+
     private Map<String, AttributeValue> itemKey() {
         Map<String, AttributeValue> successfulKey = new HashMap<>();
         successfulKey.put(CORRELATION_ID_FIELD, new AttributeValue().withS(CORRELATION_ID_1));
