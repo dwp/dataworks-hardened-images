@@ -524,7 +524,7 @@ public class EMRStep extends AbstractProcessJob {
                 current_state = clusterDetails.getCluster().getStatus().getState()
                 info("Waiting for state WAITING...current state is " + current_state);
 
-                if (current_state.equals("TERMINATED") {
+                if (current_state.equals("TERMINATED")) {
                     info("Exiting with error as current state is " + current_state);
                     throw new RuntimeException("Cluster has been terminated");
                 }
