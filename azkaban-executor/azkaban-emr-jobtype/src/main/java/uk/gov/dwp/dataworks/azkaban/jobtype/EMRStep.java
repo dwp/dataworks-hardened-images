@@ -529,6 +529,11 @@ public class EMRStep extends AbstractProcessJob {
                     throw new RuntimeException("Cluster has been terminated");
                 }
 
+                if (killed) {
+                    info("Stopping waiting for cluster configuration to complete due to job being killed");
+                    return;
+                }
+
                 try {
                     Thread.sleep(POLL_INTERVAL);
                 } catch (Exception e) {
