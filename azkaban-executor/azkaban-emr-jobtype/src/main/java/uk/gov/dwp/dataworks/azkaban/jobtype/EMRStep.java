@@ -542,7 +542,7 @@ public class EMRStep extends AbstractProcessJob {
                 clusterDetails = emr.describeCluster(new DescribeClusterRequest().withClusterId(clusterId));
             }
 
-            if (clusterDetails.getCluster().getStepConcurrencyLevel() != MAX_STEPS) {
+            if (!killed && clusterDetails.getCluster().getStepConcurrencyLevel() != MAX_STEPS) {
                 ModifyClusterResult modifyResult = emr.modifyCluster(
                         new ModifyClusterRequest().withClusterId(clusterId).withStepConcurrencyLevel(MAX_STEPS));
                 // Add additional setup here.
