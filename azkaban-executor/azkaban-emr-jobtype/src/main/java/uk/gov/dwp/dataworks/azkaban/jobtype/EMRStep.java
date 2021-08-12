@@ -513,7 +513,7 @@ public class EMRStep extends AbstractProcessJob {
         return Utils.ifNull(this.getJobPath(), "");
     }
 
-    private void configureCluster(AmazonElasticMapReduce emr, String clusterId) {
+    private void configureCluster(AmazonElasticMapReduce emr, String clusterId) throws RuntimeException {
         DescribeClusterResult clusterDetails = emr
                 .describeCluster(new DescribeClusterRequest().withClusterId(clusterId));
         if (clusterDetails.getCluster().getStepConcurrencyLevel() != MAX_STEPS) {
@@ -521,8 +521,19 @@ public class EMRStep extends AbstractProcessJob {
             // We may still be initializing, so wait until we are waiting for steps.
             // Potentially maybe other executors listening, so check step concurrency also.
             while (!clusterDetails.getCluster().getStatus().getState().equals("WAITING")) {
-                info("Waiting for state WAITING...current state is " + clusterDetails.getCluster().getStatus()
-                                                                                     .getState());
+                String current_state = clusterDetails.getCluster().getStatus().getState();
+                info("Waiting for state WAITING...current state is " + current_state);
+
+                if (current_state.equals("TERMINATED")) {
+                    info("Exiting with error as current state is " + current_state);
+                    throw new RuntimeException("Cluster has been terminated");
+                }
+
+                if (killed) {
+                    info("Stopping waiting for cluster configuration to complete due to job being killed");
+                    return;
+                }
+
                 try {
                     Thread.sleep(POLL_INTERVAL);
                 } catch (Exception e) {
@@ -531,7 +542,7 @@ public class EMRStep extends AbstractProcessJob {
                 clusterDetails = emr.describeCluster(new DescribeClusterRequest().withClusterId(clusterId));
             }
 
-            if (clusterDetails.getCluster().getStepConcurrencyLevel() != MAX_STEPS) {
+            if (!killed && clusterDetails.getCluster().getStepConcurrencyLevel() != MAX_STEPS) {
                 ModifyClusterResult modifyResult = emr.modifyCluster(
                         new ModifyClusterRequest().withClusterId(clusterId).withStepConcurrencyLevel(MAX_STEPS));
                 // Add additional setup here.
