@@ -119,7 +119,7 @@ echo "INFO: crontab after addition"
 crontab -l
 
 echo "INFO starting crond"
-crond
+crond -l 2 -f
 
 echo "INFO: Starting azkaban web-server..."
 /azkaban-web-server/bin/start-web.sh
