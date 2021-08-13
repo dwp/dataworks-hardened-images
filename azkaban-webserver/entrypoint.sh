@@ -118,6 +118,9 @@ crontab scheduler.txt
 echo "INFO: crontab after addition"
 crontab -l
 
+echo "INFO starting crond"
+crond
+
 echo "INFO: Starting azkaban web-server..."
 /azkaban-web-server/bin/start-web.sh
 
