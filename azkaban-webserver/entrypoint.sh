@@ -111,15 +111,13 @@ done < /azkaban-web-server/conf/azkaban.properties > file.tmp && mv file.tmp /az
 
 echo "INFO: adding executor check to crontab"
 
-echo "*/5 * * * * /executor_check.sh
+echo "*/5 * * * * /bin/executor_check.sh
 # This extra line makes it a valid cron" > scheduler.txt
 crontab scheduler.txt
 
 echo "INFO: crontab after addition"
 crontab -l
 
-echo "INFO starting crond"
-crond -l 2 -f
 
 echo "INFO: Starting azkaban web-server..."
 /azkaban-web-server/bin/start-web.sh
