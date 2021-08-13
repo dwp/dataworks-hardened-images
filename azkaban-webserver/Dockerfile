@@ -49,5 +49,7 @@ COPY dist/jackson-core-2.11.1.jar /azkaban-web-server/lib/jackson-core-2.11.1.ja
 COPY dist/jackson-databind-2.11.1.jar /azkaban-web-server/lib/jackson-databind-2.11.1.jar
 
 COPY --from=gradle-builder /tmp/azkaban-cognito-usermanager/build/libs/azkaban-cognito-usermanager-1.0.0-SNAPSHOT.jar /azkaban-web-server/extlib/azkaban-cognito-usermanager-1.0.0-SNAPSHOT.jar
-    
+
+CMD ["crond", "-l 2", "-f"]
+
 ENTRYPOINT [ "/bin/entrypoint.sh" ]
