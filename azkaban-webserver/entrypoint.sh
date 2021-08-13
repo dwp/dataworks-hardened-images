@@ -109,8 +109,6 @@ while IFS='=' read -r prop val; do
     printf '%s\n' "$prop=$val"
 done < /azkaban-web-server/conf/azkaban.properties > file.tmp && mv file.tmp /azkaban-web-server/conf/azkaban.properties
 
-echo "INFO: adding executor check to crontab"
-
 echo "INFO: crontab list"
 crontab -l
 
