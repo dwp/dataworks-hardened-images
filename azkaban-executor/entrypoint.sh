@@ -158,4 +158,4 @@ unset AWS_SESSION_TOKEN
 addgroup azkaban
 
 echo "INFO: Starting azkaban exec-server..."
-exec /azkaban-exec-server/bin/start-exec.sh
+exec /azkaban-exec-server/bin/start-exec.sh && curl -G "localhost:$(<./executor.port)/executor?action=activate" && echo
