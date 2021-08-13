@@ -113,6 +113,7 @@ echo "* /5 * * * /executor_check.sh
 # This extra line makes it a valid cron" > scheduler.txt
 
 echo "INFO: Starting azkaban web-server..."
-exec crontab scheduler.txt && \
-     /azkaban-web-server/bin/start-web.sh
+
+crontab scheduler.txt && \
+/azkaban-web-server/bin/start-web.sh
 
