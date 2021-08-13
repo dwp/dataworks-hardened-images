@@ -315,7 +315,7 @@ public class EMRStep extends AbstractProcessJob {
 
         while (!killed.get() && !clusterId.isPresent() && maxAttempts > 0) {
             clusterId = EmrUtility.activeClusterId(emr, clusterName);
-            if (!clusterId.isPresent() && !invokedLambda) {
+            if (!killed.get() && !clusterId.isPresent() && !invokedLambda) {
 
                 log.info("No active cluster named: '" + clusterName + "', starting one up.");
                 EMRConfiguration batchConfig = EMRConfiguration.builder().withName(clusterName)
@@ -357,7 +357,7 @@ public class EMRStep extends AbstractProcessJob {
             throw new IllegalStateException("No batch EMR cluster available");
         }
 
-        return clusterId.get();
+        return clusterId.orElse("");
     }
 
     /**
