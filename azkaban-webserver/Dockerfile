@@ -43,7 +43,7 @@ RUN sed -i -e 's/v[[:digit:]]\..*\//edge\//g' /etc/apk/repositories && \
     mv /tmp/azkaban-db-0.1.0-SNAPSHOT /azkaban-db && \
     chown -R nobody:nogroup /azkaban-web-server && \
     chmod 755 /bin/entrypoint.sh \
-    chmod 755 /bin/executor_check
+    chmod 755 /bin/executor_check \
 
 RUN echo '*/5 * * * * /bin/executor_check' > /etc/crontabs/root
 CMD ["crond", "-l 2", "-f"]
