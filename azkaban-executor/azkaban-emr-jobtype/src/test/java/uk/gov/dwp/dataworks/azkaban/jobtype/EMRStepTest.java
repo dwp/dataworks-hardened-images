@@ -44,7 +44,7 @@ class EMRStepTest {
         when(clustersResult.getClusters()).thenReturn(summaries);
 
         AWSLambda lambda = mock(AWSLambda.class);
-        String clusterId = EMRStep.getClusterId(emr, lambda, SYSTEM_PROPERTIES, JOB_PROPERTIES, new AtomicBoolean(false), Logger.getLogger(EMRStep.class));
+        String clusterId = getClusterId(new AtomicBoolean(false), emr, lambda);
         assertEquals(TARGET_CLUSTER_ID, clusterId);
         verify(emr, times(1)).listClusters(any());
         verifyNoMoreInteractions(emr);
@@ -76,7 +76,7 @@ class EMRStepTest {
 
         AWSLambda lambda = mock(AWSLambda.class);
 
-        String clusterId = EMRStep.getClusterId(emr, lambda, SYSTEM_PROPERTIES, JOB_PROPERTIES, new AtomicBoolean(false), Logger.getLogger(EMRStep.class));
+        String clusterId = getClusterId(new AtomicBoolean(false), emr, lambda);
         assertEquals(TARGET_CLUSTER_ID, clusterId);
         verify(emr, times(2)).listClusters(any());
         verifyNoMoreInteractions(emr);
@@ -118,7 +118,7 @@ class EMRStepTest {
         when(result.getStatusCode()).thenReturn(200);
         when(lambda.invoke(any())).thenReturn(result);
 
-        String clusterId = EMRStep.getClusterId(emr, lambda, SYSTEM_PROPERTIES, JOB_PROPERTIES, new AtomicBoolean(false), Logger.getLogger(EMRStep.class));
+        String clusterId = getClusterId(new AtomicBoolean(false), emr, lambda);
         assertEquals(TARGET_CLUSTER_ID, clusterId);
         verify(emr, times(3)).listClusters(any());
         verifyNoMoreInteractions(emr);
@@ -226,11 +226,16 @@ class EMRStepTest {
         when(result.getStatusCode()).thenReturn(200);
         when(lambda.invoke(any())).thenReturn(result);
 
-        String clusterId = EMRStep.getClusterId(emr, lambda, SYSTEM_PROPERTIES, JOB_PROPERTIES, killed, Logger.getLogger(EMRStep.class));
+        String clusterId = getClusterId(killed, emr, lambda);
         assertEquals("", clusterId);
         verify(emr, times(1)).listClusters(any());
         verifyNoMoreInteractions(emr);
         verifyNoInteractions(lambda);
+    }
+
+    private String getClusterId(AtomicBoolean killed, AmazonElasticMapReduce emr, AWSLambda lambda) {
+        return EMRStep.getClusterId(emr, lambda, SYSTEM_PROPERTIES, JOB_PROPERTIES, killed,
+                Logger.getLogger(EMRStep.class));
     }
 
     @Test
@@ -260,7 +265,7 @@ class EMRStepTest {
 
         AWSLambda lambda = mock(AWSLambda.class);
 
-        String clusterId = EMRStep.getClusterId(emr, lambda, SYSTEM_PROPERTIES, JOB_PROPERTIES, killed, Logger.getLogger(EMRStep.class));
+        String clusterId = getClusterId(killed, emr, lambda);
         assertEquals("", clusterId);
         verify(emr, times(2)).listClusters(any());
         verifyNoMoreInteractions(emr);
