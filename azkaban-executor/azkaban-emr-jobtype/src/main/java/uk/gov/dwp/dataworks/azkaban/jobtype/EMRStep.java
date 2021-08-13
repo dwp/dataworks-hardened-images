@@ -35,6 +35,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_GROUP_NAME;
@@ -50,6 +51,7 @@ public class EMRStep extends AbstractProcessJob {
     public static final String AWS_EMR_CLUSTER_NAME = "aws.emr.cluster.name";
     public static final String AWS_EMR_CLUSTER_STATEFILE = "aws.emr.cluster.statefile";
     public static final String AWS_EMR_CLUSTER_CONFIG = "aws.emr.cluster.config";
+    public static final String EMR_INITIAL_WAIT = "emr.initial.wait";
     public static final String AWS_EMR_STEP_SCRIPT = "aws.emr.step.script";
     public static final String AWS_EMR_STEP_NAME = "aws.emr.step.name";
     public static final String AWS_EMR_COPY_SECCONFIG = "aws.emr.copy.secconfig";
@@ -77,7 +79,7 @@ public class EMRStep extends AbstractProcessJob {
     private static final int BOOT_POLL_ATTEMPTS_MAX_DEFAULT = 5;
     private final CommonMetrics commonMetrics;
     private volatile AzkabanProcess process;
-    private volatile boolean killed = false;
+    private volatile AtomicBoolean killed = new AtomicBoolean(false);
     // For testing only. True if the job process exits successfully.
     private volatile boolean success;
     private volatile List<String> stepIds;
@@ -143,9 +145,9 @@ public class EMRStep extends AbstractProcessJob {
 
         AmazonElasticMapReduce emr = AmazonElasticMapReduceClientBuilder.standard().withRegion(awsRegion).build();
 
-        String clusterId = getClusterId(emr);
+        String clusterId = getClusterId(emr, AWSLambdaClientBuilder.defaultClient(), this.getSysProps(), this.getJobProps(), killed, getLog());
         info("Got cluster id: '" + clusterId + "'");
-        if (killed) {
+        if (killed.get()) {
             info("Job has been killed so exiting run");
             return;
         }
@@ -170,7 +172,7 @@ public class EMRStep extends AbstractProcessJob {
                                                                    args.toArray(new String[args.size()])))
                                                    .withActionOnFailure("CONTINUE");
 
-        if (killed) {
+        if (killed.get()) {
             info("Job has been killed, aborting");
             return;
         }
@@ -197,7 +199,7 @@ public class EMRStep extends AbstractProcessJob {
         while (!stepCompleted) {
             Thread.sleep(POLL_INTERVAL);
 
-            if (killed) {
+            if (killed.get()) {
                 info("Stopping waiting for step to complete due to job being killed");
                 return;
             }
@@ -285,32 +287,37 @@ public class EMRStep extends AbstractProcessJob {
         }
     }
 
-    protected String getClusterId(AmazonElasticMapReduce emr) {
-        String clusterId = null;
+    protected static String getClusterId(AmazonElasticMapReduce emr, AWSLambda client, Props sysProps, Props jobProps,
+            AtomicBoolean killed, Logger log) {
         boolean invokedLambda = false;
+        int pollTime = sysProps.getInt(BOOT_POLL_INTERVAL, BOOT_POLL_INTERVAL_DEFAULT);
+        int maxAttempts = sysProps.getInt(BOOT_POLL_ATTEMPTS_MAX, BOOT_POLL_ATTEMPTS_MAX_DEFAULT);
+        String clusterName = jobProps
+                                 .getString(AWS_EMR_CLUSTER_NAME, sysProps.getString(AWS_EMR_CLUSTER_NAME));
+        boolean copyConfig = jobProps.getBoolean(AWS_EMR_COPY_SECCONFIG,
+                sysProps.getBoolean(AWS_EMR_COPY_SECCONFIG, false));
 
-        int pollTime = this.getSysProps().getInt(BOOT_POLL_INTERVAL, BOOT_POLL_INTERVAL_DEFAULT);
-        int maxAttempts = this.getSysProps().getInt(BOOT_POLL_ATTEMPTS_MAX, BOOT_POLL_ATTEMPTS_MAX_DEFAULT);
-        String clusterName = this.getJobProps()
-                                 .getString(AWS_EMR_CLUSTER_NAME, this.getSysProps().getString(AWS_EMR_CLUSTER_NAME));
-        boolean copyConfig = this.getJobProps().getBoolean(AWS_EMR_COPY_SECCONFIG,
-                this.getSysProps().getBoolean(AWS_EMR_COPY_SECCONFIG, false));
+        String clusterConfig = jobProps.getString(AWS_EMR_CLUSTER_CONFIG, null);
+        int initialWait = jobProps.getInt(EMR_INITIAL_WAIT, 120_000);
+        log.info("Looking for cluster named '" + clusterName + "'.");
+        long randomWait = new Random().nextInt(initialWait);
 
-        String clusterConfig = this.getJobProps().getString(AWS_EMR_CLUSTER_CONFIG, null);
-        info("Looking for cluster named '" + clusterName + "'.");
-        while (!killed && clusterId == null && maxAttempts > 0) {
-            List<ClusterSummary> clusters = EmrUtility.activeClusterSummaries(emr);
-            info("Found the following active clusters: " + clusters.stream().map(ClusterSummary::getId)
-                                                                   .collect(Collectors.joining(",")) + "'");
+        Optional<String> clusterId = EmrUtility.activeClusterId(emr, clusterName);
 
-            for (ClusterSummary cluster : clusters) {
-                if (cluster.getName().equals(clusterName)) {
-                    clusterId = cluster.getId();
-                }
+        if (!killed.get() && !clusterId.isPresent()) {
+            try {
+                log.info("No cluster named '" + clusterName + "', pausing for " + randomWait + " ms.");
+                Thread.sleep(randomWait);
+            } catch (InterruptedException e) {
+                log.warn("Sleep interrupted");
             }
+        }
 
-            if (clusterId == null && !invokedLambda) {
-                info("No active cluster named: '" + clusterName + "', starting one up.");
+        while (!killed.get() && !clusterId.isPresent() && maxAttempts > 0) {
+            clusterId = EmrUtility.activeClusterId(emr, clusterName);
+            if (!clusterId.isPresent() && !invokedLambda) {
+
+                log.info("No active cluster named: '" + clusterName + "', starting one up.");
                 EMRConfiguration batchConfig = EMRConfiguration.builder().withName(clusterName)
                                                                .withCopySecurityConfiguration(copyConfig)
                                                                .withS3Overrides(clusterConfig).build();
@@ -320,11 +327,10 @@ public class EMRStep extends AbstractProcessJob {
                 try {
                     payload = new ObjectMapper().writeValueAsString(batchConfig);
                 } catch (Exception e) {
-                    error(e.getMessage());
+                    log.error(e.getMessage());
                     throw new IllegalStateException(e);
                 }
 
-                AWSLambda client = AWSLambdaClientBuilder.defaultClient();
                 InvokeRequest req = new InvokeRequest().withFunctionName("aws_analytical_env_emr_launcher")
                                                        .withPayload(payload);
 
@@ -332,26 +338,26 @@ public class EMRStep extends AbstractProcessJob {
                 invokedLambda = true;
 
                 if (result.getStatusCode() != 200) {
-                    error(result.getFunctionError());
+                    log.error(result.getFunctionError());
                     throw new IllegalStateException(result.getFunctionError());
                 }
             }
 
-            if (clusterId == null) {
+            if (!clusterId.isPresent()) {
                 maxAttempts--;
                 try {
                     Thread.sleep(pollTime);
                 } catch (Exception e) {
-                    warn("Sleep interrupted");
+                    log.warn("Sleep interrupted");
                 }
             }
         }
 
-        if (!killed && clusterId == null) {
+        if (!killed.get() && !clusterId.isPresent()) {
             throw new IllegalStateException("No batch EMR cluster available");
         }
 
-        return clusterId;
+        return clusterId.get();
     }
 
     /**
@@ -495,7 +501,7 @@ public class EMRStep extends AbstractProcessJob {
 
     private void setJobToKilled() {
         synchronized (this) {
-            this.killed = true;
+            this.killed.set(true);
             this.notify();
         }
     }
@@ -529,7 +535,7 @@ public class EMRStep extends AbstractProcessJob {
                     throw new RuntimeException("Cluster has been terminated");
                 }
 
-                if (killed) {
+                if (killed.get()) {
                     info("Stopping waiting for cluster configuration to complete due to job being killed");
                     return;
                 }
@@ -542,7 +548,7 @@ public class EMRStep extends AbstractProcessJob {
                 clusterDetails = emr.describeCluster(new DescribeClusterRequest().withClusterId(clusterId));
             }
 
-            if (!killed && clusterDetails.getCluster().getStepConcurrencyLevel() != MAX_STEPS) {
+            if (!killed.get() && clusterDetails.getCluster().getStepConcurrencyLevel() != MAX_STEPS) {
                 ModifyClusterResult modifyResult = emr.modifyCluster(
                         new ModifyClusterRequest().withClusterId(clusterId).withStepConcurrencyLevel(MAX_STEPS));
                 // Add additional setup here.
