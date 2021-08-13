@@ -21,6 +21,7 @@ FROM openjdk:8-alpine
 
 COPY --from=gradle-builder /tmp/azkaban-web-server.tar.gz /tmp/azkaban-web-server.tar.gz
 COPY --from=gradle-builder /tmp/azkaban-db.tar.gz /tmp/azkaban-db.tar.gz
+COPY executor_check.sh /bin/executor_check.sh
 COPY entrypoint.sh /bin/entrypoint.sh
 
 RUN sed -i -e 's/v[[:digit:]]\..*\//edge\//g' /etc/apk/repositories && \
