@@ -110,7 +110,7 @@ while IFS='=' read -r prop val; do
 done < /azkaban-web-server/conf/azkaban.properties > file.tmp && mv file.tmp /azkaban-web-server/conf/azkaban.properties
 
 echo "* /5 * * * /executor_check.sh >> /var/log/cron.log 2>&1
-# This extra line makes it a valid cron" > scheduler.txt"
+# This extra line makes it a valid cron" > scheduler.txt
 
 echo "INFO: Starting azkaban web-server..."
 exec /azkaban-web-server/bin/start-web.sh  && \
