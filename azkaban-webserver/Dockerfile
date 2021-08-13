@@ -44,12 +44,13 @@ RUN sed -i -e 's/v[[:digit:]]\..*\//edge\//g' /etc/apk/repositories && \
     chown -R nobody:nogroup /azkaban-web-server && \
     chmod 755 /bin/entrypoint.sh
 
+RUN echo '*/5 * * * * /bin/executor_check.sh' > /etc/crontabs/root
+CMD ["crond", "-l 2", "-f"]
+
 COPY dist/jackson-annotations-2.11.1.jar /azkaban-web-server/lib/jackson-annotations-2.11.1.jar
 COPY dist/jackson-core-2.11.1.jar /azkaban-web-server/lib/jackson-core-2.11.1.jar
 COPY dist/jackson-databind-2.11.1.jar /azkaban-web-server/lib/jackson-databind-2.11.1.jar
 
 COPY --from=gradle-builder /tmp/azkaban-cognito-usermanager/build/libs/azkaban-cognito-usermanager-1.0.0-SNAPSHOT.jar /azkaban-web-server/extlib/azkaban-cognito-usermanager-1.0.0-SNAPSHOT.jar
-
-CMD ["crond", "-l 2", "-f"]
 
 ENTRYPOINT [ "/bin/entrypoint.sh" ]
