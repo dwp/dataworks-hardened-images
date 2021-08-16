@@ -118,5 +118,5 @@ crontab -l
 echo "INFO: Starting azkaban web-server..."
 #/azkaban-web-server/bin/start-web.sh
 
-crond -f
+crond -l 2 -f
 

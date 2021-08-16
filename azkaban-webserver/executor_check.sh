@@ -2,7 +2,7 @@
 set -e
 
 echo "Obtaining executor list..."\n
-mysql -h $DB_HOST -u $DB_USERNAME -p $DB_PASSWORD -e < SELECT DISTINCT host FROM $DB_NAME.executors; > /executors.list
+mysql -h $DB_HOST -u $DB_USERNAME -p $DB_PASSWORD -e SELECT DISTINCT host FROM $DB_NAME.executors; > /executors.list
 
 echo "Current Executors: "\n
 cat /executors.list
