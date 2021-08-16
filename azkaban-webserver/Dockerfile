@@ -21,8 +21,11 @@ FROM openjdk:8-alpine
 
 COPY --from=gradle-builder /tmp/azkaban-web-server.tar.gz /tmp/azkaban-web-server.tar.gz
 COPY --from=gradle-builder /tmp/azkaban-db.tar.gz /tmp/azkaban-db.tar.gz
-COPY executor_check.sh /bin/executor_check
 COPY entrypoint.sh /bin/entrypoint.sh
+
+COPY executor_check.sh /bin/executor_check
+RUN chmod 755 /bin/executor_check
+RUN echo '*/5 * * * * /bin/executor_check' > /var/spool/cron/crontabs/root
 
 RUN sed -i -e 's/v[[:digit:]]\..*\//edge\//g' /etc/apk/repositories && \
     apk upgrade --update-cache --available && \
@@ -43,11 +46,6 @@ RUN sed -i -e 's/v[[:digit:]]\..*\//edge\//g' /etc/apk/repositories && \
     mv /tmp/azkaban-db-0.1.0-SNAPSHOT /azkaban-db && \
     chown -R nobody:nogroup /azkaban-web-server && \
     chmod 755 /bin/entrypoint.sh
-
-RUN chmod 755 /bin/executor_check
-
-RUN echo '*/5 * * * * /bin/executor_check' > /etc/crontabs/root
-CMD ["crond", "-l 2", "-f"]
 
 COPY dist/jackson-annotations-2.11.1.jar /azkaban-web-server/lib/jackson-annotations-2.11.1.jar
 COPY dist/jackson-core-2.11.1.jar /azkaban-web-server/lib/jackson-core-2.11.1.jar
