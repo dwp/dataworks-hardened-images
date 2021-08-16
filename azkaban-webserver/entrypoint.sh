@@ -17,7 +17,7 @@ if [ -n "${AWS_ACCESS_KEY_ID}${AWS_SECRET_ACCESS_KEY}" ]; then
     else
         echo "INFO: Using supplied access key for authentication"
     fi
-
+    
     # If either of the ASSUMEROLE variables were provided, validate them and configure a shared credentials fie
     if [ -n "${AWS_ASSUMEROLE_ACCOUNT}${AWS_ASSUMEROLE_ROLE}" ]; then
         if [ -z "${AWS_ASSUMEROLE_ACCOUNT}" -o -z "${AWS_ASSUMEROLE_ROLE}" ]; then
@@ -108,6 +108,9 @@ while IFS='=' read -r prop val; do
     esac
     printf '%s\n' "$prop=$val"
 done < /azkaban-web-server/conf/azkaban.properties > file.tmp && mv file.tmp /azkaban-web-server/conf/azkaban.properties
+
+echo "INFO: Adding crond to launch"
+sed -i 's/${script_dir}/crond \-S \&\& \${script_dir}/' /azkaban-web-server/bin/start-web.sh
 
 echo "INFO: crontab list"
 crontab -l
