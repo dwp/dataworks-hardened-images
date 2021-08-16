@@ -110,13 +110,10 @@ while IFS='=' read -r prop val; do
 done < /azkaban-web-server/conf/azkaban.properties > file.tmp && mv file.tmp /azkaban-web-server/conf/azkaban.properties
 
 echo "INFO: Adding crond to launch"
-sed -i 's/${script_dir}/crond \-S \&\& \${script_dir}/' /azkaban-web-server/bin/start-web.sh
+sed -i 's/${script_dir}/crond \-l \2 \&\& \${script_dir}/' /azkaban-web-server/bin/start-web.sh
 
 echo "INFO: crontab list"
 crontab -l
 
 echo "INFO: Starting azkaban web-server..."
-#/azkaban-web-server/bin/start-web.sh
-
-crond -l 2 -f
-
+/azkaban-web-server/bin/start-web.sh
