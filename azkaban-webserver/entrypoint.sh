@@ -116,5 +116,7 @@ echo "INFO: crontab list"
 crontab -l
 
 echo "INFO: Starting azkaban web-server..."
-/azkaban-web-server/bin/start-web.sh
+#/azkaban-web-server/bin/start-web.sh
+
+crond -f
 
