@@ -25,7 +25,7 @@ COPY entrypoint.sh /bin/entrypoint.sh
 
 COPY executor_check.sh /bin/executor_check
 RUN chmod 755 /bin/executor_check
-RUN echo '*/2 * * * * /bin/executor_check > /proc/$(cat /var/run/crond.pid)/fd/1 2>&1' > /var/spool/cron/crontabs/root
+RUN echo '*/2 * * * * /bin/executor_check > /proc/1/fd/1 2>&1' > /var/spool/cron/crontabs/root
 
 RUN sed -i -e 's/v[[:digit:]]\..*\//edge\//g' /etc/apk/repositories && \
     apk upgrade --update-cache --available && \
