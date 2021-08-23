@@ -2,9 +2,6 @@
 set -e
 
 echo "Obtaining executor list...\n"
-echo "DB HOST ${DB_HOST}"
-echo "DB USERNAME ${DB_USERNAME}"azkaban-database.cluster-cg4gggiy7hda.eu-west-2.rds.amazonaws.com
-echo "DB NAME ${DB_NAME}"
 mysql -h $DB_HOST -u $DB_USERNAME -p$DB_PASSWORD $DB_NAME -e "SELECT DISTINCT host FROM $DB_NAME.executors;" > /executors.list
 
 echo "Current Executors: "\n
