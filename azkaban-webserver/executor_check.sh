@@ -4,10 +4,11 @@ set -e
 echo "Obtaining executor list...\n"
 mysql -h $DB_HOST -u $DB_USERNAME -p$DB_PASSWORD $DB_NAME -e "SELECT DISTINCT host FROM $DB_NAME.executors;" > /executors.list
 
-echo "Current Executors: "\n
+echo "Current Executors:"
 cat /executors.list
 
-for executor_host in $(cat /executors.list);
+# Executors list contains 'host' mysql header - ignore first line
+for executor_host in $(tail -n +2 /executors.list);
 do
     if [[ $(nc -v -z -w5 $executor_host 7082 && echo $?) != 0 ]]; then
         echo "$executor_host appears to be down, removing from active list..."
