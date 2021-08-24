@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+executor_port=$(cat /azkaban-web-server/executor-port)
 
 echo "Obtaining executor list..."
 mysql -h $DB_HOST -u $DB_USERNAME -p$DB_PASSWORD $DB_NAME -e "SELECT DISTINCT host FROM $DB_NAME.executors;" > /executors.list
@@ -11,7 +12,10 @@ cat /executors.list
 for executor_host in $(tail -n +2 /executors.list);
 do
   killed_instances=0
-    if [[ $(nc -v -z -w5 $executor_host $EXECUTOR_PORT && echo $?) != 0 ]]; then
+  echo "Executor host '${executor_host}'"
+  echo "Executor port '${executor_port}'"
+
+    if [[ $(nc -v -z -w5 $executor_host $executor_port && echo $?) != 0 ]]; then
         echo "$executor_host appears to be down, removing from active list..."
         mysql -h $DB_HOST -u $DB_USERNAME -p$DB_PASSWORD $DB_NAME -e "DELETE FROM $DB_NAME.executors WHERE host LIKE '${executor_host}';"
         (( killed_instances++ ))
