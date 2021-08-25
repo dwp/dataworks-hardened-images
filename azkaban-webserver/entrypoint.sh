@@ -74,8 +74,7 @@ export DB_NAME=$(echo $DB_SECRETS | jq -r .dbInstanceIdentifier)
 export DB_HOST=$(echo $DB_SECRETS | jq -r .host)
 export DB_USERNAME=$(echo $DB_SECRETS | jq -r .username)
 export DB_PASSWORD=$(echo $DB_SECRETS | jq -r .password)
-export EXECUTOR_PORT=$(echo $DB_SECRETS | jq -r .ports.azkaban_executor_port)
-echo "${EXECUTOR_PORT}" > /azkaban-web-server/executor-port
+export EXECUTOR_PORT=$(echo $SECRETS | tr '\r\n' ' ' | jq '.ports.azkaban_executor_port')
 
 /usr/bin/openssl req -x509 -newkey rsa:4096 -keyout $JAVA_HOME/jre/lib/security/key.pem -out $JAVA_HOME/jre/lib/security/cert.pem -days 30 -nodes -subj "/CN=azkaban"
 keytool -keystore /azkaban-web-server/cacerts -storepass ${PASS} -noprompt -trustcacerts -importcert -alias self_signed -file $JAVA_HOME/jre/lib/security/cert.pem
