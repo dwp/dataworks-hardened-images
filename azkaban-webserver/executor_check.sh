@@ -6,10 +6,10 @@ mysql -h $DB_HOST -u $DB_USERNAME -p$DB_PASSWORD $DB_NAME -e "SELECT DISTINCT ho
 
 echo "Current Executors:"
 cat /executors.list
+killed_instances=0
 
 # Executors list contains 'host' mysql header - ignore first line
 for executor_host in $(tail -n +2 /executors.list); do
-  killed_instances=0
   attempts=1
   echo "Executor host '${executor_host}'"
   echo "Executor port '${executor_port}'"
