@@ -118,7 +118,7 @@ crontab -l
 
 trap "exit" SIGINT SIGTERM
 
-echo $(ps)
+ps
 
 echo "INFO: Starting azkaban web-server..."
 /azkaban-web-server/bin/start-web.sh
