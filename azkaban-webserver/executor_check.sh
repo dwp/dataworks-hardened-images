@@ -32,6 +32,8 @@ for executor_host in $(tail -n +2 /executors.list); do
   fi
 done
 
+echo "Removed instances '${killed_instances}'"
+
 #    Kill the container after clearing all dead hosts - required because Azkaban doesn't read database after starting
 if [[ "${killed_instances}" != 0 ]]; then
   echo "Killing container after clearing dead executor hosts from database"
