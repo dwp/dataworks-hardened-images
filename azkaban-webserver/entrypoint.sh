@@ -116,5 +116,9 @@ sed -i 's/${script_dir}/crond \-l 2 \&\& \${script_dir}/' /azkaban-web-server/bi
 echo "INFO: crontab list"
 crontab -l
 
+trap "exit" SIGINT SIGTERM
+
+ps
+
 echo "INFO: Starting azkaban web-server..."
 /azkaban-web-server/bin/start-web.sh
