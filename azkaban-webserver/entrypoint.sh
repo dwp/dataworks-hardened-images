@@ -116,7 +116,7 @@ sed -i 's/${script_dir}/crond \-l 2 \&\& \${script_dir}/' /azkaban-web-server/bi
 echo "INFO: crontab list"
 crontab -l
 
-trap "exit" SIGINT SIGTERM
+trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT SIGHUP
 
 ps
 
