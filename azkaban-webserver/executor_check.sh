@@ -27,7 +27,7 @@ for executor_host in $(tail -n +2 /executors.list); do
       fi
   done
 
-  if [[ $attempts < 3 ]]; then
+  if [[ $attempts -lt 3 ]]; then
     echo "Successfully connected to '$executor_host' on attempt '$attempts'"
   fi
 done
