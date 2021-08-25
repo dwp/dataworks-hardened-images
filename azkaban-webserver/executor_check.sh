@@ -13,9 +13,10 @@ for executor_host in $(tail -n +2 /executors.list); do
   echo "Executor host '${executor_host}'"
   echo "Executor port '${executor_port}'"
 
-  while [[ $((nc -v -z -w5 $executor_host $EXECUTOR_PORT && echo $?)) != 0 && $attempts <= 3 ]]; do
+  while [[ $(nc -v -z -w 5 $executor_host $executor_port && echo $?) != 0 ]] && [[ $attempts -le 3 ]]; do
       if [[ $attempts = 3 ]]; then
-        mysql -h $DB_HOST -u $DB_USERNAME -p$DB_PASSWORD $DB_NAME -e "DELETE FROM $DB_NAME.executors WHERE host LIKE '${executor_host}';"
+        echo "db sql"
+        (( attempts ++ ))
         (( killed_instances++ ))
       else
         echo "$executor_host failed to connect. Attempt '$attempts'. Retrying..."
@@ -24,7 +25,9 @@ for executor_host in $(tail -n +2 /executors.list); do
       fi
   done
 
-  echo "Successfully connected to '$executor_host' on attempt '$attempts'"
+  if [[ $attempts < 3 ]]; then
+    echo "Successfully connected to '$executor_host' on attempt '$attempts'"
+  fi
 done
 
 #    Kill the container after clearing all dead hosts - required because Azkaban doesn't read database after starting
