@@ -21,7 +21,7 @@ for executor_host in $(tail -n +2 /executors.list); do
         (( killed_instances++ ))
         break
       else
-        echo "$executor_host failed to connect. Attempt '$attempts'. Retrying..."
+        echo "$executor_host failed to connect on attempt '$attempts'. Retrying..."
         (( attempts ++ ))
         sleep 5
       fi
