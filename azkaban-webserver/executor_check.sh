@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+ps
+
 echo "Obtaining executor list..."
 mysql -h $DB_HOST -u $DB_USERNAME -p$DB_PASSWORD $DB_NAME -e "SELECT DISTINCT host FROM $DB_NAME.executors;" > /executors.list
 
@@ -33,7 +35,7 @@ for executor_host in $(tail -n +2 /executors.list); do
   fi
 done
 
-set +x
+set -x
 set +e
 echo "Removed instances '${killed_instances}'"
 
