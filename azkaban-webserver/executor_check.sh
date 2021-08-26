@@ -1,5 +1,6 @@
 #!/bin/bash
-set -e
+set -x
+set +e
 
 ps
 
@@ -8,7 +9,7 @@ mysql -h $DB_HOST -u $DB_USERNAME -p$DB_PASSWORD $DB_NAME -e "SELECT DISTINCT ho
 
 echo "Current Executors:"
 cat /executors.list
-killed_instances=0
+export killed_instances=0
 
 # Executors list contains 'host' mysql header - ignore first line
 for executor_host in $(tail -n +2 /executors.list); do
@@ -21,7 +22,8 @@ for executor_host in $(tail -n +2 /executors.list); do
         echo "$executor_host failed to connect on attempt '$attempts'. Removing from executors list"
         mysql -h $DB_HOST -u $DB_USERNAME -p$DB_PASSWORD $DB_NAME -e "DELETE FROM $DB_NAME.executors WHERE host LIKE '${executor_host}';"
         (( attempts ++ ))
-        (( killed_instances++ ))
+        (( killed_instances ++ ))
+        echo "Killed instances: '$killed_instances'"
         break
       else
         echo "$executor_host failed to connect on attempt '$attempts'. Retrying..."
@@ -35,8 +37,6 @@ for executor_host in $(tail -n +2 /executors.list); do
   fi
 done
 
-set -x
-set +e
 echo "Removed instances '${killed_instances}'"
 
 #    Kill the container after clearing all dead hosts - required because Azkaban doesn't read database after starting
@@ -44,6 +44,8 @@ if [[ "${killed_instances}" != 0 ]]; then
   echo "Killing container after clearing dead executor hosts from database"
 #  Flush to CW
   sleep 5
+  ps
   PID=$(pidof java)
   kill $PID
+  ps
 fi
