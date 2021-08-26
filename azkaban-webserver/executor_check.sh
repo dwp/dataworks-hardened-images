@@ -41,8 +41,6 @@ if [[ "${killed_instances}" != 0 ]]; then
   echo "Killing container after clearing dead executor hosts from database"
 #  Flush to CW
   sleep 5
-  ps
   PID=$(pidof java)
   kill $PID
-  ps
 fi
