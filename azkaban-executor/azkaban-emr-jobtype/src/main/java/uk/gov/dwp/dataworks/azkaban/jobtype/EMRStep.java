@@ -16,6 +16,7 @@ import com.amazonaws.services.elasticmapreduce.model.*;
 import com.amazonaws.services.elasticmapreduce.util.StepFactory;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
+import com.amazonaws.services.lambda.model.InvocationType;
 import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
 import com.amazonaws.services.logs.AWSLogsClient;
@@ -33,6 +34,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -79,7 +82,7 @@ public class EMRStep extends AbstractProcessJob {
     private static final int BOOT_POLL_ATTEMPTS_MAX_DEFAULT = 5;
     private final CommonMetrics commonMetrics;
     private volatile AzkabanProcess process;
-    private volatile AtomicBoolean killed = new AtomicBoolean(false);
+    private final AtomicBoolean killed = new AtomicBoolean(false);
     // For testing only. True if the job process exits successfully.
     private volatile boolean success;
     private volatile List<String> stepIds;
@@ -333,9 +336,14 @@ public class EMRStep extends AbstractProcessJob {
 
                 InvokeRequest req = new InvokeRequest().withFunctionName("aws_analytical_env_emr_launcher")
                                                        .withPayload(payload);
-
                 InvokeResult result = client.invoke(req);
                 invokedLambda = true;
+                log.info("Lambda invocation status code: '" + result.getStatusCode() + "'");
+                ByteBuffer byteBuffer = result.getPayload().asReadOnlyBuffer();
+                if (byteBuffer.hasArray()) {
+                    String response = new String(byteBuffer.array(), StandardCharsets.UTF_8);
+                    log.info("Lambda invocation response: '" + response + "'");
+                }
 
                 if (result.getStatusCode() != 200) {
                     log.error(result.getFunctionError());
@@ -527,11 +535,11 @@ public class EMRStep extends AbstractProcessJob {
             // We may still be initializing, so wait until we are waiting for steps.
             // Potentially maybe other executors listening, so check step concurrency also.
             while (!clusterDetails.getCluster().getStatus().getState().equals("WAITING")) {
-                String current_state = clusterDetails.getCluster().getStatus().getState();
-                info("Waiting for state WAITING...current state is " + current_state);
+                String currentState = clusterDetails.getCluster().getStatus().getState();
+                info("Waiting for state WAITING...current state is " + currentState);
 
-                if (current_state.equals("TERMINATED")) {
-                    info("Exiting with error as current state is " + current_state);
+                if (currentState.contains("TERMINATED")) {
+                    info("Exiting with error as current state is " + currentState);
                     throw new RuntimeException("Cluster has been terminated");
                 }
 
