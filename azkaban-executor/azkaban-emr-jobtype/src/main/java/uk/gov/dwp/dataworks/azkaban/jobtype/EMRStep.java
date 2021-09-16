@@ -339,10 +339,24 @@ public class EMRStep extends AbstractProcessJob {
                 InvokeResult result = client.invoke(req);
                 invokedLambda = true;
                 log.info("Lambda invocation status code: '" + result.getStatusCode() + "'");
-                ByteBuffer byteBuffer = result.getPayload().asReadOnlyBuffer();
-                if (byteBuffer.hasArray()) {
-                    String response = new String(byteBuffer.array(), StandardCharsets.UTF_8);
-                    log.info("Lambda invocation response: '" + response + "'");
+                ByteBuffer resultPayload = result.getPayload();
+                if (resultPayload != null) {
+                    if (resultPayload.hasArray()) {
+                        String response = new String(resultPayload.array(), StandardCharsets.UTF_8);
+                        log.info("Lambda invocation response from result payload: '" + response + "'");
+                    } else {
+                        log.info("resultPayload payload has no backing array");
+                    }
+
+                    ByteBuffer readOnlyBuffer = resultPayload.asReadOnlyBuffer();
+                    if (readOnlyBuffer != null && readOnlyBuffer.hasArray()) {
+                        String response = new String(readOnlyBuffer.array(), StandardCharsets.UTF_8);
+                        log.info("Lambda invocation response: '" + response + "'");
+                    } else {
+                        log.info("readOnlyBuffer payload has no backing array");
+                    }
+                } else {
+                    log.info("Result payload is null");
                 }
 
                 if (result.getStatusCode() != 200) {
