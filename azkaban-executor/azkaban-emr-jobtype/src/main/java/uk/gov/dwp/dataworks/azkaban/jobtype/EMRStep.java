@@ -368,6 +368,7 @@ public class EMRStep extends AbstractProcessJob {
             if (!clusterId.isPresent()) {
                 maxAttempts--;
                 try {
+                    log.info("Waiting " + pollTime  + "ms for presence of clusterId");
                     Thread.sleep(pollTime);
                 } catch (Exception e) {
                     log.warn("Sleep interrupted");
