@@ -9,6 +9,7 @@ import com.amazonaws.services.lambda.model.InvokeResult;
 import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Test;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -117,7 +118,10 @@ class EMRStepTest {
         InvokeResult result = mock(InvokeResult.class);
         when(result.getStatusCode()).thenReturn(200);
         when(lambda.invoke(any())).thenReturn(result);
-
+        ByteBuffer byteBuffer = mock(ByteBuffer.class);
+        ByteBuffer readOnlyByteBuffer = ByteBuffer.wrap(new byte[] { });
+        when(byteBuffer.asReadOnlyBuffer()).thenReturn(readOnlyByteBuffer);
+        when(result.getPayload()).thenReturn(byteBuffer);
         String clusterId = getClusterId(new AtomicBoolean(false), emr, lambda);
         assertEquals(TARGET_CLUSTER_ID, clusterId);
         verify(emr, times(3)).listClusters(any());
@@ -159,6 +163,10 @@ class EMRStepTest {
         AWSLambda lambda = mock(AWSLambda.class);
         InvokeResult result = mock(InvokeResult.class);
         when(result.getStatusCode()).thenReturn(501);
+        ByteBuffer byteBuffer = mock(ByteBuffer.class);
+        ByteBuffer readOnlyByteBuffer = ByteBuffer.wrap(new byte[] { });
+        when(byteBuffer.asReadOnlyBuffer()).thenReturn(readOnlyByteBuffer);
+        when(result.getPayload()).thenReturn(byteBuffer);
         when(lambda.invoke(any())).thenReturn(result);
 
         assertThrows(IllegalStateException.class, () ->
@@ -190,6 +198,10 @@ class EMRStepTest {
         InvokeResult result = mock(InvokeResult.class);
         when(result.getStatusCode()).thenReturn(200);
         when(lambda.invoke(any())).thenReturn(result);
+        ByteBuffer byteBuffer = mock(ByteBuffer.class);
+        ByteBuffer readOnlyByteBuffer = ByteBuffer.wrap(new byte[] { });
+        when(byteBuffer.asReadOnlyBuffer()).thenReturn(readOnlyByteBuffer);
+        when(result.getPayload()).thenReturn(byteBuffer);
 
         assertThrows(IllegalStateException.class, () ->
                 EMRStep.getClusterId(emr, lambda, SYSTEM_PROPERTIES, JOB_PROPERTIES,
