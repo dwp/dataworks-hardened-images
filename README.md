@@ -7,3 +7,4 @@ Repo of Dataworks specific container images which remove vulnerabilities from th
 #### The `README.md` for the s3fs image can be found [here](https://github.com/dwp/dataworks-hardened-images/tree/master/s3fs/README.md)
 #### The `README.md` for the prom-pushgateway image can be found [here](https://github.com/dwp/dataworks-hardened-images/tree/master/prom-pushgateway/README.md)
 #### The `README.md` for the hue image can be found [here](https://github.com/dwp/dataworks-hardened-images/tree/master/hue/README.md)
+#### The `README.md` for the guacd image can be found [here](https://github.com/dwp/dataworks-hardened-images/tree/master/guacd/README.md)
