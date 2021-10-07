@@ -1,4 +1,5 @@
 #!/bin/sh
+
 set -e
 
 echo "INFO: Checking container configuration..."
@@ -17,7 +18,7 @@ if [ -n "${AWS_ACCESS_KEY_ID}${AWS_SECRET_ACCESS_KEY}" ]; then
     else
         echo "INFO: Using supplied access key for authentication"
     fi
-    
+
     # If either of the ASSUMEROLE variables were provided, validate them and configure a shared credentials fie
     if [ -n "${AWS_ASSUMEROLE_ACCOUNT}${AWS_ASSUMEROLE_ROLE}" ]; then
         if [ -z "${AWS_ASSUMEROLE_ACCOUNT}" -o -z "${AWS_ASSUMEROLE_ROLE}" ]; then
@@ -76,10 +77,10 @@ export DB_USERNAME=$(echo $DB_SECRETS | jq -r .username)
 export DB_PASSWORD=$(echo $DB_SECRETS | jq -r .password)
 export EXECUTOR_PORT=$(aws secretsmanager get-secret-value --secret-id $AZKABAN_SECRET_ID --query SecretBinary --output text | base64 -d | jq '.ports.azkaban_executor_port')
 
-/usr/bin/openssl req -x509 -newkey rsa:4096 -keyout $JAVA_HOME/jre/lib/security/key.pem -out $JAVA_HOME/jre/lib/security/cert.pem -days 30 -nodes -subj "/CN=azkaban"
-keytool -keystore /azkaban-web-server/cacerts -storepass ${PASS} -noprompt -trustcacerts -importcert -alias self_signed -file $JAVA_HOME/jre/lib/security/cert.pem
-openssl req -new -key $JAVA_HOME/jre/lib/security/key.pem -subj "/CN=azkaban" -out $JAVA_HOME/jre/lib/security/cert.csr
-openssl pkcs12 -inkey $JAVA_HOME/jre/lib/security/key.pem -in $JAVA_HOME/jre/lib/security/cert.pem -export -out /azkaban-web-server/cacerts.pkcs12 -passout pass:${PASS}
+/usr/bin/openssl req -x509 -newkey rsa:4096 -keyout $JAVA_HOME/lib/security/key.pem -out $JAVA_HOME/lib/security/cert.pem -days 30 -nodes -subj "/CN=azkaban"
+keytool -keystore /azkaban-web-server/cacerts -storepass ${PASS} -noprompt -trustcacerts -importcert -alias self_signed -file $JAVA_HOME/lib/security/cert.pem
+openssl req -new -key $JAVA_HOME/lib/security/key.pem -subj "/CN=azkaban" -out $JAVA_HOME/lib/security/cert.csr
+openssl pkcs12 -inkey $JAVA_HOME/lib/security/key.pem -in $JAVA_HOME/lib/security/cert.pem -export -out /azkaban-web-server/cacerts.pkcs12 -passout pass:${PASS}
 keytool -importkeystore -srckeystore /azkaban-web-server/cacerts.pkcs12 -storepass ${PASS} -srcstorepass ${PASS} -srcstoretype PKCS12 -destkeystore /azkaban-web-server/cacerts
 
 cat <<EOF > /azkaban-web-server/conf/azkaban-users.xml
