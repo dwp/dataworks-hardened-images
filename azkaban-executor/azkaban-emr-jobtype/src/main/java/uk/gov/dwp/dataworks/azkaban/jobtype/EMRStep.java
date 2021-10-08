@@ -211,6 +211,9 @@ public class EMRStep extends AbstractProcessJob {
             stepCompleted = completionStatus.getFirst();
 
             if (stepCompleted && !completionStatus.getSecond().equals("COMPLETED")) {
+                // drain the error log before exiting
+                GetLogEventsResult errLogEvent = logsClient.getLogEvents(getLogEventsRequest);
+                printLogs(errLogEvent);
                 error(String.format("Step %s did not successfully complete. Reason: %s", stepId,
                         completionStatus.getSecond()));
                 throw new RuntimeException(String.format("Step %s did not successfully complete. Reason: %s", stepId,
