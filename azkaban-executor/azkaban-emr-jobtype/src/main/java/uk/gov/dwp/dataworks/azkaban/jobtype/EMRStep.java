@@ -211,9 +211,13 @@ public class EMRStep extends AbstractProcessJob {
             stepCompleted = completionStatus.getFirst();
 
             if (stepCompleted && !completionStatus.getSecond().equals("COMPLETED")) {
-                // drain the error log before exiting
-                GetLogEventsResult errLogEvent = logsClient.getLogEvents(getLogEventsRequest);
-                printLogs(errLogEvent);
+                try {
+                    // drain the error log before exiting
+                    GetLogEventsResult logResult = logsClient.getLogEvents(getLogEventsRequest);
+                    printLogs(logResult);
+                } catch (AWSLogsException e) {
+                    error(String.format("Error fetching detailed logs. Reason: %s", e.getErrorMessage()));
+                }
                 error(String.format("Step %s did not successfully complete. Reason: %s", stepId,
                         completionStatus.getSecond()));
                 throw new RuntimeException(String.format("Step %s did not successfully complete. Reason: %s", stepId,
@@ -238,12 +242,13 @@ public class EMRStep extends AbstractProcessJob {
         try {
             nextToken = lastToken;
 
-            getLogEventsRequest = new GetLogEventsRequest().withLogGroupName(logGroupName).withLogStreamName(stepId)
-                                                           .withStartFromHead(true).withNextToken(nextToken);
+            if(nextToken != null && !nextToken.isEmpty()) {
+                getLogEventsRequest = new GetLogEventsRequest().withLogGroupName(logGroupName).withLogStreamName(stepId)
+                                                            .withStartFromHead(true).withNextToken(nextToken);
 
-            GetLogEventsResult logResult = logsClient.getLogEvents(getLogEventsRequest);
-            printLogs(logResult);
-
+                GetLogEventsResult logResult = logsClient.getLogEvents(getLogEventsRequest);
+                printLogs(logResult);
+            }
         } catch (AWSLogsException e) {
             info("Error reading logs: " + e.getErrorMessage());
             nextToken = lastToken;
