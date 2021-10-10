@@ -7,17 +7,17 @@ USER root
 COPY azkaban-cognito-usermanager /tmp/azkaban-cognito-usermanager
 COPY dist/LoginAbstractAzkabanServlet.java /tmp/LoginAbstractAzkabanServlet.java
 
-RUN curl -k -LSs --output /tmp/azkaban.tar.gz https://github.com/azkaban/azkaban/archive/$AZK_VERSION.tar.gz && \
-    tar -C /tmp -zoxf /tmp/azkaban.tar.gz && \
-    mv -f /tmp/LoginAbstractAzkabanServlet.java /tmp/azkaban-$AZK_VERSION/azkaban-web-server/src/main/java/azkaban/webapp/servlet && \
-    cat /tmp/azkaban-$AZK_VERSION/build.gradle | sed -e 's/httpclient:4.5.3/httpclient:4.5.13/' > /tmp/build.gradle && \
-    mv /tmp/build.gradle /tmp/azkaban-$AZK_VERSION/build.gradle && \
-    /tmp/azkaban-$AZK_VERSION/gradlew -p /tmp/azkaban-$AZK_VERSION assemble && \
-    /tmp/azkaban-cognito-usermanager/gradlew -p /tmp/azkaban-cognito-usermanager assemble && \
-    mv /tmp/azkaban-$AZK_VERSION/azkaban-web-server/build/distributions/azkaban-web-server-0.1.0-SNAPSHOT.tar.gz /tmp/azkaban-web-server.tar.gz && \
-    mv /tmp/azkaban-$AZK_VERSION/azkaban-db/build/distributions/azkaban-db-0.1.0-SNAPSHOT.tar.gz /tmp/azkaban-db.tar.gz
+RUN curl -k -LSs --output /tmp/azkaban.tar.gz https://github.com/azkaban/azkaban/archive/$AZK_VERSION.tar.gz
+RUN tar -C /tmp -zoxf /tmp/azkaban.tar.gz
+RUN mv -f /tmp/LoginAbstractAzkabanServlet.java /tmp/azkaban-$AZK_VERSION/azkaban-web-server/src/main/java/azkaban/webapp/servlet
+RUN cat /tmp/azkaban-$AZK_VERSION/build.gradle | sed -e 's/httpclient:4.5.3/httpclient:4.5.13/' > /tmp/build.gradle
+RUN mv /tmp/build.gradle /tmp/azkaban-$AZK_VERSION/build.gradle
+RUN /tmp/azkaban-$AZK_VERSION/gradlew -p /tmp/azkaban-$AZK_VERSION assemble
+RUN /tmp/azkaban-cognito-usermanager/gradlew -p /tmp/azkaban-cognito-usermanager assemble
+RUN mv /tmp/azkaban-$AZK_VERSION/azkaban-web-server/build/distributions/azkaban-web-server-0.1.0-SNAPSHOT.tar.gz /tmp/azkaban-web-server.tar.gz
+RUN mv /tmp/azkaban-$AZK_VERSION/azkaban-db/build/distributions/azkaban-db-0.1.0-SNAPSHOT.tar.gz /tmp/azkaban-db.tar.gz
 
-FROM openjdk:8-alpine
+FROM openjdk:12-alpine
 
 COPY --from=gradle-builder /tmp/azkaban-web-server.tar.gz /tmp/azkaban-web-server.tar.gz
 COPY --from=gradle-builder /tmp/azkaban-db.tar.gz /tmp/azkaban-db.tar.gz
