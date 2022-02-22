@@ -13,7 +13,6 @@ RUN cd lua-openssl && \
 
 
 FROM openresty/openresty:1.19.9.1-5-alpine
-
 RUN apk add openssl lua-dev
 
 ADD https://github.com/cdbattags/lua-resty-jwt/archive/v0.2.0.tar.gz /lua-resty-jwt.tar.gz
