@@ -34,11 +34,11 @@ function jwk_to_pem(jwk)
     return rsa_public_key:export('pem')
 end
 
-function check_jwt(token, user)
-    if not token then respond_401("Missing token (user: " .. user .. ")") end
+function check_jwt(token)
+    if not token then respond_401("Missing token") end
     
     local jwt_obj = jwt:load_jwt(token)
-    if not jwt_obj.valid then respond_401("Invalid token (user: " .. user .. "): " .. jwt_obj.reason) end
+    if not jwt_obj.valid then respond_401("Invalid token: " .. jwt_obj.reason) end
     
     local jwk = get_jwk(jwt_obj.header.kid)
     if not jwk then respond_401("No JWK found that matches token kid " .. jwt_obj.header.kid) end
