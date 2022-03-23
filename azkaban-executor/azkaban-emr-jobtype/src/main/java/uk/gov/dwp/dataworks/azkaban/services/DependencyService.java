@@ -70,6 +70,7 @@ public class DependencyService extends CancellableLoggingService implements Meta
         metadataEntry(product).ifPresent(x -> latch.countDown());
     }
 
+    //Scan for product by polling DynamoDB table
     private Optional<Map<String, AttributeValue>> metadataEntry(final String product) {
         final List<Map<String, AttributeValue>> results = new ArrayList<>();
         Map<String, AttributeValue> lastKeyEvaluatedKey = null;

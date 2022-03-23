@@ -28,7 +28,7 @@ public class LaunchInvocationService extends CancellableLoggingService {
         if (proceed.get()) {
             try {
                 info("Invoking lambda '" + functionName + "', payload: '" + payload + "'");
-                InvokeResult result = awsLambda.invoke(invokeRequest(payload));
+                InvokeResult result = awsLambda.invoke(invokeRequest(payload.getMeta()));
                 info("Invoked lambda '" + functionName + "', payload: '" + payload + "', result: '" + result
                         .getStatusCode() + "'");
                 String resultPayload = new String(result.getPayload().array());
