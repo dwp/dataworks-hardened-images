@@ -3,9 +3,7 @@ package uk.gov.dwp.dataworks.azkaban.model;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.CORRELATION_ID_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.DATE_FIELD;
@@ -34,23 +32,31 @@ public class InvocationPayload {
                 attributeValue(entry, "Snapshot_Type"), attributeValue(entry, DATE_FIELD));
     }
 
-    public static Map<String, ArrayList<String>> getMeta() {
-        Map<String, ArrayList<String>> res = new Map;
-        ArrayList<String> list = new ArrayList<>;
+    public Map<String, Map<String, ArrayList<String>>> getPayload() {
 
-        list.add("--correlation_id")
-        list.add(correlationId)
-        list.add("--analytical_dataset_prefix")
-        list.add(analyticalDatasetPrefix)
-        list.add("--s3_prefix")
-        list.add(snapshotPrefix)
-        list.add("--snapshot_type")
-        list.add(snapshotType)
-        list.add("--export_date")
-        list.add(exportDate)
+        Map<String, Map<String, ArrayList<String>>> res = new HashMap<>();
+        Map<String, ArrayList<String>> values = new HashMap<>();
+        ArrayList<String> list = new ArrayList<>();
 
-        res.put("additional_step_args", list)
-        return new res;
+        list.add("--correlation_id");
+        list.add(correlationId);
+        list.add("--s3_prefix");
+        list.add(snapshotPrefix);
+        list.add("--snapshot_type");
+        list.add(snapshotType);
+        list.add("--export_date");
+        list.add(exportDate);
+
+        values.put("submit-job", list);
+        values.put("courtesy-flush", list);
+        values.put("send_notification", list);
+        values.put("create-clive-databases", list);
+        values.put("source", list);
+        values.put("create_uc_feature_dbs", list);
+        values.put("create-hive-dynamo-table", list);
+
+        res.put("additional_step_args", values);
+        return res;
     }
 
     private static String attributeValue(Map<String, AttributeValue> map, String... keys) {

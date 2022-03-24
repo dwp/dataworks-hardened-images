@@ -95,7 +95,7 @@ public class EmrLaunchAndMonitoringService extends CancellableLoggingService {
     }
 
     private Optional<InvocationPayload> dependencyMetadata(String dependencies, String ... collections) {
-        return completedDependency(dependencies, collections).map(InvocationPayload::from); //Return values from retrived metadata (correlationId etc...)
+        return completedDependency(dependencies, collections).map(InvocationPayload::from); //Return values from retrieved metadata (correlationId etc...)
     }
 
     private Optional<Map<String, AttributeValue>> completedDependency(String dependency, String ... collections) {
