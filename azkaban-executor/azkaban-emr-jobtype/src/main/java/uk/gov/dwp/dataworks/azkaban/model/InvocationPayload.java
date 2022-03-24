@@ -34,29 +34,29 @@ public class InvocationPayload {
 
     public Map<String, Map<String, ArrayList<String>>> getPayload() {
 
-        Map<String, Map<String, ArrayList<String>>> res = new HashMap<>();
-        Map<String, ArrayList<String>> values = new HashMap<>();
-        ArrayList<String> list = new ArrayList<>();
+        Map<String, Map<String, ArrayList<String>>> payload = new HashMap<>();
+        Map<String, ArrayList<String>> args = new HashMap<>();
+        ArrayList<String> argsList = new ArrayList<>();
 
-        list.add("--correlation_id");
-        list.add(correlationId);
-        list.add("--s3_prefix");
-        list.add(snapshotPrefix);
-        list.add("--snapshot_type");
-        list.add(snapshotType);
-        list.add("--export_date");
-        list.add(exportDate);
+        argsList.add("--correlation_id");
+        argsList.add(correlationId);
+        argsList.add("--s3_prefix");
+        argsList.add(snapshotPrefix);
+        argsList.add("--snapshot_type");
+        argsList.add(snapshotType);
+        argsList.add("--export_date");
+        argsList.add(exportDate);
 
-        values.put("submit-job", list);
-        values.put("courtesy-flush", list);
-        values.put("send_notification", list);
-        values.put("create-clive-databases", list);
-        values.put("source", list);
-        values.put("create_uc_feature_dbs", list);
-        values.put("create-hive-dynamo-table", list);
+        args.put("submit-job", argsList);
+        args.put("courtesy-flush", argsList);
+        args.put("send_notification", argsList);
+        args.put("create-clive-databases", argsList);
+        args.put("source", argsList);
+        args.put("create_uc_feature_dbs", argsList);
+        args.put("create-hive-dynamo-table", argsList);
 
-        res.put("additional_step_args", values);
-        return res;
+        payload.put("additional_step_args", args);
+        return payload;
     }
 
     private static String attributeValue(Map<String, AttributeValue> map, String... keys) {
