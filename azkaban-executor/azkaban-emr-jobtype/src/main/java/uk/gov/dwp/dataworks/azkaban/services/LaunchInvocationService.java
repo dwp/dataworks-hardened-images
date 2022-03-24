@@ -27,7 +27,7 @@ public class LaunchInvocationService extends CancellableLoggingService {
     public Optional<InvocationResult> invokeEmrLauncher(final InvocationPayload payload) {
         if (proceed.get()) {
             try {
-                info("Invoking lambda '" + functionName + "', payload: '" + payload + "'");
+                info("Invoking lambda '" + functionName + "', payload: '" + payload.getPayload() + "'");
                 InvokeResult result = awsLambda.invoke(invokeRequest(payload));
                 info("Invoked lambda '" + functionName + "', payload: '" + payload + "', result: '" + result
                         .getStatusCode() + "'");
@@ -46,7 +46,7 @@ public class LaunchInvocationService extends CancellableLoggingService {
 
     private InvokeRequest invokeRequest(InvocationPayload payload) throws JsonProcessingException {
         return new InvokeRequest().withFunctionName(this.functionName)
-                                  .withPayload(new ObjectMapper().writeValueAsString(payload))
+                                  .withPayload(new ObjectMapper().writeValueAsString(payload.getPayload()))
                                   .withInvocationType(InvocationType.RequestResponse);
     }
 }

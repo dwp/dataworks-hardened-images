@@ -3,9 +3,7 @@ package uk.gov.dwp.dataworks.azkaban.model;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.CORRELATION_ID_FIELD;
 import static uk.gov.dwp.dataworks.azkaban.services.DependencyService.DATE_FIELD;
@@ -32,6 +30,33 @@ public class InvocationPayload {
         return new InvocationPayload(attributeValue(entry, CORRELATION_ID_FIELD),
                 attributeValue(entry, "S3_Prefix_Analytical_DataSet"), attributeValue(entry, "S3_Prefix_Snapshots"),
                 attributeValue(entry, "Snapshot_Type"), attributeValue(entry, DATE_FIELD));
+    }
+
+    public Map<String, Map<String, ArrayList<String>>> getPayload() {
+
+        Map<String, Map<String, ArrayList<String>>> payload = new HashMap<>();
+        Map<String, ArrayList<String>> args = new HashMap<>();
+        ArrayList<String> argsList = new ArrayList<>();
+
+        argsList.add("--correlation_id");
+        argsList.add(correlationId);
+        argsList.add("--s3_prefix");
+        argsList.add(snapshotPrefix);
+        argsList.add("--snapshot_type");
+        argsList.add(snapshotType);
+        argsList.add("--export_date");
+        argsList.add(exportDate);
+
+        args.put("submit-job", argsList);
+        args.put("courtesy-flush", argsList);
+        args.put("send_notification", argsList);
+        args.put("create-clive-databases", argsList);
+        args.put("source", argsList);
+        args.put("create_uc_feature_dbs", argsList);
+        args.put("create-hive-dynamo-table", argsList);
+
+        payload.put("additional_step_args", args);
+        return payload;
     }
 
     private static String attributeValue(Map<String, AttributeValue> map, String... keys) {
