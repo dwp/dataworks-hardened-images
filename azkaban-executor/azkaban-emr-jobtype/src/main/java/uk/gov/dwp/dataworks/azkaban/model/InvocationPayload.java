@@ -39,13 +39,13 @@ public class InvocationPayload {
         ArrayList<String> argsList = new ArrayList<>();
 
         argsList.add("--correlation_id");
-        argsList.add(correlationId);
+        argsList.add(getCorrelationId());
         argsList.add("--s3_prefix");
-        argsList.add(snapshotPrefix);
+        argsList.add(getPrefix());
         argsList.add("--snapshot_type");
-        argsList.add(snapshotType);
+        argsList.add(getSnapshotType());
         argsList.add("--export_date");
-        argsList.add(exportDate);
+        argsList.add(getExportDate());
 
         args.put("submit-job", argsList);
         args.put("courtesy-flush", argsList);
