@@ -55,7 +55,7 @@ public class EmrProgressService extends CancellableLoggingService {
         if (proceed.get()) {
             info("Monitoring '" + clusterId + "'");
             final ScheduledExecutorService startupMonitorExecutor = Executors.newSingleThreadScheduledExecutor();
-            startupMonitorExecutor.scheduleAtFixedRate(() -> checkClusterStatus(clusterId), 0, 10, TimeUnit.SECONDS);
+            startupMonitorExecutor.scheduleAtFixedRate(() -> checkClusterStatus(clusterId), 0, 60, TimeUnit.SECONDS);
             clusterStartupLatch.await();
             info("Shutting down startupMonitorExecutor executor");
             startupMonitorExecutor.shutdownNow();
@@ -73,7 +73,7 @@ public class EmrProgressService extends CancellableLoggingService {
                 info("Cluster is running, monitoring steps.");
                 final ScheduledExecutorService stepsMonitorExecutor = Executors.newSingleThreadScheduledExecutor();
                 stepsMonitorExecutor
-                        .scheduleWithFixedDelay(() -> checkForStepCompletion(clusterId), 0, 5, TimeUnit.SECONDS);
+                        .scheduleWithFixedDelay(() -> checkForStepCompletion(clusterId), 0, 60, TimeUnit.SECONDS);
                 stepsMonitorLatch.await();
                 info("Shutting down stepsMonitor executor");
                 stepsMonitorExecutor.shutdownNow();
