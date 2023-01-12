@@ -75,7 +75,7 @@ public class EMRStep extends AbstractProcessJob {
     private static final int SUCCESSFUL_EXECUTION = 0;
     private static final String TEMP_FILE_NAME = "user_can_write";
     private static final int MAX_STEPS = 256;
-    private static final int POLL_INTERVAL = 10000;
+    private static final int POLL_INTERVAL = 60000;
     private static final String BOOT_POLL_INTERVAL = "emr.boot.poll.interval";
     private static final int BOOT_POLL_INTERVAL_DEFAULT = 300000; /* 5 mins */
     private static final String BOOT_POLL_ATTEMPTS_MAX = "emr.boot.poll.attempts.max";
