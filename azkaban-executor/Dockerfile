@@ -16,7 +16,7 @@ RUN curl -k -LSs --output /tmp/azkaban.tar.gz https://github.com/azkaban/azkaban
     mv /tmp/azkaban-$AZK_VERSION/azkaban-db/build/distributions/azkaban-db-0.1.0-SNAPSHOT.tar.gz /tmp/azkaban-db.tar.gz
 
 FROM openjdk:8-alpine AS binary-builder
-
+ENV JAVA_OPTIONS='-Dhttp.proxyHost=$https_proxy -Dhttp.proxyPort=3128'
 COPY --from=gradle-builder /tmp/execute-as-user.c /tmp/execute-as-user.c
 
 RUN apk add --update --no-cache \
